@@ -10,6 +10,7 @@ class Enrollment extends Model
 {
     use HasFactory;
 
+    protected $guarded = [];
 
     function course() : BelongsTo {
        return $this->belongsTo(Course::class, 'course_id', 'id'); 

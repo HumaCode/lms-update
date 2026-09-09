@@ -2,6 +2,7 @@ import React from 'react';
 import InstructorHeader from './InstructorHeader';
 import InstructorSidebar from './InstructorSidebar';
 import Breadcrumb from '../Components/Breadcrumb';
+import CustomPointer from '@/User/Components/CustomPointer';
 import { useFlashNotification } from '@/Hooks/useFlashNotification';
 
 export default function InstructorLayout({ title = 'Instructor Studio', crumbs = [], children }) {
@@ -9,6 +10,7 @@ export default function InstructorLayout({ title = 'Instructor Studio', crumbs =
 
     return (
         <div className="instructor-layout-wrapper d-flex flex-column min-vh-100 bg-light">
+            <CustomPointer />
             <InstructorHeader />
             <Breadcrumb title={title} crumbs={crumbs} />
 

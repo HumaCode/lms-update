@@ -15,11 +15,14 @@ use Illuminate\Support\Facades\Mail;
 
 class FrontendContactController extends Controller
 {
-    function index() : View
+    function index()
     {
         $contactCards = Contact::where('status', 1)->get();
         $contactSetting = ContactSetting::first();
-        return view('frontend.pages.contact', compact('contactCards', 'contactSetting'));
+        return \Inertia\Inertia::render('User/Contact/Index', [
+            'contactCards' => $contactCards,
+            'contactSetting' => $contactSetting,
+        ]);
     }
 
 

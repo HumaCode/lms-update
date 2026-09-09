@@ -13,21 +13,29 @@ use Illuminate\Http\Response;
 
 class EnrolledCourseController extends Controller
 {
-    function index() : View
+    function index()
     {
-        $enrollments = Enrollment::with('course')->where('user_id', user()->id)->get();
-        return view('frontend.student-dashboard.enrolled-course.index', compact('enrollments'));     
+        $enrollments = Enrollment::with(['course.instructor', 'course.category'])->where('user_id', user()->id)->get();
+        return \Inertia\Inertia::render('User/Student/EnrolledCourse/Index', [
+            'enrollments' => $enrollments,
+        ]);     
     }
 
-    function payerIndex(string $slug) : View
+    function payerIndex(string $slug)
     {
-        $course = Course::where('slug', $slug)->firstOrFail();
+        $course = Course::with(['chapters.lessons'])->where('slug', $slug)->firstOrFail();
 
         if(!Enrollment::where('user_id', user()->id)->where('course_id', $course->id)->where('have_access', 1)->exists()) return abort(404);
         $lessonCount = CourseChapterLession::where('course_id', $course->id)->count();
         $lastWatchHistory = WatchHistory::where(['user_id' => user()->id, 'course_id' => $course->id])->orderBy('updated_at', 'desc')->first();
         $watchedLessonIds = WatchHistory::where(['user_id' => user()->id, 'course_id' => $course->id, 'is_completed' => 1])->pluck('lesson_id')->toArray();
-        return view('frontend.student-dashboard.enrolled-course.player-index', compact('course', 'lastWatchHistory', 'watchedLessonIds', 'lessonCount'));
+
+        return \Inertia\Inertia::render('User/Student/CoursePlayer/Index', [
+            'course' => $course,
+            'lastWatchHistory' => $lastWatchHistory,
+            'watchedLessonIds' => $watchedLessonIds,
+            'lessonCount' => $lessonCount,
+        ]);
     }
 
     function getLessonContent(Request $request) 

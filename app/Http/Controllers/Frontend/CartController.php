@@ -15,10 +15,12 @@ class CartController extends Controller
 {
     //
 
-    function index() : View
+    function index()
     {
-        $cart = Cart::with(['course'])->where(['user_id' => user()->id])->paginate();
-        return view('frontend.pages.cart', compact('cart'));
+        $cart = Cart::with(['course.instructor'])->where(['user_id' => user()->id])->paginate();
+        return \Inertia\Inertia::render('User/Cart/Index', [
+            'cart' => $cart,
+        ]);
     }
 
     function addToCart(int $id) : Response

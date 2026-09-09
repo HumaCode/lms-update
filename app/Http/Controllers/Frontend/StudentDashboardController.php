@@ -18,21 +18,27 @@ class StudentDashboardController extends Controller
 {
     use FileUpload;
 
-    function index() : View {
+    function index()
+    {
         $userCourses = user()->enrollments()->count();
         $reviewCount = Review::where('user_id', user()->id)->count();
         $orderCount = Order::where('buyer_id', user()->id)->count();
 
-        $orders = Order::where('buyer_id', user()->id)->take(10)->get();
+        $orders = Order::where('buyer_id', user()->id)->latest()->take(10)->get();
         
-        return view('frontend.student-dashboard.index', compact('userCourses', 'reviewCount', 'orderCount', 'orders'));
+        return \Inertia\Inertia::render('User/Student/Dashboard/Index', [
+            'userCourses' => $userCourses,
+            'reviewCount' => $reviewCount,
+            'orderCount' => $orderCount,
+            'orders' => $orders,
+        ]);
     }
 
+    function becomeInstructor()
+    {
+        if(auth()->user()->role == 'instructor') abort(403);
 
-    function becomeInstructor() : View {
-       if(auth()->user()->role == 'instructor') abort(403);
-
-       return view('frontend.student-dashboard.become-instructor.index'); 
+        return \Inertia\Inertia::render('User/Student/BecomeInstructor/Index'); 
     }
 
     function becomeInstructorUpdate(Request $request, User $user) : RedirectResponse {
@@ -44,13 +50,16 @@ class StudentDashboardController extends Controller
             'document' => $filePath
         ]);
 
+        notyf()->success('Application submitted successfully!');
         return redirect()->route('student.dashboard');
     }
 
-    function review() : View
+    function review()
     {
-        $reviews = Review::where('user_id', user()->id)->paginate(10);
-        return view('frontend.student-dashboard.review.index', compact('reviews'));
+        $reviews = Review::with('course')->where('user_id', user()->id)->paginate(10);
+        return \Inertia\Inertia::render('User/Student/Review/Index', [
+            'reviews' => $reviews,
+        ]);
     }
 
     function reviewDestroy(string $id) {

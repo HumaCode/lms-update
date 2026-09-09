@@ -19,8 +19,9 @@ class ProfileController extends Controller
 {
     use FileUpload;
 
-    function index() : View {
-       return view('frontend.student-dashboard.profile.index'); 
+    function index()
+    {
+        return \Inertia\Inertia::render('User/Student/Profile/Index'); 
     }
 
     function instructorIndex()

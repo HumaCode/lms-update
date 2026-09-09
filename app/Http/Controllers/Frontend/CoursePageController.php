@@ -15,10 +15,12 @@ use Illuminate\Http\Request;
 
 class CoursePageController extends Controller
 {
-    function index(Request $request): View
+    function index(Request $request)
     {
-        // dd($request->all());
-        $courses = Course::where('is_approved', 'approved')
+        $courses = Course::with(['category', 'level', 'instructor'])
+            ->withAvg('reviews', 'rating')
+            ->withCount('enrollments')
+            ->where('is_approved', 'approved')
             ->where('status', 'active')
             ->when($request->has('search') && $request->filled('search'), function($query) use ($request) {
                 $query->where('title', 'like', '%' . $request->search . '%')
@@ -48,24 +50,37 @@ class CoursePageController extends Controller
                 $query->whereBetween('price', [$request->from, $request->to]);
             })
             ->orderBy('id', $request->filled('order') ? $request->order : 'desc')
-            ->paginate(12);
+            ->paginate(12)
+            ->withQueryString();
 
         $categories = CourseCategory::where('status', 1)->whereNull('parent_id')->get();
         $levels = CourseLevel::all();
         $languages = CourseLanguage::all();
-        return view('frontend.pages.course-page', compact('courses', 'categories', 'levels', 'languages'));
+
+        return \Inertia\Inertia::render('User/Course/Index', [
+            'courses' => $courses,
+            'categories' => $categories,
+            'levels' => $levels,
+            'languages' => $languages,
+        ]);
     }
 
-    function show(string $slug): View
+    function show(string $slug)
     {
-        $course = Course::with('reviews')->where('slug', $slug)
+        $course = Course::with(['category', 'level', 'language', 'instructor', 'chapters.lessons'])
+            ->withAvg('reviews', 'rating')
+            ->withCount('enrollments')
+            ->where('slug', $slug)
             ->where('is_approved', 'approved')
             ->where('status', 'active')
             ->firstOrFail();
-        $reviews = Review::where('course_id', $course->id)->where('status', 1)->paginate(10);
-        
 
-        return view('frontend.pages.course-details-page', compact('course', 'reviews'));
+        $reviews = Review::with('user')->where('course_id', $course->id)->where('status', 1)->paginate(10);
+
+        return \Inertia\Inertia::render('User/Course/Show', [
+            'course' => $course,
+            'reviews' => $reviews,
+        ]);
     }
 
     function storeReview(Request $request) : RedirectResponse

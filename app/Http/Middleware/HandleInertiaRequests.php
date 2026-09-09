@@ -48,6 +48,12 @@ class HandleInertiaRequests extends Middleware
                 'warning' => fn () => $request->session()->get('warning'),
             ],
             'settings' => fn () => config('settings'),
+            'cart_count' => fn () => auth()->guard('web')->check() ? cartCount() : 0,
+            'nav_categories' => fn () => \App\Models\CourseCategory::whereNull('parent_id')->where('status', 1)->with('subCategories')->get(),
+            'topbar' => fn () => \App\Models\TopBar::first(),
+            'footer' => fn () => \App\Models\Footer::first(),
+            'social_links' => fn () => \App\Models\SocialLink::where('status', 1)->get(),
+            'custom_pages' => fn () => \App\Models\CustomPage::where('status', 1)->where('show_at_nav', 1)->get(),
             'ziggy' => fn () => [
                 ...(new \Tighten\Ziggy\Ziggy)->toArray(),
                 'location' => $request->url(),

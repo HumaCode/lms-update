@@ -12,6 +12,11 @@ class CheckoutController extends Controller
      */
     public function __invoke(Request $request)
     {
-       return view('frontend.pages.checkout-page');
+        $cartTotal = cartTotal();
+        $cartCount = cartCount();
+        return \Inertia\Inertia::render('User/Checkout/Index', [
+            'totalAmount' => $cartTotal,
+            'totalCount' => $cartCount,
+        ]);
     }
 }

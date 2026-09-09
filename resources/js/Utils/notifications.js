@@ -36,4 +36,7 @@ export const notify = {
     warning: (msg) => getNotyf()?.open({ type: 'warning', message: msg }),
 };
 
+export const notifySuccess = (msg) => notify.success(msg);
+export const notifyError = (msg) => notify.error(msg);
+
 export default notify;

@@ -23,9 +23,14 @@ class ProfileController extends Controller
        return view('frontend.student-dashboard.profile.index'); 
     }
 
-    function instructorIndex() : View {
+    function instructorIndex()
+    {
+        $user = Auth::user()->load('gatewayInfo');
         $gateways = PayoutGateway::where('status', 1)->get();
-       return view('frontend.instructor-dashboard.profile.index', compact('gateways')); 
+        return \Inertia\Inertia::render('Instructor/Profile/Index', [
+            'profile' => $user,
+            'gateways' => $gateways,
+        ]); 
     }
 
     function profileUpdate(ProfileUpdateRequest $request) : RedirectResponse {

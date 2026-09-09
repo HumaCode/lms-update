@@ -10,17 +10,34 @@ use Illuminate\Http\Request;
 
 class WithdrawController extends Controller
 {
-    function index() : View
+    function index()
     {
-        return view('frontend.instructor-dashboard.withdraw.index');    
+        $currentBalance = user()->wallet ?? 0;
+        $pendingBalance = Withdraw::where('instructor_id', user()->id)->where('status', 'pending')->sum('amount');
+        $totalPayout = Withdraw::where('instructor_id', user()->id)->where('status', 'approved')->sum('amount');
+        $withdraws = Withdraw::where('instructor_id', user()->id)->latest()->paginate(15);
+
+        return \Inertia\Inertia::render('Instructor/Withdraw/Index', [
+            'currentBalance' => $currentBalance,
+            'pendingBalance' => $pendingBalance,
+            'totalPayout' => $totalPayout,
+            'withdraws' => $withdraws,
+        ]);    
     }
 
-    function requestPayoutIndex() : View 
+    function requestPayoutIndex() 
     {
-        $currentBallance = user()->wallet;
-        $pendingBallance = Withdraw::where('instructor_id', user()->id)->where('status', 'pending')->sum('amount');
+        $currentBalance = user()->wallet ?? 0;
+        $pendingBalance = Withdraw::where('instructor_id', user()->id)->where('status', 'pending')->sum('amount');
         $totalPayout = Withdraw::where('instructor_id', user()->id)->where('status', 'approved')->sum('amount');
-        return view('frontend.instructor-dashboard.withdraw.request-payout', compact('currentBallance', 'pendingBallance', 'totalPayout'));     
+        $gatewayInfo = user()->load('gatewayInfo')->gatewayInfo;
+
+        return \Inertia\Inertia::render('Instructor/Withdraw/RequestPayout', [
+            'currentBalance' => $currentBalance,
+            'pendingBalance' => $pendingBalance,
+            'totalPayout' => $totalPayout,
+            'gatewayInfo' => $gatewayInfo,
+        ]);     
     }
 
     function requestPayout(Request $request) : RedirectResponse {

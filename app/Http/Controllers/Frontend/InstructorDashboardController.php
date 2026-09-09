@@ -10,21 +10,22 @@ use Illuminate\Http\Request;
 
 class InstructorDashboardController extends Controller
 {
-    function index() : View {
-        $pendingCourses = Course::where('instructor_id', user()->id)->where('is_approved', 'pending')
-            ->orderBy('id', 'DESC')
-            ->limit(5)->count();
-        $approvedCourses = Course::where('instructor_id', user()->id)->where('is_approved', 'approved')
-            ->orderBy('id', 'DESC')
-            ->limit(5)->count();
-        $rejectedCourses = Course::where('instructor_id', user()->id)->where('is_approved', 'rejected')
-        ->orderBy('id', 'DESC')
-        ->limit(5)->count();
+    function index()
+    {
+        $pendingCourses = Course::where('instructor_id', user()->id)->where('is_approved', 'pending')->count();
+        $approvedCourses = Course::where('instructor_id', user()->id)->where('is_approved', 'approved')->count();
+        $rejectedCourses = Course::where('instructor_id', user()->id)->where('is_approved', 'rejected')->count();
 
-        $orderItems = OrderItem::whereHas('course', function($query) {
-            $query->where('instructor_id', user()->id);
-        })->take(10)->get();
+        $orderItems = OrderItem::with(['course', 'order.customer'])
+            ->whereHas('course', function($query) {
+                $query->where('instructor_id', user()->id);
+            })->latest()->take(10)->get();
 
-       return view('frontend.instructor-dashboard.index', compact('pendingCourses', 'approvedCourses', 'rejectedCourses', 'orderItems')); 
+        return \Inertia\Inertia::render('Instructor/Dashboard/Index', [
+            'pendingCourses' => $pendingCourses,
+            'approvedCourses' => $approvedCourses,
+            'rejectedCourses' => $rejectedCourses,
+            'orderItems' => $orderItems,
+        ]); 
     }
 }

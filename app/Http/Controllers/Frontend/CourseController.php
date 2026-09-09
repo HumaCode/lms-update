@@ -19,17 +19,23 @@ class CourseController extends Controller
 {
     use FileUpload;
 
-    function index(): View
+    function index()
     {
-        $courses = Course::where('instructor_id', Auth::user()->id)->orderBy('id', 'DESC')->get();
-        return view('frontend.instructor-dashboard.course.index', compact('courses'));
+        $courses = Course::with(['category', 'enrollments'])
+            ->withAvg('reviews', 'rating')
+            ->withCount('enrollments')
+            ->where('instructor_id', Auth::user()->id)
+            ->orderBy('id', 'DESC')
+            ->get();
+        return \Inertia\Inertia::render('Instructor/Course/Index', [
+            'courses' => $courses,
+        ]);
     }
 
-    function create(): View
+    function create()
     {
-        return view('frontend.instructor-dashboard.course.create');
+        return \Inertia\Inertia::render('Instructor/Course/Create');
     }
-
 
     function storeBasicInfo(CourseBasicInfoCreateRequest $request)
     {
@@ -47,51 +53,36 @@ class CourseController extends Controller
         $course->instructor_id = Auth::guard('web')->user()->id;
         $course->save();
 
-        // save course id on session
         Session::put('course_create_id', $course->id);
 
-        return response([
-            'status' => 'success',
-            'message' => 'Updated successfully.',
-            'redirect' => route('instructor.courses.edit', ['id' => $course->id, 'step' => $request->next_step])
-        ]);
+        notyf()->success('Course created! Now complete the course details.');
+
+        return to_route('instructor.courses.edit', ['id' => $course->id, 'step' => 2]);
     }
 
-    function edit(Request $request)
+    function edit(Request $request, ?string $id = null)
     {
+        $courseId = $id ?? $request->id;
+        $course = Course::with(['category', 'level', 'language', 'chapters.lessons'])
+            ->where('instructor_id', Auth::user()->id)
+            ->findOrFail($courseId);
 
-        switch ($request->step) {
-            case '1':
-                $course = Course::findOrFail($request->id);
-                return view('frontend.instructor-dashboard.course.edit', compact('course'));
-                break;
+        $categories = CourseCategory::whereNull('parent_id')->with('subCategories')->where('status', 1)->get();
+        $levels = CourseLevel::all();
+        $languages = CourseLanguage::all();
+        $step = (int) ($request->step ?? 1);
 
-            case '2':
-                $categories = CourseCategory::where('status', 1)->get();
-                $levels = CourseLevel::all();
-                $languages = CourseLanguage::all();
-                $course = Course::findOrFail($request->id);
-                return view('frontend.instructor-dashboard.course.more-info', compact('categories', 'levels', 'languages', 'course'));
-                break;
-
-            case '3':
-                $courseId = $request->id;
-                $chapters = CourseChapter::where(['course_id' => $courseId, 'instructor_id' => Auth::user()->id])->orderBy('order')->get();
-                return view('frontend.instructor-dashboard.course.course-content', compact('courseId', 'chapters'));
-                break;
-
-            case '4':
-                $courseId = $request->id;
-                $course = Course::findOrFail($request->id);
-                $editMode = true;
-                return view('frontend.instructor-dashboard.course.finish', compact('course', 'editMode'));
-                break;
-        }
+        return \Inertia\Inertia::render('Instructor/Course/Edit', [
+            'course' => $course,
+            'categories' => $categories,
+            'levels' => $levels,
+            'languages' => $languages,
+            'currentStep' => $step,
+        ]);
     }
 
     function update(Request $request)
     {
-        // dd($request->all());
         switch ($request->current_step) {
             case '1':
                 $rules = [
@@ -107,7 +98,7 @@ class CourseController extends Controller
 
                 $request->validate($rules);
 
-                $course = Course::findOrFail($request->id);
+                $course = Course::where('instructor_id', Auth::user()->id)->findOrFail($request->id);
 
                 if ($request->hasFile('thumbnail')) {
                     $thumbnailPath = $this->uploadFile($request->file('thumbnail'));
@@ -119,26 +110,17 @@ class CourseController extends Controller
                 $course->slug = \Str::slug($request->title);
                 $course->seo_description = $request->seo_description;
                 $course->demo_video_storage = $request->demo_video_storage;
-                $course->demo_video_source = $request->filled('file') ? $request->file : $request->url;
+                $course->demo_video_source = $request->filled('file') ? $request->file : $request->demo_video_source;
                 $course->price = $request->price;
                 $course->discount = $request->discount;
                 $course->description = $request->description;
-                $course->instructor_id = Auth::guard('web')->user()->id;
                 $course->save();
 
-                // save course id on session
-                Session::put('course_create_id', $course->id);
+                notyf()->success('Basic information updated!');
 
-                return response([
-                    'status' => 'success',
-                    'message' => 'Updated successfully.',
-                    'redirect' => route('instructor.courses.edit', ['id' => $course->id, 'step' => $request->next_step])
-                ]);
-
-                break;
+                return to_route('instructor.courses.edit', ['id' => $course->id, 'step' => 2]);
 
             case '2':
-                // validation
                 $request->validate([
                     'capacity' => ['nullable', 'numeric'],
                     'duration' => ['required', 'numeric'],
@@ -149,8 +131,7 @@ class CourseController extends Controller
                     'language' => ['required', 'integer'],
                 ]);
 
-                // update course data
-                $course = Course::findOrFail($request->id);
+                $course = Course::where('instructor_id', Auth::user()->id)->findOrFail($request->id);
                 $course->capacity = $request->capacity;
                 $course->duration = $request->duration;
                 $course->qna = $request->qna ? 1 : 0;
@@ -160,39 +141,27 @@ class CourseController extends Controller
                 $course->course_language_id = $request->language;
                 $course->save();
 
-                return response([
-                    'status' => 'success',
-                    'message' => 'Updated successfully.',
-                    'redirect' => route('instructor.courses.edit', ['id' => $course->id, 'step' => $request->next_step])
-                ]);
+                notyf()->success('Course details updated!');
 
-                break;
+                return to_route('instructor.courses.edit', ['id' => $course->id, 'step' => 3]);
+
             case '3':
-                return response([
-                    'status' => 'success',
-                    'message' => 'Updated successfully.',
-                    'redirect' => route('instructor.courses.edit', ['id' => $request->id, 'step' => $request->next_step])
-                ]);
-                break;
+                return to_route('instructor.courses.edit', ['id' => $request->id, 'step' => 4]);
 
             case '4':
-                // validation
                 $request->validate([
                     'message' => ['nullable', 'max:1000', 'string'],
                     'status' => ['required', 'in:active,inactive,draft']
                 ]);
 
-                // update course data
-                $course = Course::findOrFail($request->id);
+                $course = Course::where('instructor_id', Auth::user()->id)->findOrFail($request->id);
                 $course->message_for_reviewer = $request->message;
                 $course->status = $request->status;
                 $course->save();
-                return response([
-                    'status' => 'success',
-                    'message' => 'Updated successfully.',
-                    'redirect' => route('instructor.courses.index')
-                ]);
-                break;
+
+                notyf()->success('Course published and submitted for review!');
+
+                return to_route('instructor.courses.index');
         }
     }
 }

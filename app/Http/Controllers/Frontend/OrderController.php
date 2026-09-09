@@ -12,12 +12,15 @@ class OrderController extends Controller
 {
     //
 
-    function index() : View
+    function index()
     {
-        $orderItems = OrderItem::whereHas('course', function($query) {
-            $query->where('instructor_id', user()->id);
-        })->paginate(25);
+        $orderItems = OrderItem::with(['course', 'order.customer'])
+            ->whereHas('course', function($query) {
+                $query->where('instructor_id', user()->id);
+            })->latest()->paginate(25);
 
-        return view('frontend.instructor-dashboard.order.index', compact('orderItems'));     
+        return \Inertia\Inertia::render('Instructor/Order/Index', [
+            'orderItems' => $orderItems,
+        ]);     
     }
 }

@@ -103,17 +103,18 @@ class CourseContentController extends Controller
         return redirect()->back();
     }
 
-    function destroyChapter(string $id): Response
+    function destroyChapter(string $id): RedirectResponse
     {
         try {
-            // delete chapter
-            $chapter = CourseChapter::findOrFail($id);
+            $chapter = CourseChapter::where('instructor_id', Auth::user()->id)->findOrFail($id);
+            $chapter->lessons()->delete();
             $chapter->delete();
-            notyf()->success('Deleted Successfully!');
-            return response(['message' => 'Deleted Successfully!'], 200);
+            notyf()->success('Chapter deleted successfully!');
+            return redirect()->back();
         } catch (Exception $e) {
-            logger("Course Level Error >> " . $e);
-            return response(['message' => 'Something went wrong!'], 500);
+            logger("Course Chapter Error >> " . $e);
+            notyf()->error('Something went wrong!');
+            return redirect()->back();
         }
     }
 
@@ -170,21 +171,22 @@ class CourseContentController extends Controller
         $lesson->chapter_id = $request->chapter_id;
         $lesson->save();
 
-        notyf()->success('Updated Success fully!');
+        notyf()->success('Lesson updated successfully!');
 
         return redirect()->back();
     }
 
-    function destroyLesson(string $id): Response
+    function destroyLesson(string $id): RedirectResponse
     {
         try {
-            $lesson =  CourseChapterLession::findOrFail($id);
+            $lesson = CourseChapterLession::where('instructor_id', Auth::user()->id)->findOrFail($id);
             $lesson->delete();
-            notyf()->success('Deleted Successfully!');
-            return response(['message' => 'Deleted Successfully!'], 200);
+            notyf()->success('Lesson deleted successfully!');
+            return redirect()->back();
         } catch (Exception $e) {
-            logger("Course Level Error >> " . $e);
-            return response(['message' => 'Something went wrong!'], 500);
+            logger("Course Lesson Error >> " . $e);
+            notyf()->error('Something went wrong!');
+            return redirect()->back();
         }
     }
 

@@ -1,34 +1,82 @@
 import React, { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import UserLayout from '../../Layouts/UserLayout';
-import CourseCard from '../../Components/CourseCard';
+import CourseSidebarFilter from './Sections/CourseSidebarFilter';
+import CourseGridCard from './Sections/CourseGridCard';
+
+const parseUrlArray = (paramName) => {
+    if (typeof window === 'undefined') return [];
+    const params = new URLSearchParams(window.location.search);
+    const result = [];
+    for (const [key, val] of params.entries()) {
+        if (key === paramName || key === `${paramName}[]` || key.startsWith(`${paramName}[`)) {
+            const num = Number(val);
+            if (!isNaN(num) && val !== '') {
+                result.push(num);
+            }
+        }
+    }
+    return result;
+};
 
 export default function CourseCatalog({
     courses,
     categories = [],
     levels = [],
-    languages = []
+    languages = [],
 }) {
     // Current query parameters from URL
-    const urlParams = new URLSearchParams(window.location.search);
+    const urlParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
     const [search, setSearch] = useState(urlParams.get('search') || '');
     const [order, setOrder] = useState(urlParams.get('order') || 'desc');
-    const [selectedCategories, setSelectedCategories] = useState(urlParams.getAll('category[]').map(Number));
-    const [selectedLevels, setSelectedLevels] = useState(urlParams.getAll('level[]').map(Number));
-    const [selectedLanguages, setSelectedLanguages] = useState(urlParams.getAll('language[]').map(Number));
+    const [selectedCategories, setSelectedCategories] = useState(() => parseUrlArray('category'));
+    const [selectedLevels, setSelectedLevels] = useState(() => parseUrlArray('level'));
+    const [selectedRatings, setSelectedRatings] = useState(() => parseUrlArray('rating'));
 
     const applyFilter = (newOverrides = {}) => {
+        const catList = newOverrides.categories !== undefined ? newOverrides.categories : selectedCategories;
+        const lvlList = newOverrides.levels !== undefined ? newOverrides.levels : selectedLevels;
+        const ratingList = newOverrides.ratings !== undefined ? newOverrides.ratings : selectedRatings;
+        const searchVal = newOverrides.search !== undefined ? newOverrides.search : search;
+        const orderVal = newOverrides.order !== undefined ? newOverrides.order : order;
+
+        let categoryParam = undefined;
+        if (catList && catList.length === 1) {
+            categoryParam = catList[0];
+        } else if (catList && catList.length > 1) {
+            categoryParam = catList.join(',');
+        }
+
+        let levelParam = undefined;
+        if (lvlList && lvlList.length === 1) {
+            levelParam = lvlList[0];
+        } else if (lvlList && lvlList.length > 1) {
+            levelParam = lvlList.join(',');
+        }
+
+        let ratingParam = undefined;
+        if (ratingList && ratingList.length === 1) {
+            ratingParam = ratingList[0];
+        } else if (ratingList && ratingList.length > 1) {
+            ratingParam = ratingList.join(',');
+        }
+
         const query = {
-            search: newOverrides.search !== undefined ? newOverrides.search : search,
-            order: newOverrides.order !== undefined ? newOverrides.order : order,
-            'category[]': newOverrides.categories !== undefined ? newOverrides.categories : selectedCategories,
-            'level[]': newOverrides.levels !== undefined ? newOverrides.levels : selectedLevels,
-            'language[]': newOverrides.languages !== undefined ? newOverrides.languages : selectedLanguages,
+            search: searchVal,
+            order: orderVal,
+            category: categoryParam,
+            level: levelParam,
+            rating: ratingParam,
         };
 
         // Clean empty keys
         Object.keys(query).forEach((key) => {
-            if (!query[key] || (Array.isArray(query[key]) && query[key].length === 0)) {
+            if (
+                query[key] === undefined ||
+                query[key] === null ||
+                query[key] === '' ||
+                (Array.isArray(query[key]) && query[key].length === 0)
+            ) {
                 delete query[key];
             }
         });
@@ -41,210 +89,298 @@ export default function CourseCatalog({
         applyFilter({ search });
     };
 
-    const toggleCheckbox = (list, setList, val, paramKey) => {
-        const next = list.includes(val) ? list.filter((x) => x !== val) : [...list, val];
-        setList(next);
-        applyFilter({ [paramKey]: next });
+    const toggleCategory = (catId) => {
+        if (catId === 'clear') {
+            setSelectedCategories([]);
+            applyFilter({ categories: [] });
+            return;
+        }
+        const next = selectedCategories.includes(catId)
+            ? selectedCategories.filter((x) => x !== catId)
+            : [...selectedCategories, catId];
+        setSelectedCategories(next);
+        applyFilter({ categories: next });
+    };
+
+    const toggleLevel = (lvlId) => {
+        const next = selectedLevels.includes(lvlId)
+            ? selectedLevels.filter((x) => x !== lvlId)
+            : [...selectedLevels, lvlId];
+        setSelectedLevels(next);
+        applyFilter({ levels: next });
+    };
+
+    const toggleRating = (stars) => {
+        const next = selectedRatings.includes(stars)
+            ? selectedRatings.filter((x) => x !== stars)
+            : [...selectedRatings, stars];
+        setSelectedRatings(next);
+        applyFilter({ ratings: next });
     };
 
     const clearFilters = () => {
         setSearch('');
         setSelectedCategories([]);
         setSelectedLevels([]);
-        setSelectedLanguages([]);
+        setSelectedRatings([]);
+        setOrder('desc');
         router.get(route('courses.index'));
     };
 
-    const courseList = courses?.data || [];
+    const displayedCourses = courses?.data || [];
+    const totalCount = courses?.total || displayedCourses.length;
+    const fromCount = courses?.from || (displayedCourses.length > 0 ? 1 : 0);
+    const toCount = courses?.to || displayedCourses.length;
 
     return (
         <UserLayout>
-            <Head title="Course Catalog - EduCore" />
+            <Head title="Our Courses - EduCore LMS" />
 
-            {/* Breadcrumb */}
+            {/* Breadcrumb Header matching template */}
             <section
                 className="wsus__breadcrumb"
                 style={{
                     background: 'url(/frontend/assets/images/breadcrumb_bg.jpg) no-repeat center/cover',
-                    padding: '60px 0',
                 }}
             >
-                <div className="container text-center text-white">
-                    <h2 className="fw-bold mb-2">Explore All Courses</h2>
-                    <ul className="d-flex justify-content-center list-unstyled mb-0 gap-2 small">
-                        <li><Link href={route('home')} className="text-white-50 text-decoration-none">Home</Link></li>
-                        <li>/</li>
-                        <li className="text-white">Courses</li>
-                    </ul>
+                <div className="wsus__breadcrumb_overlay">
+                    <div className="container">
+                        <div className="row">
+                            <div className="col-12 wow fadeInUp">
+                                <div className="wsus__breadcrumb_text">
+                                    <h1>Our Courses</h1>
+                                    <ul>
+                                        <li>
+                                            <Link href={route('home')}>Home</Link>
+                                        </li>
+                                        <li>Our Courses</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
 
-            {/* Catalog Content */}
-            <section className="courses_page py-5 bg-light">
+            {/* Courses Page Section */}
+            <section className="wsus__courses mt_120 xs_mt_100 pb_120 xs_pb_100">
                 <div className="container">
                     <div className="row g-4">
                         {/* Left Sidebar Filter */}
-                        <div className="col-lg-3">
-                            <div className="card border-0 shadow-sm rounded-3 p-4 bg-white mb-4">
-                                <div className="d-flex justify-content-between align-items-center mb-3">
-                                    <h5 className="fw-bold mb-0 text-dark">Filters</h5>
-                                    <button
-                                        type="button"
-                                        onClick={clearFilters}
-                                        className="btn btn-link btn-sm text-danger text-decoration-none p-0"
-                                    >
-                                        Reset All
-                                    </button>
-                                </div>
-
-                                {/* Search in Catalog */}
-                                <form onSubmit={handleSearchSubmit} className="mb-4">
-                                    <div className="input-group">
-                                        <input
-                                            type="text"
-                                            className="form-control form-control-sm"
-                                            placeholder="Search courses..."
-                                            value={search}
-                                            onChange={(e) => setSearch(e.target.value)}
-                                        />
-                                        <button className="btn btn-sm btn-primary" type="submit">
-                                            <i className="fas fa-search"></i>
-                                        </button>
-                                    </div>
-                                </form>
-
-                                {/* Categories */}
-                                {categories.length > 0 && (
-                                    <div className="filter_group mb-4">
-                                        <h6 className="fw-bold text-dark border-bottom pb-2 mb-2">Category</h6>
-                                        <div className="overflow-auto" style={{ maxHeight: '200px' }}>
-                                            {categories.map((cat) => (
-                                                <div className="form-check mb-1" key={cat.id}>
-                                                    <input
-                                                        className="form-check-input"
-                                                        type="checkbox"
-                                                        id={`cat_${cat.id}`}
-                                                        checked={selectedCategories.includes(cat.id)}
-                                                        onChange={() => toggleCheckbox(selectedCategories, setSelectedCategories, cat.id, 'categories')}
-                                                    />
-                                                    <label className="form-check-label small" htmlFor={`cat_${cat.id}`}>
-                                                        {cat.name}
-                                                    </label>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Levels */}
-                                {levels.length > 0 && (
-                                    <div className="filter_group mb-4">
-                                        <h6 className="fw-bold text-dark border-bottom pb-2 mb-2">Skill Level</h6>
-                                        {levels.map((lvl) => (
-                                            <div className="form-check mb-1" key={lvl.id}>
-                                                <input
-                                                    className="form-check-input"
-                                                    type="checkbox"
-                                                    id={`lvl_${lvl.id}`}
-                                                    checked={selectedLevels.includes(lvl.id)}
-                                                    onChange={() => toggleCheckbox(selectedLevels, setSelectedLevels, lvl.id, 'levels')}
-                                                />
-                                                <label className="form-check-label small" htmlFor={`lvl_${lvl.id}`}>
-                                                    {lvl.name}
-                                                </label>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-
-                                {/* Languages */}
-                                {languages.length > 0 && (
-                                    <div className="filter_group mb-2">
-                                        <h6 className="fw-bold text-dark border-bottom pb-2 mb-2">Language</h6>
-                                        {languages.map((lang) => (
-                                            <div className="form-check mb-1" key={lang.id}>
-                                                <input
-                                                    className="form-check-input"
-                                                    type="checkbox"
-                                                    id={`lang_${lang.id}`}
-                                                    checked={selectedLanguages.includes(lang.id)}
-                                                    onChange={() => toggleCheckbox(selectedLanguages, setSelectedLanguages, lang.id, 'languages')}
-                                                />
-                                                <label className="form-check-label small" htmlFor={`lang_${lang.id}`}>
-                                                    {lang.name}
-                                                </label>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
+                        <div className="col-xl-3 col-lg-4 col-md-8 order-2 order-lg-1">
+                            <CourseSidebarFilter
+                                search={search}
+                                setSearch={setSearch}
+                                handleSearchSubmit={handleSearchSubmit}
+                                categories={categories}
+                                selectedCategories={selectedCategories}
+                                toggleCategory={toggleCategory}
+                                levels={levels}
+                                selectedLevels={selectedLevels}
+                                toggleLevel={toggleLevel}
+                                selectedRatings={selectedRatings}
+                                toggleRating={toggleRating}
+                                clearFilters={clearFilters}
+                            />
                         </div>
 
-                        {/* Right Course Grid */}
-                        <div className="col-lg-9">
-                            {/* Sort & Count Header */}
-                            <div className="card border-0 shadow-sm rounded-3 p-3 bg-white mb-4">
-                                <div className="d-flex flex-wrap justify-content-between align-items-center gap-3">
-                                    <div className="text-muted small">
-                                        Showing <strong className="text-dark">{courses?.from || 0} - {courses?.to || 0}</strong> of <strong className="text-dark">{courses?.total || 0}</strong> results
-                                    </div>
-                                    <div className="d-flex align-items-center gap-2">
-                                        <label className="small text-muted mb-0">Sort By:</label>
-                                        <select
-                                            className="form-select form-select-sm"
-                                            style={{ width: '160px' }}
-                                            value={order}
-                                            onChange={(e) => {
-                                                setOrder(e.target.value);
-                                                applyFilter({ order: e.target.value });
-                                            }}
-                                        >
-                                            <option value="desc">Newest First</option>
-                                            <option value="asc">Oldest First</option>
-                                        </select>
-                                    </div>
+                        {/* Right Courses Listing */}
+                        <div className="col-xl-9 col-lg-8 order-1 order-lg-2">
+                            {/* Top Bar: Showing Results Count + Sorting Dropdown */}
+                            <div
+                                className="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4 p-3"
+                                style={{
+                                    background: '#ffffff',
+                                    borderRadius: '10px',
+                                    border: '1px solid #F1F5F9',
+                                    boxShadow: '0 2px 10px rgba(0, 0, 0, 0.03)',
+                                }}
+                            >
+                                <p style={{ margin: 0, fontSize: '15px', color: '#475569', fontWeight: 500 }}>
+                                    Showing{' '}
+                                    <span style={{ color: '#2563EB', fontWeight: 600 }}>
+                                        {fromCount}-{toCount}
+                                    </span>{' '}
+                                    Of <span style={{ color: '#0F172A', fontWeight: 600 }}>{totalCount}</span>{' '}
+                                    Results
+                                </p>
+
+                                <div className="d-flex align-items-center gap-2">
+                                    <span style={{ fontSize: '14px', color: '#64748B', whiteSpace: 'nowrap' }}>
+                                        Sort-by:
+                                    </span>
+                                    <select
+                                        className="form-select form-select-sm"
+                                        style={{
+                                            width: '150px',
+                                            borderRadius: '6px',
+                                            borderColor: '#CBD5E1',
+                                            fontSize: '13px',
+                                            fontWeight: 500,
+                                            color: '#334155',
+                                            padding: '6px 28px 6px 12px',
+                                            cursor: 'pointer',
+                                        }}
+                                        value={order}
+                                        onChange={(e) => {
+                                            const newOrder = e.target.value;
+                                            setOrder(newOrder);
+                                            applyFilter({ order: newOrder });
+                                        }}
+                                    >
+                                        <option value="desc">Regular</option>
+                                        <option value="desc">New to Old</option>
+                                        <option value="asc">Old to New</option>
+                                        <option value="price_low">Price: Low to High</option>
+                                        <option value="price_high">Price: High to Low</option>
+                                    </select>
                                 </div>
                             </div>
 
-                            {/* Course Cards Grid */}
-                            {courseList.length === 0 ? (
-                                <div className="card border-0 shadow-sm rounded-3 p-5 text-center bg-white">
+                            {/* Course Cards 3-Column Grid */}
+                            {displayedCourses.length === 0 ? (
+                                <div
+                                    className="card border-0 p-5 text-center"
+                                    style={{
+                                        background: '#ffffff',
+                                        borderRadius: '12px',
+                                        boxShadow: '0 2px 12px rgba(0, 0, 0, 0.04)',
+                                    }}
+                                >
                                     <i className="fas fa-search fs-1 text-muted mb-3 opacity-50"></i>
                                     <h5 className="fw-bold text-dark">No courses found</h5>
-                                    <p className="text-muted small mb-3">Try adjusting your filters or search keywords.</p>
+                                    <p className="text-muted small mb-3">
+                                        Try adjusting your search criteria or reset your filters.
+                                    </p>
                                     <div>
-                                        <button onClick={clearFilters} className="btn btn-primary btn-sm">
-                                            Clear All Filters
+                                        <button
+                                            onClick={clearFilters}
+                                            className="btn btn-primary btn-sm px-4"
+                                            style={{ borderRadius: '6px' }}
+                                        >
+                                            Reset All Filters
                                         </button>
                                     </div>
                                 </div>
                             ) : (
-                                <div className="row g-4 mb-4">
-                                    {courseList.map((course) => (
-                                        <div className="col-md-6 col-xl-4" key={course.id}>
-                                            <CourseCard course={course} />
+                                <div className="row g-4">
+                                    {displayedCourses.map((course) => (
+                                        <div className="col-xl-4 col-md-6" key={course.id}>
+                                            <CourseGridCard course={course} />
                                         </div>
                                     ))}
                                 </div>
                             )}
 
-                            {/* Pagination Links */}
+                            {/* Pagination */}
                             {courses?.links && courses.links.length > 3 && (
-                                <div className="d-flex justify-content-center mt-4">
-                                    <nav>
-                                        <ul className="pagination pagination-sm shadow-sm mb-0">
-                                            {courses.links.map((link, index) => (
-                                                <li
-                                                    key={index}
-                                                    className={`page-item ${link.active ? 'active' : ''} ${!link.url ? 'disabled' : ''}`}
-                                                >
-                                                    <Link
-                                                        href={link.url || '#'}
-                                                        className="page-link"
-                                                        dangerouslySetInnerHTML={{ __html: link.label }}
-                                                    />
-                                                </li>
-                                            ))}
+                                <div className="mt-5 d-flex justify-content-center">
+                                    <style>{`
+                                        .course-pagination-list {
+                                            list-style: none !important;
+                                            padding: 0 !important;
+                                            margin: 0 !important;
+                                            display: flex;
+                                            align-items: center;
+                                            gap: 8px;
+                                        }
+                                        .course-pagination-list li {
+                                            list-style: none !important;
+                                            margin: 0 !important;
+                                            padding: 0 !important;
+                                        }
+                                        .custom-pagination-btn {
+                                            width: 44px !important;
+                                            height: 44px !important;
+                                            min-width: 44px !important;
+                                            border-radius: 50% !important;
+                                            display: flex !important;
+                                            align-items: center !important;
+                                            justify-content: center !important;
+                                            font-size: 14px !important;
+                                            font-weight: 500 !important;
+                                            text-decoration: none !important;
+                                            transition: all 0.2s ease-in-out !important;
+                                            border: 1px solid #E2E8F0 !important;
+                                            line-height: normal !important;
+                                            padding: 0 !important;
+                                        }
+                                        .custom-pagination-btn.is-active {
+                                            background-color: #2563EB !important;
+                                            color: #FFFFFF !important;
+                                            font-weight: 600 !important;
+                                            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
+                                            border-color: #2563EB !important;
+                                        }
+                                        .custom-pagination-btn.is-default {
+                                            background-color: #FFFFFF !important;
+                                            color: #1E293B !important;
+                                            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+                                        }
+                                        .custom-pagination-btn.is-default:hover {
+                                            background-color: #F8FAFC !important;
+                                            border-color: #CBD5E1 !important;
+                                            color: #2563EB !important;
+                                            transform: translateY(-1px);
+                                            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08) !important;
+                                        }
+                                        .custom-pagination-btn.is-disabled {
+                                            background-color: #FFFFFF !important;
+                                            color: #94A3B8 !important;
+                                            border-color: #E2E8F0 !important;
+                                            pointer-events: none !important;
+                                            opacity: 0.45 !important;
+                                            cursor: not-allowed !important;
+                                        }
+                                    `}</style>
+                                    <nav aria-label="Course catalog navigation">
+                                        <ul className="course-pagination-list">
+                                            {courses.links.map((link, index) => {
+                                                const isPrev = link.label.includes('Previous') || link.label.includes('&laquo;') || link.label.includes('«');
+                                                const isNext = link.label.includes('Next') || link.label.includes('&raquo;') || link.label.includes('»');
+                                                const isDisabled = !link.url;
+                                                const isActive = link.active;
+
+                                                const stateClass = isActive
+                                                    ? 'is-active'
+                                                    : isDisabled
+                                                    ? 'is-disabled'
+                                                    : 'is-default';
+
+                                                if (isDisabled) {
+                                                    return (
+                                                        <li key={index}>
+                                                            <span className={`custom-pagination-btn ${stateClass}`}>
+                                                                {isPrev ? (
+                                                                    <i className="fas fa-chevron-left" style={{ fontSize: '13px' }}></i>
+                                                                ) : isNext ? (
+                                                                    <i className="fas fa-chevron-right" style={{ fontSize: '13px' }}></i>
+                                                                ) : (
+                                                                    <span dangerouslySetInnerHTML={{ __html: link.label }} />
+                                                                )}
+                                                            </span>
+                                                        </li>
+                                                    );
+                                                }
+
+                                                return (
+                                                    <li key={index}>
+                                                        <Link
+                                                            href={link.url}
+                                                            preserveScroll
+                                                            className={`custom-pagination-btn ${stateClass}`}
+                                                        >
+                                                            {isPrev ? (
+                                                                <i className="fas fa-chevron-left" style={{ fontSize: '13px' }}></i>
+                                                            ) : isNext ? (
+                                                                <i className="fas fa-chevron-right" style={{ fontSize: '13px' }}></i>
+                                                            ) : (
+                                                                <span dangerouslySetInnerHTML={{ __html: link.label }} />
+                                                            )}
+                                                        </Link>
+                                                    </li>
+                                                );
+                                            })}
                                         </ul>
                                     </nav>
                                 </div>

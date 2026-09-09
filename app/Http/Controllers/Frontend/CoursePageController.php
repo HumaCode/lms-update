@@ -19,7 +19,7 @@ class CoursePageController extends Controller
     {
         $courses = Course::with(['category', 'level', 'instructor'])
             ->withAvg('reviews', 'rating')
-            ->withCount('enrollments')
+            ->withCount(['enrollments', 'lessons'])
             ->where('is_approved', 'approved')
             ->where('status', 'active')
             ->when($request->has('search') && $request->filled('search'), function($query) use ($request) {
@@ -27,33 +27,91 @@ class CoursePageController extends Controller
                 ->orWhere('description', 'like', '%' . $request->search . '%');
             })
             ->when($request->has('category') && $request->filled('category'), function($query) use ($request) {
-                if(is_array($request->category)){
-                    $query->whereIn('category_id', $request->category);
-                }else {
-                    $query->where('category_id', $request->category);
+                $raw = $request->category;
+                if (is_string($raw) && str_contains($raw, ',')) {
+                    $categories = explode(',', $raw);
+                } elseif (is_array($raw)) {
+                    $categories = \Illuminate\Support\Arr::flatten($raw);
+                } else {
+                    $categories = [$raw];
+                }
+                $numericCategories = array_values(array_filter($categories, fn($c) => is_numeric($c)));
+                if (!empty($numericCategories)) {
+                    $query->whereIn('category_id', array_map('intval', $numericCategories));
+                } else {
+                    $query->whereRaw('1 = 0');
                 }
             })
             ->when($request->filled('main_category'), function($query) use ($request) {
-                $query->whereHas('category', function($query) use ($request) {
+                $query->whereHas('category', function($query) use ($request){
                     $query->whereHas('parentCategory', function($query) use ($request){
                         $query->where('slug', $request->main_category);
                     });
                 });
             })
             ->when($request->has('level') && $request->filled('level'), function($query) use ($request) {
-                $query->whereIn('course_level_id', $request->level);
+                $raw = $request->level;
+                if (is_string($raw) && str_contains($raw, ',')) {
+                    $levels = explode(',', $raw);
+                } elseif (is_array($raw)) {
+                    $levels = \Illuminate\Support\Arr::flatten($raw);
+                } else {
+                    $levels = [$raw];
+                }
+                $numericLevels = array_values(array_filter($levels, fn($l) => is_numeric($l)));
+                if (!empty($numericLevels)) {
+                    $query->whereIn('course_level_id', array_map('intval', $numericLevels));
+                }
             })
             ->when($request->has('language') && $request->filled('language'), function($query) use ($request) {
-                $query->whereIn('course_language_id', $request->language);
+                $raw = $request->language;
+                if (is_string($raw) && str_contains($raw, ',')) {
+                    $languages = explode(',', $raw);
+                } elseif (is_array($raw)) {
+                    $languages = \Illuminate\Support\Arr::flatten($raw);
+                } else {
+                    $languages = [$raw];
+                }
+                $numericLanguages = array_values(array_filter($languages, fn($l) => is_numeric($l)));
+                if (!empty($numericLanguages)) {
+                    $query->whereIn('course_language_id', array_map('intval', $numericLanguages));
+                }
+            })
+            ->when($request->has('rating') && $request->filled('rating'), function($query) use ($request) {
+                $raw = $request->rating;
+                if (is_string($raw) && str_contains($raw, ',')) {
+                    $ratings = explode(',', $raw);
+                } elseif (is_array($raw)) {
+                    $ratings = \Illuminate\Support\Arr::flatten($raw);
+                } else {
+                    $ratings = [$raw];
+                }
+                $numericRatings = array_values(array_filter($ratings, fn($r) => is_numeric($r)));
+                if (!empty($numericRatings)) {
+                    $placeholders = implode(',', array_fill(0, count($numericRatings), '?'));
+                    $query->whereRaw("ROUND((SELECT COALESCE(AVG(rating), 0) FROM reviews WHERE reviews.course_id = courses.id AND reviews.status = true)::numeric) IN ($placeholders)", array_map('intval', $numericRatings));
+                }
             })
             ->when($request->has('from') && $request->has('to') && $request->filled('from') && $request->filled('to'), function($query) use ($request) {
                 $query->whereBetween('price', [$request->from, $request->to]);
             })
-            ->orderBy('id', $request->filled('order') ? $request->order : 'desc')
+            ->when($request->filled('order'), function($query) use ($request) {
+                if ($request->order === 'price_low') {
+                    $query->orderBy('price', 'asc');
+                } elseif ($request->order === 'price_high') {
+                    $query->orderBy('price', 'desc');
+                } elseif ($request->order === 'asc') {
+                    $query->orderBy('id', 'asc');
+                } else {
+                    $query->orderBy('id', 'desc');
+                }
+            }, function($query) {
+                $query->orderBy('id', 'desc');
+            })
             ->paginate(12)
             ->withQueryString();
 
-        $categories = CourseCategory::where('status', 1)->whereNull('parent_id')->get();
+        $categories = CourseCategory::with('subCategories')->where('status', 1)->whereNull('parent_id')->get();
         $levels = CourseLevel::all();
         $languages = CourseLanguage::all();
 

@@ -16,26 +16,34 @@ export default function BlogIndex({ blogs }) {
         <UserLayout>
             <Head title="Latest Blogs & News - EduCore" />
 
-            {/* Breadcrumb */}
+            {/* Breadcrumb matching template */}
             <section
                 className="wsus__breadcrumb"
                 style={{
                     background: 'url(/frontend/assets/images/breadcrumb_bg.jpg) no-repeat center/cover',
-                    padding: '50px 0',
                 }}
             >
-                <div className="container text-center text-white">
-                    <h2 className="fw-bold mb-2">Our Blog & Articles</h2>
-                    <ul className="d-flex justify-content-center list-unstyled mb-0 gap-2 small">
-                        <li><Link href={route('home')} className="text-white-50 text-decoration-none">Home</Link></li>
-                        <li>/</li>
-                        <li className="text-white">Blogs</li>
-                    </ul>
+                <div className="wsus__breadcrumb_overlay">
+                    <div className="container">
+                        <div className="row">
+                            <div className="col-12 wow fadeInUp">
+                                <div className="wsus__breadcrumb_text">
+                                    <h1>Our Blog & Articles</h1>
+                                    <ul>
+                                        <li>
+                                            <Link href={route('home')}>Home</Link>
+                                        </li>
+                                        <li>Blogs</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
 
             {/* Blog Grid */}
-            <section className="blog_section py-5 bg-light">
+            <section className="blog_section mt_120 xs_mt_100 pb_120 xs_pb_100">
                 <div className="container">
                     {/* Search Bar */}
                     <div className="row justify-content-center mb-5">
@@ -99,14 +107,115 @@ export default function BlogIndex({ blogs }) {
 
                     {/* Pagination */}
                     {blogs?.links && blogs.links.length > 3 && (
-                        <div className="d-flex justify-content-center mt-4">
-                            <ul className="pagination pagination-sm shadow-sm mb-0">
-                                {blogs.links.map((link, i) => (
-                                    <li key={i} className={`page-item ${link.active ? 'active' : ''} ${!link.url ? 'disabled' : ''}`}>
-                                        <Link href={link.url || '#'} className="page-link" dangerouslySetInnerHTML={{ __html: link.label }} />
-                                    </li>
-                                ))}
-                            </ul>
+                        <div className="mt-5 d-flex justify-content-center">
+                            <style>{`
+                                .blog-pagination-list {
+                                    list-style: none !important;
+                                    padding: 0 !important;
+                                    margin: 0 !important;
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 8px;
+                                }
+                                .blog-pagination-list li {
+                                    list-style: none !important;
+                                    margin: 0 !important;
+                                    padding: 0 !important;
+                                }
+                                .custom-pagination-btn {
+                                    width: 44px !important;
+                                    height: 44px !important;
+                                    min-width: 44px !important;
+                                    border-radius: 50% !important;
+                                    display: flex !important;
+                                    align-items: center !important;
+                                    justify-content: center !important;
+                                    font-size: 14px !important;
+                                    font-weight: 500 !important;
+                                    text-decoration: none !important;
+                                    transition: all 0.2s ease-in-out !important;
+                                    border: 1px solid #E2E8F0 !important;
+                                    line-height: normal !important;
+                                    padding: 0 !important;
+                                }
+                                .custom-pagination-btn.is-active {
+                                    background-color: #2563EB !important;
+                                    color: #FFFFFF !important;
+                                    font-weight: 600 !important;
+                                    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
+                                    border-color: #2563EB !important;
+                                }
+                                .custom-pagination-btn.is-default {
+                                    background-color: #FFFFFF !important;
+                                    color: #1E293B !important;
+                                    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+                                }
+                                .custom-pagination-btn.is-default:hover {
+                                    background-color: #F8FAFC !important;
+                                    border-color: #CBD5E1 !important;
+                                    color: #2563EB !important;
+                                    transform: translateY(-1px);
+                                    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08) !important;
+                                }
+                                .custom-pagination-btn.is-disabled {
+                                    background-color: #FFFFFF !important;
+                                    color: #94A3B8 !important;
+                                    border-color: #E2E8F0 !important;
+                                    pointer-events: none !important;
+                                    opacity: 0.45 !important;
+                                    cursor: not-allowed !important;
+                                }
+                            `}</style>
+                            <nav aria-label="Blog pagination">
+                                <ul className="blog-pagination-list">
+                                    {blogs.links.map((link, index) => {
+                                        const isPrev = link.label.includes('Previous') || link.label.includes('&laquo;') || link.label.includes('«');
+                                        const isNext = link.label.includes('Next') || link.label.includes('&raquo;') || link.label.includes('»');
+                                        const isDisabled = !link.url;
+                                        const isActive = link.active;
+
+                                        const stateClass = isActive
+                                            ? 'is-active'
+                                            : isDisabled
+                                            ? 'is-disabled'
+                                            : 'is-default';
+
+                                        if (isDisabled) {
+                                            return (
+                                                <li key={index}>
+                                                    <span className={`custom-pagination-btn ${stateClass}`}>
+                                                        {isPrev ? (
+                                                            <i className="fas fa-chevron-left" style={{ fontSize: '13px' }}></i>
+                                                        ) : isNext ? (
+                                                            <i className="fas fa-chevron-right" style={{ fontSize: '13px' }}></i>
+                                                        ) : (
+                                                            <span dangerouslySetInnerHTML={{ __html: link.label }} />
+                                                        )}
+                                                    </span>
+                                                </li>
+                                            );
+                                        }
+
+                                        return (
+                                            <li key={index}>
+                                                <Link
+                                                    href={link.url}
+                                                    preserveScroll
+                                                    className={`custom-pagination-btn ${stateClass}`}
+                                                >
+                                                    {isPrev ? (
+                                                        <i className="fas fa-chevron-left" style={{ fontSize: '13px' }}></i>
+                                                    ) : isNext ? (
+                                                        <i className="fas fa-chevron-right" style={{ fontSize: '13px' }}></i>
+                                                    ) : (
+                                                        <span dangerouslySetInnerHTML={{ __html: link.label }} />
+                                                    )}
+                                                </Link>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            </nav>
                         </div>
                     )}
                 </div>

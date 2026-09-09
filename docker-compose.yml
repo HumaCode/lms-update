@@ -1,0 +1,98 @@
+name: lms-update
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lms_update_app
+    restart: unless-stopped
+    command: frankenphp php-server --root /app/public
+    ports:
+      - "8090:80"    # Web LMS: http://localhost:8090
+      - "5180:5180"  # Vite HMR dev server
+    environment:
+      APP_NAME: "LMS Update"
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: http://localhost:8090
+      VITE_PORT: 5180
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: lms_db
+      DB_USERNAME: lms_user
+      DB_PASSWORD: lms_secret
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CACHE_STORE: redis
+      SESSION_DRIVER: redis
+      QUEUE_CONNECTION: redis
+      MAIL_MAILER: smtp
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
+    volumes:
+      - .:/app
+      - ./docker/php/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80/up || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - lms-network
+
+  db:
+    image: postgres:18-alpine
+    container_name: lms_update_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: lms_db
+      POSTGRES_USER: lms_user
+      POSTGRES_PASSWORD: lms_secret
+    ports:
+      - "5440:5432"  # Host 5440 -> Container 5432 (Bebas dari port 5432, 5438, 5439)
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lms_user -d lms_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - lms-network
+
+  redis:
+    image: redis:alpine
+    container_name: lms_update_redis
+    restart: unless-stopped
+    ports:
+      - "6387:6379"  # Host 6387 -> Container 6379 (Bebas dari port 6381-6386)
+    volumes:
+      - redis_data:/data
+    networks:
+      - lms-network
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: lms_update_mailpit
+    restart: unless-stopped
+    ports:
+      - "8028:8025"  # Dashboard Web Mailpit (Bebas dari 8026, 8027)
+      - "1028:1025"  # SMTP Port (Bebas dari 1026, 1027)
+    networks:
+      - lms-network
+
+networks:
+  lms-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:

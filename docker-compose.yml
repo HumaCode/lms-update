@@ -22,7 +22,7 @@ services:
       DB_PORT: 5432
       DB_DATABASE: lms_db
       DB_USERNAME: lms_user
-      DB_PASSWORD: lms_secret
+      DB_PASSWORD: "lms@2026"
       REDIS_HOST: redis
       REDIS_PORT: 6379
       CACHE_STORE: redis
@@ -55,7 +55,7 @@ services:
     environment:
       POSTGRES_DB: lms_db
       POSTGRES_USER: lms_user
-      POSTGRES_PASSWORD: lms_secret
+      POSTGRES_PASSWORD: "lms@2026"
     ports:
       - "5440:5432"  # Host 5440 -> Container 5432 (Bebas dari port 5432, 5438, 5439)
     volumes:

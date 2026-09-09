@@ -12,9 +12,6 @@ use Flasher\Prime\Translation\EchoTranslator;
 use Flasher\Prime\Translation\Language;
 use Flasher\Prime\Translation\TranslatorInterface;
 
-/**
- * Listener responsible for applying translations to envelopes during presentation events based on TranslationStamps and locale settings.
- */
 final readonly class TranslationListener implements EventListenerInterface
 {
     private TranslatorInterface $translator;
@@ -54,6 +51,8 @@ final readonly class TranslationListener implements EventListenerInterface
 
     /**
      * @return array<string, mixed>
+     *
+     * @throws \InvalidArgumentException
      */
     private function getParameters(Envelope $envelope, string $locale): array
     {
@@ -66,7 +65,7 @@ final readonly class TranslationListener implements EventListenerInterface
 
         foreach ($preset->getParameters() as $key => $value) {
             if (!\is_string($value)) {
-                throw new \InvalidArgumentException(sprintf('Value must be "string", got "%s".', get_debug_type($value)));
+                throw new \InvalidArgumentException(\sprintf('Value must be "string", got "%s".', get_debug_type($value)));
             }
 
             $parameters[$key] = $this->translator->translate($value, $parameters, $locale);

@@ -23,7 +23,7 @@ use function preg_match;
 /**
  * Reflection class for a {@}since tag in a Docblock.
  */
-final class Since extends BaseTag implements Factory\StaticMethod
+final class Since extends BaseTag
 {
     protected string $name = 'since';
 
@@ -59,7 +59,7 @@ final class Since extends BaseTag implements Factory\StaticMethod
         ?DescriptionFactory $descriptionFactory = null,
         ?TypeContext $context = null
     ): ?self {
-        if (empty($body)) {
+        if ($body === null || $body === '') {
             return new static();
         }
 
@@ -89,7 +89,7 @@ final class Since extends BaseTag implements Factory\StaticMethod
      */
     public function __toString(): string
     {
-        if ($this->description) {
+        if ($this->description !== null) {
             $description = $this->description->render();
         } else {
             $description = '';

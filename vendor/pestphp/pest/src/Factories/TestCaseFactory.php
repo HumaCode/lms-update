@@ -6,16 +6,18 @@ namespace Pest\Factories;
 
 use ParseError;
 use Pest\Concerns;
-use Pest\Contracts\AddsAnnotations;
 use Pest\Contracts\HasPrintableTestCaseName;
+use Pest\Evaluators\Attributes;
 use Pest\Exceptions\DatasetMissing;
 use Pest\Exceptions\ShouldNotHappen;
 use Pest\Exceptions\TestAlreadyExist;
+use Pest\Exceptions\TestClosureMustNotBeStatic;
 use Pest\Exceptions\TestDescriptionMissing;
 use Pest\Factories\Concerns\HigherOrderable;
 use Pest\Support\Reflection;
 use Pest\Support\Str;
 use Pest\TestSuite;
+use PHPUnit\Framework\Attributes\TestDox;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
@@ -27,25 +29,11 @@ final class TestCaseFactory
     use HigherOrderable;
 
     /**
-     * The list of annotations.
-     *
-     * @var array<int, class-string<AddsAnnotations>>
-     */
-    private const ANNOTATIONS = [
-        Annotations\Depends::class,
-        Annotations\Groups::class,
-        Annotations\CoversNothing::class,
-        Annotations\TestDox::class,
-    ];
-
-    /**
      * The list of attributes.
      *
-     * @var array<int, class-string<\Pest\Factories\Attributes\Attribute>>
+     * @var array<int, Attribute>
      */
-    private const ATTRIBUTES = [
-        Attributes\Covers::class,
-    ];
+    public array $attributes = [];
 
     /**
      * The FQN of the Test Case class.
@@ -70,6 +58,11 @@ final class TestCaseFactory
         Concerns\Testable::class,
         Concerns\Expectable::class,
     ];
+
+    /**
+     * The namespace for the test case, overrides the path-based namespace when set.
+     */
+    public ?string $namespace = null;
 
     /**
      * Creates a new Factory instance.
@@ -101,7 +94,8 @@ final class TestCaseFactory
             $filename = (string) preg_replace_callback('~^(?P<drive>[a-z]+:\\\)~i', static fn (array $match): string => strtolower($match['drive']), $filename);
         }
 
-        $filename = str_replace('\\\\', '\\', addslashes((string) realpath($filename)));
+        $realpath = (string) realpath($filename);
+        $filename = str_replace('\\\\', '\\', addslashes($realpath));
         $rootPath = TestSuite::getInstance()->rootPath;
         $relativePath = str_replace($rootPath.DIRECTORY_SEPARATOR, '', $filename);
 
@@ -123,8 +117,8 @@ final class TestCaseFactory
         $relativePath = (string) preg_replace('|%[a-fA-F0-9][a-fA-F0-9]|', '', $relativePath);
         // Remove escaped quote sequences (maintain namespace)
         $relativePath = str_replace(array_map(fn (string $quote): string => sprintf('\\%s', $quote), ['\'', '"']), '', $relativePath);
-        // Limit to A-Z, a-z, 0-9, '_', '-'.
-        $relativePath = (string) preg_replace('/[^A-Za-z0-9\\\\]/', '', $relativePath);
+        // Limit to Unicode letters and numbers.
+        $relativePath = (string) preg_replace('/[^\p{L}\p{N}\\\\]/u', '', $relativePath);
 
         $classFQN = 'P\\'.$relativePath;
 
@@ -139,61 +133,50 @@ final class TestCaseFactory
 
         $partsFQN = explode('\\', $classFQN);
         $className = array_pop($partsFQN);
-        $namespace = implode('\\', $partsFQN);
+        $namespace = $this->namespace ?? implode('\\', $partsFQN);
         $baseClass = sprintf('\%s', $this->class);
 
         if (trim($className) === '') {
             $className = 'InvalidTestName'.Str::random();
         }
 
-        $classAvailableAttributes = array_filter(self::ATTRIBUTES, fn (string $attribute): bool => $attribute::$above);
-        $methodAvailableAttributes = array_filter(self::ATTRIBUTES, fn (string $attribute): bool => ! $attribute::$above);
+        $this->attributes = [
+            new Attribute(
+                TestDox::class,
+                [$this->filename],
+            ),
+            ...$this->attributes,
+        ];
 
-        $classAttributes = [];
+        $attributesCode = Attributes::code($this->attributes);
 
-        foreach ($classAvailableAttributes as $attribute) {
-            $classAttributes = array_reduce(
-                $methods,
-                fn (array $carry, TestCaseMethodFactory $methodFactory): array => (new $attribute)->__invoke($methodFactory, $carry),
-                $classAttributes
-            );
-        }
+        $filenameLiteral = var_export($realpath, true);
 
         $methodsCode = implode('', array_map(
-            fn (TestCaseMethodFactory $methodFactory): string => $methodFactory->buildForEvaluation(
-                self::ANNOTATIONS,
-                $methodAvailableAttributes
-            ),
+            fn (TestCaseMethodFactory $methodFactory): string => $methodFactory->buildForEvaluation(),
             $methods
-        ));
-
-        $classAttributesCode = implode('', array_map(
-            static fn (string $attribute): string => sprintf("\n%s", $attribute),
-            array_unique($classAttributes),
         ));
 
         try {
             $classCode = <<<PHP
             namespace $namespace;
 
+            use Pest\Exceptions\DatasetProviderError as __PestDatasetProviderError;
             use Pest\Repositories\DatasetsRepository as __PestDatasets;
             use Pest\TestSuite as __PestTestSuite;
 
-            /**
-             * @testdox $filename
-             */
-            $classAttributesCode
+            $attributesCode
             #[\AllowDynamicProperties]
             final class $className extends $baseClass implements $hasPrintableTestCaseClassFQN {
                 $traitsCode
 
-                private static \$__filename = '$filename';
+                public static \$__filename = $filenameLiteral;
 
                 $methodsCode
             }
             PHP;
 
-            eval($classCode); // @phpstan-ignore-line
+            eval($classCode);
         } catch (ParseError $caught) {
             throw new RuntimeException(sprintf(
                 "Unable to create test case for test file at %s. \n %s",
@@ -214,6 +197,14 @@ final class TestCaseFactory
 
         if (array_key_exists($method->description, $this->methods)) {
             throw new TestAlreadyExist($method->filename, $method->description);
+        }
+
+        if (
+            $method->closure instanceof \Closure &&
+            (new \ReflectionFunction($method->closure))->isStatic()
+        ) {
+
+            throw new TestClosureMustNotBeStatic($method);
         }
 
         if (! $method->receivesArguments()) {

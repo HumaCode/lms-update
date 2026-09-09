@@ -4,62 +4,50 @@ declare(strict_types=1);
 
 namespace Intervention\Image\Geometry\Factories;
 
-use Closure;
+use Intervention\Image\Exceptions\InvalidArgumentException;
 use Intervention\Image\Geometry\Ellipse;
-use Intervention\Image\Geometry\Point;
+use Intervention\Image\Interfaces\ColorInterface;
 use Intervention\Image\Interfaces\DrawableFactoryInterface;
 use Intervention\Image\Interfaces\DrawableInterface;
-use Intervention\Image\Interfaces\PointInterface;
 
 class EllipseFactory implements DrawableFactoryInterface
 {
     protected Ellipse $ellipse;
 
     /**
-     * Create new factory instance
-     *
-     * @param PointInterface $pivot
-     * @param null|Closure|Ellipse $init
-     * @return void
+     * Create new factory instance.
      */
-    public function __construct(
-        protected PointInterface $pivot = new Point(),
-        null|Closure|Ellipse $init = null,
-    ) {
-        $this->ellipse = is_a($init, Ellipse::class) ? $init : new Ellipse(0, 0);
-        $this->ellipse->setPosition($pivot);
+    public function __construct(null|callable|Ellipse $ellipse = null)
+    {
+        $this->ellipse = $ellipse instanceof Ellipse ? clone $ellipse : new Ellipse(0, 0);
 
-        if (is_callable($init)) {
-            $init($this);
+        if (is_callable($ellipse)) {
+            $ellipse($this);
         }
     }
 
     /**
      * {@inheritdoc}
      *
-     * @see DrawableFactoryInterface::init()
+     * @see DrawableFactoryInterface::build()
      */
-    public static function init(null|Closure|DrawableInterface $init = null): self
+    public static function build(null|callable|DrawableInterface $drawable = null): Ellipse
     {
-        return new self(init: $init);
+        return (new self($drawable))->drawable();
     }
 
     /**
      * {@inheritdoc}
      *
-     * @see DrawableFactoryInterface::create()
+     * @see DrawableFactoryInterface::drawable()
      */
-    public function create(): DrawableInterface
+    public function drawable(): Ellipse
     {
         return $this->ellipse;
     }
 
     /**
-     * Set the size of the ellipse to be produced
-     *
-     * @param int $width
-     * @param int $height
-     * @return EllipseFactory
+     * Set the size of the ellipse to be produced.
      */
     public function size(int $width, int $height): self
     {
@@ -69,10 +57,7 @@ class EllipseFactory implements DrawableFactoryInterface
     }
 
     /**
-     * Set the width of the ellipse to be produced
-     *
-     * @param int $width
-     * @return EllipseFactory
+     * Set the width of the ellipse to be produced.
      */
     public function width(int $width): self
     {
@@ -82,10 +67,7 @@ class EllipseFactory implements DrawableFactoryInterface
     }
 
     /**
-     * Set the height of the ellipse to be produced
-     *
-     * @param int $height
-     * @return EllipseFactory
+     * Set the height of the ellipse to be produced.
      */
     public function height(int $height): self
     {
@@ -95,12 +77,9 @@ class EllipseFactory implements DrawableFactoryInterface
     }
 
     /**
-     * Set the background color of the ellipse to be produced
-     *
-     * @param mixed $color
-     * @return EllipseFactory
+     * Set the background color of the ellipse to be produced.
      */
-    public function background(mixed $color): self
+    public function background(string|ColorInterface $color): self
     {
         $this->ellipse->setBackgroundColor($color);
 
@@ -108,13 +87,11 @@ class EllipseFactory implements DrawableFactoryInterface
     }
 
     /**
-     * Set the border color & border size of the ellipse to be produced
+     * Set the border color & border size of the ellipse to be produced.
      *
-     * @param mixed $color
-     * @param int $size
-     * @return EllipseFactory
+     * @throws InvalidArgumentException
      */
-    public function border(mixed $color, int $size = 1): self
+    public function border(string|ColorInterface $color, int $size = 1): self
     {
         $this->ellipse->setBorder($color, $size);
 
@@ -122,12 +99,12 @@ class EllipseFactory implements DrawableFactoryInterface
     }
 
     /**
-     * Produce the ellipse
-     *
-     * @return Ellipse
+     * Set the position where the ellipse should be drawn.
      */
-    public function __invoke(): Ellipse
+    public function at(int $x, int $y): self
     {
-        return $this->ellipse;
+        $this->ellipse->position()->setPosition($x, $y);
+
+        return $this;
     }
 }

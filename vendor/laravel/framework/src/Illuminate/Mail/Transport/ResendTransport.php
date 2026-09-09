@@ -4,6 +4,7 @@ namespace Illuminate\Mail\Transport;
 
 use Exception;
 use Resend\Contracts\Client;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Mailer\Envelope;
 use Symfony\Component\Mailer\Exception\TransportException;
 use Symfony\Component\Mailer\SentMessage;
@@ -47,6 +48,9 @@ class ResendTransport extends AbstractTransport
 
     /**
      * {@inheritDoc}
+     *
+     * @throws \Symfony\Component\Mailer\Exception\TransportException
+     * @throws \Throwable
      */
     protected function doSend(SentMessage $message): void
     {
@@ -70,15 +74,26 @@ class ResendTransport extends AbstractTransport
 
         if ($email->getAttachments()) {
             foreach ($email->getAttachments() as $attachment) {
-                $headers = $attachment->getPreparedHeaders();
+                $attachmentHeaders = $attachment->getPreparedHeaders();
+                $contentType = $attachmentHeaders->get('Content-Type')->getBody();
+                $disposition = $attachmentHeaders->getHeaderBody('Content-Disposition');
+                $filename = $attachmentHeaders->getHeaderParameter('Content-Disposition', 'filename');
 
-                $filename = $headers->getHeaderParameter('Content-Disposition', 'filename');
+                if ($contentType === 'text/calendar') {
+                    $content = $attachment->getBody();
+                } else {
+                    $content = str_replace("\r\n", '', $attachment->bodyToString());
+                }
 
                 $item = [
-                    'content_type' => $headers->get('Content-Type')->getBody(),
-                    'content' => str_replace("\r\n", '', $attachment->bodyToString()),
+                    'content_type' => $contentType,
+                    'content' => $content,
                     'filename' => $filename,
                 ];
+
+                if ($disposition === 'inline') {
+                    $item['content_id'] = $attachment->hasContentId() ? $attachment->getContentId() : $filename;
+                }
 
                 $attachments[] = $item;
             }
@@ -97,6 +112,10 @@ class ResendTransport extends AbstractTransport
                 'text' => $email->getTextBody(),
                 'attachments' => $attachments,
             ]);
+
+            if (isset($result['statusCode']) && $result['statusCode'] != Response::HTTP_OK) {
+                throw new Exception($result['message']);
+            }
         } catch (Exception $exception) {
             throw new TransportException(
                 sprintf('Request to Resend API failed. Reason: %s.', $exception->getMessage()),
@@ -107,7 +126,11 @@ class ResendTransport extends AbstractTransport
 
         $messageId = $result->id;
 
-        $email->getHeaders()->addHeader('X-Resend-Email-ID', $messageId);
+        $message->setMessageId($messageId);
+
+        if ($message->getOriginalMessage() instanceof \Symfony\Component\Mime\Message) {
+            $message->getOriginalMessage()->getHeaders()->addHeader('X-Resend-Email-ID', $messageId);
+        }
     }
 
     /**

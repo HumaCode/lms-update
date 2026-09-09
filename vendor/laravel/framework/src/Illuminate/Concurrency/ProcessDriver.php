@@ -2,14 +2,19 @@
 
 namespace Illuminate\Concurrency;
 
+use Carbon\CarbonInterval;
 use Closure;
+use Exception;
+use Illuminate\Console\Application;
 use Illuminate\Contracts\Concurrency\Driver;
-use Illuminate\Foundation\Defer\DeferredCallback;
 use Illuminate\Process\Factory as ProcessFactory;
 use Illuminate\Process\Pool;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Defer\DeferredCallback;
+use Illuminate\Support\Facades\Context;
 use Laravel\SerializableClosure\SerializableClosure;
-use Symfony\Component\Process\PhpExecutableFinder;
+
+use function Illuminate\Support\defer;
 
 class ProcessDriver implements Driver
 {
@@ -23,34 +28,51 @@ class ProcessDriver implements Driver
 
     /**
      * Run the given tasks concurrently and return an array containing the results.
+     *
+     * @throws \Throwable
      */
-    public function run(Closure|array $tasks): array
+    public function run(Closure|array $tasks, CarbonInterval|int|null $timeout = null): array
     {
-        $php = $this->phpBinary();
-        $artisan = $this->artisanBinary();
+        $command = Application::formatCommandString('invoke-serialized-closure');
 
-        $results = $this->processFactory->pool(function (Pool $pool) use ($tasks, $php, $artisan) {
-            foreach (Arr::wrap($tasks) as $task) {
-                $pool->path(base_path())->env([
-                    'LARAVEL_INVOKABLE_CLOSURE' => serialize(new SerializableClosure($task)),
-                ])->command([
-                    $php,
-                    $artisan,
-                    'invoke-serialized-closure',
-                ]);
+        $results = $this->processFactory->pool(function (Pool $pool) use ($tasks, $command, $timeout) {
+            foreach (Arr::wrap($tasks) as $key => $task) {
+                $process = $pool->as($key)->path(base_path())->env([
+                    /** @phpstan-ignore staticMethod.notFound */
+                    '__LARAVEL_CONTEXT' => json_encode(Context::dehydrate()),
+                    'LARAVEL_INVOKABLE_CLOSURE' => base64_encode(
+                        serialize(new SerializableClosure($task))
+                    ),
+                ])->command($command);
+
+                if (! is_null($timeout)) {
+                    $process->timeout($timeout);
+                }
             }
         })->start()->wait();
 
-        return $results->collect()->map(function ($result) {
-            $result = json_decode($result->output(), true);
+        return $results->collect()->mapWithKeys(function ($result, $key) {
+            if ($result->failed()) {
+                throw new Exception('Concurrent process failed with exit code ['.$result->exitCode().']. Message: '.$result->errorOutput());
+            }
+
+            $output = $result->output();
+
+            if (($pos = strpos($output, "\x1f\x8b")) !== false) {
+                $output = substr($output, 0, $pos);
+            }
+
+            $result = json_decode($output, true);
 
             if (! $result['successful']) {
                 throw new $result['exception'](
-                    $result['message']
+                    ...(! empty(array_filter($result['parameters'], fn ($parameter) => ! is_null($parameter)))
+                        ? $result['parameters']
+                        : [$result['message']])
                 );
             }
 
-            return unserialize($result['result']);
+            return [$key => unserialize($result['result'])];
         })->all();
     }
 
@@ -59,35 +81,18 @@ class ProcessDriver implements Driver
      */
     public function defer(Closure|array $tasks): DeferredCallback
     {
-        $php = $this->phpBinary();
-        $artisan = $this->artisanBinary();
+        $command = Application::formatCommandString('invoke-serialized-closure');
 
-        return defer(function () use ($tasks, $php, $artisan) {
+        return defer(function () use ($tasks, $command) {
             foreach (Arr::wrap($tasks) as $task) {
                 $this->processFactory->path(base_path())->env([
-                    'LARAVEL_INVOKABLE_CLOSURE' => serialize(new SerializableClosure($task)),
-                ])->run([
-                    $php,
-                    $artisan,
-                    'invoke-serialized-closure 2>&1 &',
-                ]);
+                    /** @phpstan-ignore staticMethod.notFound */
+                    '__LARAVEL_CONTEXT' => json_encode(Context::dehydrate()),
+                    'LARAVEL_INVOKABLE_CLOSURE' => base64_encode(
+                        serialize(new SerializableClosure($task))
+                    ),
+                ])->run($command.' 2>&1 &');
             }
         });
-    }
-
-    /**
-     * Get the PHP binary.
-     */
-    protected function phpBinary(): string
-    {
-        return (new PhpExecutableFinder)->find(false) ?: 'php';
-    }
-
-    /**
-     * Get the Artisan binary.
-     */
-    protected function artisanBinary(): string
-    {
-        return defined('ARTISAN_BINARY') ? ARTISAN_BINARY : 'artisan';
     }
 }

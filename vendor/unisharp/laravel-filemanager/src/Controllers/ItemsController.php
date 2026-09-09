@@ -22,6 +22,13 @@ class ItemsController extends LfmController
         $perPage = $this->helper->getPaginationPerPage();
         $items = array_merge($this->lfm->folders(), $this->lfm->files());
 
+        $keyword = trim((string) request()->input('keyword', ''));
+        if ($keyword !== '') {
+            $items = array_filter($items, function ($item) use ($keyword) {
+                return stripos($item->name, $keyword) !== false;
+            });
+        }
+
         return [
             'items' => array_map(function ($item) {
                 return $item->fill()->attributes;
@@ -98,7 +105,8 @@ class ItemsController extends LfmController
 
     private static function getCurrentPageFromRequest()
     {
-        $currentPage = (int) request()->get('page', 1);
+        // Avoid deprecated Request::get() usage (Symfony 7.4+).
+        $currentPage = (int) request()->input('page', 1);
         $currentPage = $currentPage < 1 ? 1 : $currentPage;
 
         return $currentPage;

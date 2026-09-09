@@ -18,6 +18,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 final class EnsureTeamCityEnabled implements ConfiguredSubscriber
 {
     /**
+     * Indicates if the TeamCity logger has already been registered.
+     */
+    private static bool $registered = false;
+
+    /**
      * Creates a new Configured Subscriber instance.
      */
     public function __construct(
@@ -31,9 +36,15 @@ final class EnsureTeamCityEnabled implements ConfiguredSubscriber
      */
     public function notify(Configured $event): void
     {
+        if (self::$registered) {
+            return;
+        }
+
         if (! $this->input->hasParameterOption('--teamcity')) {
             return;
         }
+
+        self::$registered = true;
 
         $flowId = getenv('FLOW_ID');
         $flowId = is_string($flowId) ? (int) $flowId : getmypid();

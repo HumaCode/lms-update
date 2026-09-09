@@ -5,17 +5,18 @@ declare(strict_types=1);
 namespace Intervention\Gif\Decoders;
 
 use Intervention\Gif\Blocks\CommentExtension;
+use Intervention\Gif\Exceptions\DecoderException;
 
 class CommentExtensionDecoder extends AbstractDecoder
 {
     /**
-     * Decode current source
+     * Decode current source.
      *
-     * @return CommentExtension
+     * @throws DecoderException
      */
     public function decode(): CommentExtension
     {
-        $this->getNextBytes(2); // skip marker & label
+        $this->nextBytesOrFail(2); // skip marker & label
 
         $extension = new CommentExtension();
         foreach ($this->decodeComments() as $comment) {
@@ -26,8 +27,9 @@ class CommentExtensionDecoder extends AbstractDecoder
     }
 
     /**
-     * Decode comment from current source
+     * Decode comment from current source.
      *
+     * @throws DecoderException
      * @return array<string>
      */
     protected function decodeComments(): array
@@ -35,10 +37,10 @@ class CommentExtensionDecoder extends AbstractDecoder
         $comments = [];
 
         do {
-            $byte = $this->getNextByte();
+            $byte = $this->nextByteOrFail();
             $size = $this->decodeBlocksize($byte);
             if ($size > 0) {
-                $comments[] = $this->getNextBytes($size);
+                $comments[] = $this->nextBytesOrFail($size);
             }
         } while ($byte !== CommentExtension::TERMINATOR);
 
@@ -46,13 +48,18 @@ class CommentExtensionDecoder extends AbstractDecoder
     }
 
     /**
-     * Decode blocksize of following comment
+     * Decode blocksize of following comment.
      *
-     * @param string $byte
-     * @return int
+     * @throws DecoderException
      */
     protected function decodeBlocksize(string $byte): int
     {
-        return (int) @unpack('C', $byte)[1];
+        $unpacked = @unpack('C', $byte);
+
+        if ($unpacked === false || !array_key_exists(1, $unpacked)) {
+            throw new DecoderException('Failed to decode block size of comment extension');
+        }
+
+        return intval($unpacked[1]);
     }
 }

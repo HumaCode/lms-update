@@ -23,7 +23,7 @@ use function preg_match;
 /**
  * Reflection class for a {@}deprecated tag in a Docblock.
  */
-final class Deprecated extends BaseTag implements Factory\StaticMethod
+final class Deprecated extends BaseTag
 {
     protected string $name = 'deprecated';
 
@@ -62,7 +62,7 @@ final class Deprecated extends BaseTag implements Factory\StaticMethod
         ?DescriptionFactory $descriptionFactory = null,
         ?TypeContext $context = null
     ): self {
-        if (empty($body)) {
+        if ($body === null || $body === '') {
             return new static();
         }
 

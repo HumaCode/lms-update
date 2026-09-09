@@ -9,12 +9,10 @@ use Intervention\Image\Drivers\SpecializableEncoder;
 class GifEncoder extends SpecializableEncoder
 {
     /**
-     * Create new encoder object
-     *
-     * @param bool $interlaced
-     * @return void
+     * Create new encoder object.
      */
     public function __construct(public bool $interlaced = false)
     {
+        //
     }
 }

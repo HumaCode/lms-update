@@ -13,6 +13,8 @@ use function hrtime;
 use PHPUnit\Event\InvalidArgumentException;
 
 /**
+ * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
+ *
  * @internal This class is not covered by the backward compatibility promise for PHPUnit
  *
  * @codeCoverageIgnore
@@ -21,6 +23,9 @@ final class SystemStopWatchWithOffset implements StopWatch
 {
     private ?HRTime $offset;
 
+    /**
+     * @internal This method is not covered by the backward compatibility promise for PHPUnit
+     */
     public function __construct(HRTime $offset)
     {
         $this->offset = $offset;

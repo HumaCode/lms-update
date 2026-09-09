@@ -2,13 +2,22 @@
 
 namespace UniSharp\LaravelFilemanager\Controllers;
 
-use Intervention\Image\Facades\Image as InterventionImageV2;
-use Intervention\Image\Laravel\Facades\Image as InterventionImageV3;
+use UniSharp\LaravelFilemanager\Services\ImageService;
 use UniSharp\LaravelFilemanager\Events\ImageIsCropping;
 use UniSharp\LaravelFilemanager\Events\ImageWasCropped;
+use Composer\InstalledVersions;
+use Composer\Semver\Comparator;
 
 class CropController extends LfmController
 {
+    private ImageService $imageService;
+
+    public function __construct(ImageService $imageService)
+    {
+        $this->imageService = $imageService;
+        parent::__construct();
+    }
+    
     /**
      * Show crop page.
      *
@@ -42,13 +51,15 @@ class CropController extends LfmController
 
         $crop_info = request()->only('dataWidth', 'dataHeight', 'dataX', 'dataY');
 
-        // crop image
-        if (class_exists(InterventionImageV2::class)) {
-            InterventionImageV2::make($image_path)
+        $installedInterventionImageVersion = InstalledVersions::getPrettyVersion('intervention/image');
+        if (Comparator::greaterThanOrEqualTo($installedInterventionImageVersion, '4.0.0')) {
+            $this->imageService
+                ->decodePath($image_path)
                 ->crop(...array_values($crop_info))
                 ->save($crop_path);
         } else {
-            InterventionImageV3::read($image_path)
+            $this->imageService
+                ->read($image_path)
                 ->crop(...array_values($crop_info))
                 ->save($crop_path);
         }

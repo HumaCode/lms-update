@@ -2,28 +2,50 @@
 
 declare(strict_types=1);
 
-namespace Flasher\Laravel\Resources;
+use Flasher\Prime\Configuration;
 
-return [
-    // Default notification library (e.g., 'flasher', 'toastr', 'noty', etc.)
+/*
+ * Default PHPFlasher configuration for Laravel.
+ *
+ * This configuration file defines the default settings for PHPFlasher when
+ * used within a Laravel application. It uses the Configuration class from
+ * the core PHPFlasher library to establish type-safe configuration.
+ *
+ * @return array<string, mixed> PHPFlasher configuration
+ */
+return Configuration::from([
+    // Default notification adapter
     'default' => 'flasher',
 
-    // Path to the main JavaScript file of PHPFlasher
+    // Main script path
     'main_script' => '/vendor/flasher/flasher.min.js',
 
-    // Path to the stylesheets for PHPFlasher notifications
+    // Prefix prepended to every flasher asset URL. Useful when the app is
+    // served from a subdirectory (e.g. '/app') or a separate asset host
+    // (e.g. 'https://cdn.example.com'). Leave empty when mounted at the root.
+    'public_path' => '',
+
+    // Stylesheet files
     'styles' => [
         '/vendor/flasher/flasher.min.css',
     ],
 
-    // Whether to translate PHPFlasher messages using Laravel's translation service
-    'translate' => true,
+    // Global notification options
+    // 'options' => [
+    //     'timeout' => 5000,
+    //     'position' => 'top-right',
+    // ],
 
-    // Automatically inject PHPFlasher assets into HTML response
+    // Auto-inject assets into responses
     'inject_assets' => true,
 
-    // Configuration for the flash bag (converting Laravel flash messages)
-    // Map Laravel session keys to PHPFlasher types
+    // Enable automatic message translation
+    'translate' => true,
+
+    // URL patterns to exclude from asset injection and flash bag conversion
+    'excluded_paths' => [],
+
+    // Map Laravel session flash keys to notification types
     'flash_bag' => [
         'success' => ['success'],
         'error' => ['error', 'danger'],
@@ -31,8 +53,17 @@ return [
         'info' => ['info', 'notice', 'alert'],
     ],
 
-    // Filter criteria for notifications (e.g., limit number, types)
-    'filter' => [
-        'limit' => 5, // Limit the number of displayed notifications
-    ],
-];
+    // Filter criteria for notifications
+    // 'filter' => [
+    //     'limit' => 5,
+    // ],
+
+    // Predefined notification configurations
+    // 'presets' => [
+    //     'entity_saved' => [
+    //         'type' => 'success',
+    //         'title' => 'Entity saved',
+    //         'message' => 'Entity saved successfully',
+    //     ],
+    // ],
+]);

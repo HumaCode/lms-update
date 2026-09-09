@@ -4,29 +4,30 @@ declare(strict_types=1);
 
 namespace Intervention\Gif\Encoders;
 
+use Intervention\Gif\Blocks\Color;
 use Intervention\Gif\Blocks\ColorTable;
+use Intervention\Gif\Exceptions\EncoderException;
 
 class ColorTableEncoder extends AbstractEncoder
 {
     /**
-     * Create new instance
-     *
-     * @param ColorTable $source
+     * Create new instance.
      */
-    public function __construct(ColorTable $source)
+    public function __construct(ColorTable $entity)
     {
-        $this->source = $source;
+        parent::__construct($entity);
     }
 
     /**
-     * Encode current source
+     * Encode current entity.
      *
-     * @return string
+     * @throws EncoderException
      */
     public function encode(): string
     {
-        return implode('', array_map(function ($color) {
-            return $color->encode();
-        }, $this->source->getColors()));
+        return implode('', array_map(
+            fn(Color $color): string => $color->encode(),
+            $this->entity->colors(),
+        ));
     }
 }

@@ -3,14 +3,16 @@
 namespace UniSharp\LaravelFilemanager;
 
 use Illuminate\Container\Container;
-use Intervention\Image\Facades\Image as InterventionImageV2;
-use Intervention\Image\Laravel\Facades\Image as InterventionImageV3;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use UniSharp\LaravelFilemanager\Services\ImageService;
 use UniSharp\LaravelFilemanager\Events\FileIsUploading;
 use UniSharp\LaravelFilemanager\Events\FileWasUploaded;
 use UniSharp\LaravelFilemanager\Events\ImageIsUploading;
 use UniSharp\LaravelFilemanager\Events\ImageWasUploaded;
 use UniSharp\LaravelFilemanager\LfmUploadValidator;
+use Composer\InstalledVersions;
+use Composer\Semver\Comparator;
 
 class LfmPath
 {
@@ -20,9 +22,12 @@ class LfmPath
 
     private $helper;
 
-    public function __construct(Lfm $lfm = null)
+    private ImageService $imageService;
+
+    public function __construct(Lfm $lfm, ImageService $imageService)
     {
         $this->helper = $lfm;
+        $this->imageService = $imageService;
     }
 
     public function __get($var_name)
@@ -211,6 +216,10 @@ class LfmPath
             return strcasecmp($a->{$key_to_sort}, $b->{$key_to_sort});
         });
 
+        if (config('lfm.is_reverse_view', false)) {
+            return array_reverse($arr_items);
+        }
+
         return $arr_items;
     }
 
@@ -230,11 +239,14 @@ class LfmPath
         try {
             $this->setName($new_file_name)->storage->save($file);
 
+            $new_file_name = $this->optimizeUploadedImage($new_file_name);
+
             $this->generateThumbnail($new_file_name);
         } catch (\Exception $e) {
             \Log::info($e);
             return $this->error('invalid');
         }
+        $new_file_path = $this->setName($new_file_name)->path('absolute');
         event(new FileWasUploaded($new_file_path));
         event(new ImageWasUploaded($new_file_path));
 
@@ -270,6 +282,81 @@ class LfmPath
         return true;
     }
 
+    private function optimizeUploadedImage($file_name)
+    {
+        if (! config('lfm.optimize_uploaded_images.enabled', false)) {
+            return $file_name;
+        }
+
+        $original_image = $this->pretty($file_name);
+
+        if (!$original_image->isImage()) {
+            return $file_name;
+        }
+
+        $mime_type = $original_image->mimeType();
+        $allowed_mimetypes = (array) config(
+            'lfm.optimize_uploaded_images.mimetypes',
+            config('lfm.raster_mimetypes', [])
+        );
+
+        if (!in_array($mime_type, $allowed_mimetypes)) {
+            return $file_name;
+        }
+
+        try {
+            $contents = $original_image->get();
+            $optimized_file_name = $this->optimizedFileName($file_name, $mime_type);
+            $optimized_image = $this->imageService->optimizeUpload(
+                $contents,
+                $mime_type,
+                config('lfm.optimize_uploaded_images', [])
+            );
+
+            if (config('lfm.optimize_uploaded_images.keep_original_when_larger', true)
+                && strlen((string) $optimized_image) >= strlen($contents)
+            ) {
+                return $file_name;
+            }
+
+            if ($optimized_file_name !== $file_name && $this->setName($optimized_file_name)->exists()) {
+                return $file_name;
+            }
+
+            $this->setName($optimized_file_name)->storage->put($optimized_image, $this->storageOptions());
+
+            if ($optimized_file_name !== $file_name) {
+                $this->setName($file_name)->delete();
+            }
+
+            return $optimized_file_name;
+        } catch (\Throwable $e) {
+            \Log::info($e);
+        }
+
+        return $file_name;
+    }
+
+    private function optimizedFileName($file_name, $mime_type)
+    {
+        $format = config('lfm.optimize_uploaded_images.format');
+
+        if (!is_string($format) || $format === '') {
+            return $file_name;
+        }
+
+        $target_mime_type = $this->imageService->outputMimeType($mime_type, $format);
+        $extension = $this->imageService->extensionForMimeType($target_mime_type);
+
+        if ($extension === '') {
+            return $file_name;
+        }
+
+        $name = $this->helper->utf8Pathinfo($file_name, 'filename');
+
+        return $name . '.' . $extension;
+    }
+
     private function getNewName($file)
     {
         $new_file_name = $this->helper->translateFromUtf8(
@@ -281,7 +368,7 @@ class LfmPath
         if (config('lfm.rename_file') === true) {
             $new_file_name = uniqid();
         } elseif (config('lfm.alphanumeric_filename') === true) {
-            $new_file_name = preg_replace('/[^A-Za-z0-9\-\']/', '_', $new_file_name);
+            $new_file_name = Str::slug($new_file_name);
         }
 
         if ($extension) {
@@ -325,18 +412,31 @@ class LfmPath
         $thumbWidth = $this->helper->shouldCreateCategoryThumb() && $this->helper->categoryThumbWidth() ? $this->helper->categoryThumbWidth() : config('lfm.thumb_img_width', 200);
         $thumbHeight = $this->helper->shouldCreateCategoryThumb() && $this->helper->categoryThumbHeight() ? $this->helper->categoryThumbHeight() : config('lfm.thumb_img_height', 200);
 
-        if (class_exists(InterventionImageV2::class)) {
-            $encoded_image = InterventionImageV2::make($original_image->get())
-                ->fit($thumbWidth, $thumbHeight)
-                ->stream()
-                ->detach();
+        $installedInterventionImageVersion = InstalledVersions::getPrettyVersion('intervention/image');
+        if (Comparator::greaterThanOrEqualTo($installedInterventionImageVersion, '4.0.0')) {
+            $encoded_image = $this->imageService
+                ->decode($original_image->get())
+                ->cover($thumbWidth, $thumbHeight)
+                ->encodeUsingMediaType($original_image->mimeType());
         } else {
-            $encoded_image = InterventionImageV3::read($original_image->get())
+            $encoded_image = $this->imageService->read($original_image->get())
                 ->cover($thumbWidth, $thumbHeight)
                 ->encodeByMediaType();
         }
 
+        $this->storage->put($encoded_image, $this->storageOptions());
+    }
 
-        $this->storage->put($encoded_image, 'public');
+    private function storageOptions()
+    {
+        $config = $this->storage->getConfig();
+
+        if (key_exists('driver', $config) && $config['driver'] == 's3'
+            && $this->helper->config('s3_acls_disabled')
+        ) {
+            return [];
+        }
+
+        return 'public';
     }
 }

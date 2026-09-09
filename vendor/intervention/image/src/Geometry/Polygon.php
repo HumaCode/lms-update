@@ -7,12 +7,18 @@ namespace Intervention\Image\Geometry;
 use ArrayAccess;
 use ArrayIterator;
 use Countable;
+use Intervention\Image\Alignment;
+use Intervention\Image\Colors\AbstractColor;
+use Intervention\Image\Exceptions\InvalidArgumentException;
+use Intervention\Image\Geometry\Factories\PolygonFactory;
 use Traversable;
 use IteratorAggregate;
 use Intervention\Image\Geometry\Traits\HasBackgroundColor;
 use Intervention\Image\Geometry\Traits\HasBorder;
+use Intervention\Image\Interfaces\DrawableFactoryInterface;
 use Intervention\Image\Interfaces\DrawableInterface;
 use Intervention\Image\Interfaces\PointInterface;
+use Intervention\Image\Interfaces\SizeInterface;
 
 /**
  * @implements IteratorAggregate<PointInterface>
@@ -24,16 +30,31 @@ class Polygon implements IteratorAggregate, Countable, ArrayAccess, DrawableInte
     use HasBackgroundColor;
 
     /**
-     * Create new polygon instance
+     * Create new polygon instance.
      *
      * @param array<PointInterface> $points
-     * @param PointInterface $pivot
-     * @return void
      */
     public function __construct(
         protected array $points = [],
-        protected PointInterface $pivot = new Point()
+        protected PointInterface $pivot = new Point(),
     ) {
+        //
+    }
+
+    /**
+     * Create polygon from given size.
+     */
+    public static function fromSize(SizeInterface $size): self
+    {
+        return new self(
+            [
+                new Point(0, 0),
+                new Point($size->width(), 0),
+                new Point($size->width(), $size->height() * -1),
+                new Point(0, $size->height() * -1),
+            ],
+            $size->pivot(),
+        );
     }
 
     /**
@@ -59,9 +80,9 @@ class Polygon implements IteratorAggregate, Countable, ArrayAccess, DrawableInte
     }
 
     /**
-     * Implement iteration through all points of polygon
+     * Implement iteration through all points of polygon.
      *
-     * @return Traversable<PointInterface>
+     * @return Traversable<mixed>
      */
     public function getIterator(): Traversable
     {
@@ -69,9 +90,7 @@ class Polygon implements IteratorAggregate, Countable, ArrayAccess, DrawableInte
     }
 
     /**
-     * Return current pivot point
-     *
-     * @return PointInterface
+     * Return current pivot point.
      */
     public function pivot(): PointInterface
     {
@@ -79,10 +98,7 @@ class Polygon implements IteratorAggregate, Countable, ArrayAccess, DrawableInte
     }
 
     /**
-     * Change pivot point to given point
-     *
-     * @param PointInterface $pivot
-     * @return Polygon
+     * Change pivot point to given point.
      */
     public function setPivot(PointInterface $pivot): self
     {
@@ -92,9 +108,7 @@ class Polygon implements IteratorAggregate, Countable, ArrayAccess, DrawableInte
     }
 
     /**
-     * Return first point of polygon
-     *
-     * @return ?PointInterface
+     * Return first point of polygon.
      */
     public function first(): ?PointInterface
     {
@@ -106,9 +120,7 @@ class Polygon implements IteratorAggregate, Countable, ArrayAccess, DrawableInte
     }
 
     /**
-     * Return last point of polygon
-     *
-     * @return ?PointInterface
+     * Return last point of polygon.
      */
     public function last(): ?PointInterface
     {
@@ -120,9 +132,7 @@ class Polygon implements IteratorAggregate, Countable, ArrayAccess, DrawableInte
     }
 
     /**
-     * Return polygon's point count
-     *
-     * @return int
+     * Return polygon's point count.
      */
     public function count(): int
     {
@@ -130,55 +140,39 @@ class Polygon implements IteratorAggregate, Countable, ArrayAccess, DrawableInte
     }
 
     /**
-     * Determine if point exists at given offset
-     *
-     * @param mixed $offset
-     * @return bool
+     * Determine if point exists at given offset.
      */
-    public function offsetExists($offset): bool
+    public function offsetExists(mixed $offset): bool
     {
         return array_key_exists($offset, $this->points);
     }
 
     /**
-     * Return point at given offset
-     *
-     * @param mixed $offset
-     * @return PointInterface
+     * Return point at given offset.
      */
-    public function offsetGet($offset): mixed
+    public function offsetGet(mixed $offset): mixed
     {
         return $this->points[$offset];
     }
 
     /**
-     * Set point at given offset
-     *
-     * @param mixed $offset
-     * @param PointInterface $value
-     * @return void
+     * Set point at given offset.
      */
-    public function offsetSet($offset, $value): void
+    public function offsetSet(mixed $offset, mixed $value): void
     {
         $this->points[$offset] = $value;
     }
 
     /**
-     * Unset offset at given offset
-     *
-     * @param mixed $offset
-     * @return void
+     * Unset offset at given offset.
      */
-    public function offsetUnset($offset): void
+    public function offsetUnset(mixed $offset): void
     {
         unset($this->points[$offset]);
     }
 
     /**
-     * Add given point to polygon
-     *
-     * @param PointInterface $point
-     * @return Polygon
+     * Add given point to polygon.
      */
     public function addPoint(PointInterface $point): self
     {
@@ -188,9 +182,7 @@ class Polygon implements IteratorAggregate, Countable, ArrayAccess, DrawableInte
     }
 
     /**
-     * Calculate total horizontal span of polygon
-     *
-     * @return int
+     * Calculate total horizontal span of polygon.
      */
     public function width(): int
     {
@@ -198,9 +190,7 @@ class Polygon implements IteratorAggregate, Countable, ArrayAccess, DrawableInte
     }
 
     /**
-     * Calculate total vertical span of polygon
-     *
-     * @return int
+     * Calculate total vertical span of polygon.
      */
     public function height(): int
     {
@@ -208,18 +198,13 @@ class Polygon implements IteratorAggregate, Countable, ArrayAccess, DrawableInte
     }
 
     /**
-     * Return most left point of all points in polygon
-     *
-     * @return PointInterface
+     * Return most left point of all points in polygon.
      */
     public function mostLeftPoint(): PointInterface
     {
-        $points = [];
-        foreach ($this->points as $point) {
-            $points[] = $point;
-        }
+        $points = $this->points;
 
-        usort($points, function ($a, $b) {
+        usort($points, function (PointInterface $a, PointInterface $b): int {
             if ($a->x() === $b->x()) {
                 return 0;
             }
@@ -230,18 +215,13 @@ class Polygon implements IteratorAggregate, Countable, ArrayAccess, DrawableInte
     }
 
     /**
-     * Return most right point in polygon
-     *
-     * @return PointInterface
+     * Return most right point in polygon.
      */
     public function mostRightPoint(): PointInterface
     {
-        $points = [];
-        foreach ($this->points as $point) {
-            $points[] = $point;
-        }
+        $points = $this->points;
 
-        usort($points, function ($a, $b) {
+        usort($points, function (PointInterface $a, PointInterface $b): int {
             if ($a->x() === $b->x()) {
                 return 0;
             }
@@ -252,18 +232,13 @@ class Polygon implements IteratorAggregate, Countable, ArrayAccess, DrawableInte
     }
 
     /**
-     * Return most top point in polygon
-     *
-     * @return PointInterface
+     * Return most top point in polygon.
      */
     public function mostTopPoint(): PointInterface
     {
-        $points = [];
-        foreach ($this->points as $point) {
-            $points[] = $point;
-        }
+        $points = $this->points;
 
-        usort($points, function ($a, $b) {
+        usort($points, function (PointInterface $a, PointInterface $b): int {
             if ($a->y() === $b->y()) {
                 return 0;
             }
@@ -274,18 +249,13 @@ class Polygon implements IteratorAggregate, Countable, ArrayAccess, DrawableInte
     }
 
     /**
-     * Return most bottom point in polygon
-     *
-     * @return PointInterface
+     * Return most bottom point in polygon.
      */
     public function mostBottomPoint(): PointInterface
     {
-        $points = [];
-        foreach ($this->points as $point) {
-            $points[] = $point;
-        }
+        $points = $this->points;
 
-        usort($points, function ($a, $b) {
+        usort($points, function (PointInterface $a, PointInterface $b): int {
             if ($a->y() === $b->y()) {
                 return 0;
             }
@@ -296,89 +266,68 @@ class Polygon implements IteratorAggregate, Countable, ArrayAccess, DrawableInte
     }
 
     /**
-     * Return point in absolute center of the polygon
-     *
-     * @return PointInterface
+     * Return point in absolute center of the polygon.
      */
     public function centerPoint(): PointInterface
     {
         return new Point(
             $this->mostRightPoint()->x() - (intval(round($this->width() / 2))),
-            $this->mostTopPoint()->y() - (intval(round($this->height() / 2)))
+            $this->mostTopPoint()->y() - (intval(round($this->height() / 2))),
         );
     }
 
     /**
-     * Align all points of polygon horizontally to given position around pivot point
+     * Align all points of the polygon horizontally to given position around pivot point.
      *
-     * @param string $position
-     * @return Polygon
+     * @throws InvalidArgumentException
      */
-    public function align(string $position): self
+    public function alignHorizontally(string|Alignment $position): self
     {
-        switch (strtolower($position)) {
-            case 'center':
-            case 'middle':
-                $diff = $this->centerPoint()->x() - $this->pivot()->x();
-                break;
-
-            case 'right':
-                $diff = $this->mostRightPoint()->x() - $this->pivot()->x();
-                break;
-
-            default:
-            case 'left':
-                $diff = $this->mostLeftPoint()->x() - $this->pivot()->x();
-                break;
-        }
+        $diff = match (Alignment::create($position)) {
+            Alignment::CENTER => $this->centerPoint()->x() - $this->pivot()->x(),
+            Alignment::RIGHT,
+            Alignment::TOP_RIGHT,
+            Alignment::BOTTOM_RIGHT => $this->mostRightPoint()->x() - $this->pivot()->x(),
+            Alignment::LEFT,
+            Alignment::TOP_LEFT,
+            Alignment::BOTTOM_LEFT => $this->mostLeftPoint()->x() - $this->pivot()->x(),
+            default => 0,
+        };
 
         foreach ($this->points as $point) {
-            $point->setX(
-                intval($point->x() - $diff)
-            );
+            $point->setX(intval($point->x() - $diff));
         }
 
         return $this;
     }
 
     /**
-     * Align all points of polygon vertically to given position around pivot point
+     * Align all points of the polygon vertically to given position around pivot point.
      *
-     * @param string $position
-     * @return Polygon
+     * @throws InvalidArgumentException
      */
-    public function valign(string $position): self
+    public function alignVertically(string|Alignment $position): self
     {
-        switch (strtolower($position)) {
-            case 'center':
-            case 'middle':
-                $diff = $this->centerPoint()->y() - $this->pivot()->y();
-                break;
-
-            case 'top':
-                $diff = $this->mostTopPoint()->y() - $this->pivot()->y() - $this->height();
-                break;
-
-            default:
-            case 'bottom':
-                $diff = $this->mostBottomPoint()->y() - $this->pivot()->y() + $this->height();
-                break;
-        }
+        $diff = match (Alignment::create($position)) {
+            Alignment::CENTER => $this->centerPoint()->y() - $this->pivot()->y(),
+            Alignment::TOP,
+            Alignment::TOP_RIGHT,
+            Alignment::TOP_LEFT => $this->mostTopPoint()->y() - $this->pivot()->y() - $this->height(),
+            Alignment::BOTTOM,
+            Alignment::BOTTOM_LEFT,
+            Alignment::BOTTOM_RIGHT => $this->mostBottomPoint()->y() - $this->pivot()->y() + $this->height(),
+            default => 0,
+        };
 
         foreach ($this->points as $point) {
-            $point->setY(
-                intval($point->y() - $diff),
-            );
+            $point->setY(intval($point->y() - $diff));
         }
 
         return $this;
     }
 
     /**
-     * Rotate points of polygon around pivot point with given angle
-     *
-     * @param float $angle
-     * @return Polygon
+     * Rotate points of polygon clockwise around pivot point with given angle.
      */
     public function rotate(float $angle): self
     {
@@ -411,30 +360,24 @@ class Polygon implements IteratorAggregate, Countable, ArrayAccess, DrawableInte
     }
 
     /**
-     * Move all points by given amount on the x-axis
-     *
-     * @param int $amount
-     * @return Polygon
+     * Move all points by given distance on the x-axis.
      */
-    public function movePointsX(int $amount): self
+    public function movePointsX(int $distance): self
     {
         foreach ($this->points as $point) {
-            $point->moveX($amount);
+            $point->moveX($distance);
         }
 
         return $this;
     }
 
     /**
-     * Move all points by given amount on the y-axis
-     *
-     * @param int $amount
-     * @return Polygon
+     * Move all points by given distance on the y-axis.
      */
-    public function movePointsY(int $amount): self
+    public function movePointsY(int $distance): self
     {
         foreach ($this->points as $point) {
-            $point->moveY($amount);
+            $point->moveY($distance);
         }
 
         return $this;
@@ -454,5 +397,45 @@ class Polygon implements IteratorAggregate, Countable, ArrayAccess, DrawableInte
         }
 
         return $coordinates;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see DrawableInterface::factory()
+     */
+    public function factory(): DrawableFactoryInterface
+    {
+        return new PolygonFactory($this);
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see DrawableInterface::adjust()
+     */
+    public function adjust(callable $adjustments): DrawableInterface
+    {
+        $factory = $this->factory();
+        $adjustments($factory);
+
+        return $factory->drawable();
+    }
+
+    /**
+     * Clone polygon.
+     */
+    public function __clone(): void
+    {
+        $this->points = array_map(fn($point) => clone $point, $this->points);
+        $this->pivot = clone $this->pivot;
+
+        if ($this->backgroundColor instanceof AbstractColor) {
+            $this->backgroundColor = clone $this->backgroundColor;
+        }
+
+        if ($this->borderColor instanceof AbstractColor) {
+            $this->borderColor = clone $this->borderColor;
+        }
     }
 }

@@ -10,8 +10,14 @@ use Flasher\Prime\Response\Presenter\HtmlPresenter;
 
 final readonly class ResponseExtension implements ResponseExtensionInterface
 {
-    public function __construct(private FlasherInterface $flasher, private ContentSecurityPolicyHandlerInterface $cspHandler)
-    {
+    /**
+     * @param list<non-empty-string> $excludedPaths
+     */
+    public function __construct(
+        private FlasherInterface $flasher,
+        private ContentSecurityPolicyHandlerInterface $cspHandler,
+        private array $excludedPaths = [],
+    ) {
     }
 
     public function render(RequestInterface $request, ResponseInterface $response): ResponseInterface
@@ -55,10 +61,9 @@ final readonly class ResponseExtension implements ResponseExtensionInterface
         }
 
         if ($alreadyRendered) {
-            $htmlResponse = sprintf('options.push(%s);', $htmlResponse);
+            $htmlResponse = \sprintf('options.push(%s);', $htmlResponse);
         }
 
-        // $htmlResponse = "\n".str_replace("\n", '', (string) $htmlResponse)."\n";
         $htmlResponse .= "\n";
 
         $content = substr($content, 0, $insertPosition).$htmlResponse.substr($content, $insertPosition);
@@ -69,12 +74,38 @@ final readonly class ResponseExtension implements ResponseExtensionInterface
 
     private function isRenderable(RequestInterface $request, ResponseInterface $response): bool
     {
-        return !$request->isXmlHttpRequest()
+        return !$this->isPathExcluded($request)
+            && !$request->isXmlHttpRequest()
             && $request->isHtmlRequestFormat()
             && $response->isHtml()
             && $response->isSuccessful()
             && !$response->isRedirection()
             && !$response->isAttachment()
             && !$response->isJson();
+    }
+
+    private function isPathExcluded(RequestInterface $request): bool
+    {
+        if (!method_exists($request, 'getUri')) { // @phpstan-ignore-line
+            return false;
+        }
+
+        $url = $request->getUri();
+
+        foreach ($this->excludedPaths as $regexPattern) {
+            $result = @preg_match($regexPattern, $url);
+
+            if (false === $result) {
+                trigger_error(\sprintf('Invalid regex pattern "%s" in excluded_paths configuration', $regexPattern), \E_USER_WARNING);
+
+                continue;
+            }
+
+            if (1 === $result) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace Intervention\Image\Geometry\Factories;
 
-use Closure;
+use Intervention\Image\Exceptions\InvalidArgumentException;
 use Intervention\Image\Geometry\Point;
 use Intervention\Image\Geometry\Bezier;
+use Intervention\Image\Interfaces\ColorInterface;
 use Intervention\Image\Interfaces\DrawableFactoryInterface;
 use Intervention\Image\Interfaces\DrawableInterface;
 
@@ -15,46 +16,39 @@ class BezierFactory implements DrawableFactoryInterface
     protected Bezier $bezier;
 
     /**
-     * Create new factory instance
-     *
-     * @param null|Closure|Bezier $init
-     * @return void
+     * Create new factory instance.
      */
-    public function __construct(null|Closure|Bezier $init = null)
+    public function __construct(null|callable|Bezier $bezier = null)
     {
-        $this->bezier = is_a($init, Bezier::class) ? $init : new Bezier([]);
+        $this->bezier = $bezier instanceof Bezier ? clone $bezier : new Bezier([]);
 
-        if (is_callable($init)) {
-            $init($this);
+        if (is_callable($bezier)) {
+            $bezier($this);
         }
     }
 
     /**
      * {@inheritdoc}
      *
-     * @see DrawableFactoryInterface::init()
+     * @see DrawableFactoryInterface::build()
      */
-    public static function init(null|Closure|DrawableInterface $init = null): self
+    public static function build(null|callable|DrawableInterface $drawable = null): Bezier
     {
-        return new self($init);
+        return (new self($drawable))->drawable();
     }
 
     /**
      * {@inheritdoc}
      *
-     * @see DrawableFactoryInterface::create()
+     * @see DrawableFactoryInterface::drawable()
      */
-    public function create(): DrawableInterface
+    public function drawable(): Bezier
     {
         return $this->bezier;
     }
 
     /**
-     * Add a point to the bezier to be produced
-     *
-     * @param int $x
-     * @param int $y
-     * @return BezierFactory
+     * Add a point to the bezier to be produced.
      */
     public function point(int $x, int $y): self
     {
@@ -64,12 +58,9 @@ class BezierFactory implements DrawableFactoryInterface
     }
 
     /**
-     * Set the background color of the bezier to be produced
-     *
-     * @param mixed $color
-     * @return BezierFactory
+     * Set the background color of the bezier to be produced.
      */
-    public function background(mixed $color): self
+    public function background(string|ColorInterface $color): self
     {
         $this->bezier->setBackgroundColor($color);
 
@@ -77,26 +68,14 @@ class BezierFactory implements DrawableFactoryInterface
     }
 
     /**
-     * Set the border color & border size of the bezier to be produced
+     * Set the border color & border size of the bezier to be produced.
      *
-     * @param mixed $color
-     * @param int $size
-     * @return BezierFactory
+     * @throws InvalidArgumentException
      */
-    public function border(mixed $color, int $size = 1): self
+    public function border(string|ColorInterface $color, int $size = 1): self
     {
         $this->bezier->setBorder($color, $size);
 
         return $this;
-    }
-
-    /**
-     * Produce the bezier
-     *
-     * @return Bezier
-     */
-    public function __invoke(): Bezier
-    {
-        return $this->bezier;
     }
 }

@@ -10,14 +10,19 @@
 namespace PHPUnit\Event\Telemetry;
 
 /**
+ * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
+ *
  * @internal This class is not covered by the backward compatibility promise for PHPUnit
  */
-final class System
+final readonly class System
 {
-    private readonly StopWatch $stopWatch;
-    private readonly MemoryMeter $memoryMeter;
-    private readonly GarbageCollectorStatusProvider $garbageCollectorStatusProvider;
+    private StopWatch $stopWatch;
+    private MemoryMeter $memoryMeter;
+    private GarbageCollectorStatusProvider $garbageCollectorStatusProvider;
 
+    /**
+     * @internal This method is not covered by the backward compatibility promise for PHPUnit
+     */
     public function __construct(StopWatch $stopWatch, MemoryMeter $memoryMeter, GarbageCollectorStatusProvider $garbageCollectorStatusProvider)
     {
         $this->stopWatch                      = $stopWatch;

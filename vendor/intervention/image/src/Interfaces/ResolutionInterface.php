@@ -4,70 +4,48 @@ declare(strict_types=1);
 
 namespace Intervention\Image\Interfaces;
 
-interface ResolutionInterface
+use Intervention\Image\Length;
+use Stringable;
+
+interface ResolutionInterface extends Stringable
 {
     /**
-     * Return resolution of x-axis
-     *
-     * @return float
+     * Factory method to create resolution with given dots per inch.
      */
-    public function x(): float;
+    public static function dpi(float $x, float $y): self;
 
     /**
-     * Set resolution on x-axis
-     *
-     * @param float $x
-     * @return ResolutionInterface
+     * Factory method to create resolution with given pixels per inch.
      */
-    public function setX(float $x): self;
+    public static function ppi(float $x, float $y): self;
 
     /**
-     * Return resolution on y-axis
-     *
-     * @return float
-     */
-    public function y(): float;
-
-    /**
-     * Set resolution on y-axis
-     *
-     * @param float $y
-     * @return ResolutionInterface
-     */
-    public function setY(float $y): self;
-
-    /**
-     * Convert the resolution to DPI
-     *
-     * @return ResolutionInterface
+     * Convert resolution to units per inch.
      */
     public function perInch(): self;
 
     /**
-     * Convert the resolution to DPCM
-     *
-     * @return ResolutionInterface
+     * Convert resolution to units per centimeter.
      */
     public function perCm(): self;
 
     /**
-     * Return string representation of unit
-     *
-     * @return string
+     * Return resolution of x-axis value.
      */
-    public function unit(): string;
+    public function x(): float;
 
     /**
-     * Transform object to string
-     *
-     * @return string
+     * Return resolution on y-axis value.
+     */
+    public function y(): float;
+
+    /**
+     * Return length unit of resolution.
+     */
+    public function length(): Length;
+
+    /**
+     * Transform object to string.
      */
     public function toString(): string;
-
-    /**
-     * Cast object to string
-     *
-     * @return string
-     */
-    public function __toString(): string;
 }

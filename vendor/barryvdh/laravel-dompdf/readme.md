@@ -96,6 +96,7 @@ Available options and their defaults:
 * __isHtml5ParserEnabled__: true _(available in config/dompdf.php)_
 * __allowedRemoteHosts__: null _(available in config/dompdf.php)_
 * __isFontSubsettingEnabled__: false _(available in config/dompdf.php)_
+* __isPdfAEnabled__: false _(available in config/dompdf.php)_
 * __debugPng__: false
 * __debugKeepTemp__: false
 * __debugCss__: false
@@ -111,6 +112,57 @@ Available options and their defaults:
 * __artifactPathValidation__: null _(available in config/dompdf.php)_
 
 #### Note: Since 3.x the remote access is disabled by default, to provide more security. Use with caution!
+
+### PDF/A-3b Support
+
+> Requires dompdf >= 3.1.0 and the CPDF backend (default).
+
+You can generate PDF/A-3b compliant PDFs for archival purposes. Enable it globally via config or per-PDF at runtime.
+
+**Global (config/dompdf.php):**
+```php
+    'pdfa' => [
+        'enabled' => true,
+    ],
+```
+
+**Per-PDF at runtime:**
+```php
+    $pdf = Pdf::loadView('invoice', $data)
+        ->setPdfA()
+        ->download('invoice.pdf');
+```
+
+**Important:** PDF/A requires all fonts to be embedded. Core PDF fonts (Helvetica, Courier, Times) are **not** embedded and will cause validation failures. Use fonts like `DejaVu Sans` or `DejaVu Serif` instead.
+
+#### Zugferd / Factur-X (embedded XML invoices)
+
+For PDF/A-3b with embedded XML attachments (e.g. Zugferd/Factur-X electronic invoicing), you can use `addEmbeddedFile()` and `setAdditionalXmpRdf()`:
+
+```php
+    $pdf = Pdf::loadView('invoice', $data)->setPdfA();
+
+    // Add XMP metadata for Factur-X
+    $pdf->setAdditionalXmpRdf(
+        '<rdf:Description rdf:about=""
+            xmlns:fx="urn:factur-x:pdfa:CrossIndustryDocument:invoice:1p0#">
+            <fx:DocumentType>INVOICE</fx:DocumentType>
+            <fx:DocumentFileName>factur-x.xml</fx:DocumentFileName>
+            <fx:Version>1.0</fx:Version>
+            <fx:ConformanceLevel>BASIC</fx:ConformanceLevel>
+        </rdf:Description>'
+    );
+
+    // Embed the XML invoice
+    $pdf->addEmbeddedFile(
+        storage_path('invoices/factur-x.xml'),
+        'factur-x.xml',
+        'Factur-X Invoice',
+        'text/xml'
+    );
+
+    return $pdf->download('invoice.pdf');
+```
 
 ### Tip: UTF-8 support
 In your templates, set the UTF-8 Metatag:

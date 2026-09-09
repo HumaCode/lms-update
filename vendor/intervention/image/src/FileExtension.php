@@ -4,10 +4,16 @@ declare(strict_types=1);
 
 namespace Intervention\Image;
 
+use Error;
+use Intervention\Image\Exceptions\InvalidArgumentException;
+use Intervention\Image\Exceptions\NotSupportedException;
+
 enum FileExtension: string
 {
     case JPG = 'jpg';
     case JPEG = 'jpeg';
+    case PJPG = 'pjpg';
+    case PJPEG = 'pjpeg';
     case WEBP = 'webp';
     case AVIF = 'avif';
     case BMP = 'bmp';
@@ -17,6 +23,7 @@ enum FileExtension: string
     case TIFF = 'tiff';
     case JP2 = 'jp2';
     case J2K = 'j2k';
+    case JP2K = 'jp2k';
     case JPF = 'jpf';
     case JPM = 'jpm';
     case JPG2 = 'jpg2';
@@ -25,17 +32,77 @@ enum FileExtension: string
     case JPX = 'jpx';
     case HEIC = 'heic';
     case HEIF = 'heif';
+    case JXL = 'jxl';
+    case ICO = 'ico';
 
     /**
-     * Return the matching format for the current file extension
+     * Create file extension from given identifier.
      *
-     * @return Format
+     * @throws InvalidArgumentException
+     */
+    public static function create(string|self|Format|MediaType $identifier): self
+    {
+        if ($identifier instanceof self) {
+            return $identifier;
+        }
+
+        if ($identifier instanceof Format) {
+            try {
+                return $identifier->fileExtension();
+            } catch (NotSupportedException $e) {
+                throw new InvalidArgumentException(
+                    'Unable to create file extension from "' . $identifier::class . '"',
+                    previous: $e,
+                );
+            }
+        }
+
+        if ($identifier instanceof MediaType) {
+            try {
+                return $identifier->fileExtension();
+            } catch (NotSupportedException $e) {
+                throw new InvalidArgumentException(
+                    'Unable to create file extension from "' . $identifier->value . '"',
+                    previous: $e,
+                );
+            }
+        }
+
+        try {
+            $extension = self::from(strtolower($identifier));
+        } catch (Error) {
+            try {
+                $extension = MediaType::from(strtolower($identifier))->fileExtension();
+            } catch (Error | NotSupportedException) {
+                throw new InvalidArgumentException('Unable to create file extension from "' . $identifier . '"');
+            }
+        }
+
+        return $extension;
+    }
+
+    /**
+     * Try to create media type from given identifier and return null on failure.
+     */
+    public static function tryCreate(string|self|Format|MediaType $identifier): ?self
+    {
+        try {
+            return self::create($identifier);
+        } catch (InvalidArgumentException) {
+            return null;
+        }
+    }
+
+    /**
+     * Return the matching format for the current file extension.
      */
     public function format(): Format
     {
         return match ($this) {
             self::JPEG,
-            self::JPG => Format::JPEG,
+            self::JPG,
+            self::PJPEG,
+            self::PJPG => Format::JPEG,
             self::WEBP => Format::WEBP,
             self::GIF => Format::GIF,
             self::PNG => Format::PNG,
@@ -44,6 +111,7 @@ enum FileExtension: string
             self::TIF,
             self::TIFF => Format::TIFF,
             self::JP2,
+            self::JP2K,
             self::J2K,
             self::JPF,
             self::JPM,
@@ -53,6 +121,28 @@ enum FileExtension: string
             self::JPX => Format::JP2,
             self::HEIC,
             self::HEIF => Format::HEIC,
+            self::JXL => Format::JXL,
+            self::ICO => Format::ICO,
         };
+    }
+
+    /**
+     * Return media types for the current file extension.
+     *
+     * @return array<MediaType>
+     */
+    public function mediaTypes(): array
+    {
+        return $this->format()->mediaTypes();
+    }
+
+    /**
+     * Return the first found media type for the current file extension.
+     *
+     * @throws NotSupportedException
+     */
+    public function mediaType(): MediaType
+    {
+        return $this->format()->mediaType();
     }
 }

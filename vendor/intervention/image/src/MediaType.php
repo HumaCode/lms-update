@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Intervention\Image;
 
+use Error;
+use Intervention\Image\Exceptions\InvalidArgumentException;
+use Intervention\Image\Exceptions\NotSupportedException;
+
 enum MediaType: string
 {
     case IMAGE_JPEG = 'image/jpeg';
@@ -25,18 +29,80 @@ enum MediaType: string
     case IMAGE_X_WINDOWS_BMP = 'image/x-windows-bmp';
     case IMAGE_X_WIN_BITMAP = 'image/x-win-bitmap';
     case IMAGE_X_XBITMAP = 'image/x-xbitmap';
+    case IMAGE_X_BMP3 = 'image/x-bmp3';
     case IMAGE_TIFF = 'image/tiff';
     case IMAGE_JP2 = 'image/jp2';
+    case IMAGE_X_JP2_CODESTREAM = 'image/x-jp2-codestream';
     case IMAGE_JPX = 'image/jpx';
     case IMAGE_JPM = 'image/jpm';
     case IMAGE_HEIC = 'image/heic';
     case IMAGE_X_HEIC = 'image/x-heic';
     case IMAGE_HEIF = 'image/heif';
+    case IMAGE_JXL = 'image/jxl';
+    case IMAGE_X_JXL = 'image/x-jxl';
+    case IMAGE_X_ICON = 'image/x-icon';
+    case IMAGE_VND_MICROSOFT_ICON = 'image/vnd.microsoft.icon';
 
     /**
-     * Return the matching format for the current media (MIME) type
+     * Create media type from given identifier.
      *
-     * @return Format
+     * @throws InvalidArgumentException
+     */
+    public static function create(string|self|Format|FileExtension $identifier): self
+    {
+        if ($identifier instanceof self) {
+            return $identifier;
+        }
+
+        if ($identifier instanceof Format) {
+            try {
+                return $identifier->mediaType();
+            } catch (NotSupportedException $e) {
+                throw new InvalidArgumentException(
+                    'Unable to create media type from ' . $identifier::class,
+                    previous: $e,
+                );
+            }
+        }
+
+        if ($identifier instanceof FileExtension) {
+            try {
+                return $identifier->mediaType();
+            } catch (NotSupportedException $e) {
+                throw new InvalidArgumentException(
+                    'Unable to create media type from "' . $identifier->value . '"',
+                    previous: $e,
+                );
+            }
+        }
+
+        try {
+            $type = self::from(strtolower($identifier));
+        } catch (Error) {
+            try {
+                $type = FileExtension::from(strtolower($identifier))->mediaType();
+            } catch (Error | NotSupportedException) {
+                throw new InvalidArgumentException('Unable to create media type from "' . $identifier . '"');
+            }
+        }
+
+        return $type;
+    }
+
+    /**
+     * Try to create media type from given identifier and return null on failure.
+     */
+    public static function tryCreate(string|self|Format|FileExtension $identifier): ?self
+    {
+        try {
+            return self::create($identifier);
+        } catch (InvalidArgumentException) {
+            return null;
+        }
+    }
+
+    /**
+     * Return the matching format for the current media (MIME) type.
      */
     public function format(): Format
     {
@@ -59,14 +125,40 @@ enum MediaType: string
             self::IMAGE_X_MS_BMP,
             self::IMAGE_X_XBITMAP,
             self::IMAGE_X_WINDOWS_BMP,
+            self::IMAGE_X_BMP3,
             self::IMAGE_X_WIN_BITMAP => Format::BMP,
             self::IMAGE_TIFF => Format::TIFF,
             self::IMAGE_JP2,
             self::IMAGE_JPX,
+            self::IMAGE_X_JP2_CODESTREAM,
             self::IMAGE_JPM => Format::JP2,
             self::IMAGE_HEIF,
             self::IMAGE_HEIC,
             self::IMAGE_X_HEIC => Format::HEIC,
+            self::IMAGE_JXL,
+            self::IMAGE_X_JXL => Format::JXL,
+            self::IMAGE_X_ICON,
+            self::IMAGE_VND_MICROSOFT_ICON => Format::ICO,
         };
+    }
+
+    /**
+     * Return the possible file extension for the current media type.
+     *
+     * @return array<FileExtension>
+     */
+    public function fileExtensions(): array
+    {
+        return $this->format()->fileExtensions();
+    }
+
+    /**
+     * Return the first file extension for the current media type.
+     *
+     * @throws NotSupportedException
+     */
+    public function fileExtension(): FileExtension
+    {
+        return $this->format()->fileExtension();
     }
 }

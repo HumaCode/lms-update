@@ -8,14 +8,15 @@ use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Auth\Middleware\RedirectIfAuthenticated;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Http\Middleware\PreventRequestsDuringMaintenance;
 use Illuminate\Foundation\Http\Middleware\TrimStrings;
-use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Http\Middleware\TrustHosts;
 use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Routing\Middleware\ValidateSignature;
 use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 
 class Middleware
 {
@@ -144,6 +145,20 @@ class Middleware
      * @var array
      */
     protected $priority = [];
+
+    /**
+     * The middleware to prepend to the middleware priority definition.
+     *
+     * @var array
+     */
+    protected $prependPriority = [];
+
+    /**
+     * The middleware to append to the middleware priority definition.
+     *
+     * @var array
+     */
+    protected $appendPriority = [];
 
     /**
      * Prepend middleware to the application's global middleware stack.
@@ -401,6 +416,34 @@ class Middleware
     }
 
     /**
+     * Prepend middleware to the priority middleware.
+     *
+     * @param  array|string  $before
+     * @param  string  $prepend
+     * @return $this
+     */
+    public function prependToPriorityList($before, $prepend)
+    {
+        $this->prependPriority[$prepend] = $before;
+
+        return $this;
+    }
+
+    /**
+     * Append middleware to the priority middleware.
+     *
+     * @param  array|string  $after
+     * @param  string  $append
+     * @return $this
+     */
+    public function appendToPriorityList($after, $append)
+    {
+        $this->appendPriority[$append] = $after;
+
+        return $this;
+    }
+
+    /**
      * Get the global middleware.
      *
      * @return array
@@ -408,6 +451,7 @@ class Middleware
     public function getGlobalMiddleware()
     {
         $middleware = $this->global ?: array_values(array_filter([
+            \Illuminate\Http\Middleware\ValidatePathEncoding::class,
             \Illuminate\Foundation\Http\Middleware\InvokeDeferredCallbacks::class,
             $this->trustHosts ? \Illuminate\Http\Middleware\TrustHosts::class : null,
             \Illuminate\Http\Middleware\TrustProxies::class,
@@ -443,7 +487,7 @@ class Middleware
                 \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
                 \Illuminate\Session\Middleware\StartSession::class,
                 \Illuminate\View\Middleware\ShareErrorsFromSession::class,
-                \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
+                \Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class,
                 \Illuminate\Routing\Middleware\SubstituteBindings::class,
                 $this->authenticatedSessions ? 'auth.session' : null,
             ])),
@@ -489,11 +533,15 @@ class Middleware
     /**
      * Configure where guests are redirected by the "auth" middleware.
      *
-     * @param  callable|string  $redirect
+     * @param  callable|string|null  $redirect
      * @return $this
      */
-    public function redirectGuestsTo(callable|string $redirect)
+    public function redirectGuestsTo(callable|string|null $redirect)
     {
+        if (is_null($redirect)) {
+            $redirect = fn () => null;
+        }
+
         return $this->redirectTo(guests: $redirect);
     }
 
@@ -511,8 +559,8 @@ class Middleware
     /**
      * Configure where users are redirected by the authentication and guest middleware.
      *
-     * @param  callable|string  $guests
-     * @param  callable|string  $users
+     * @param  callable|string|null  $guests
+     * @param  callable|string|null  $users
      * @return $this
      */
     public function redirectTo(callable|string|null $guests = null, callable|string|null $users = null)
@@ -547,16 +595,36 @@ class Middleware
     }
 
     /**
+     * Configure the request forgery prevention middleware.
+     *
+     * @param  array  $except
+     * @param  bool  $originOnly
+     * @param  bool  $allowSameSite
+     * @return $this
+     */
+    public function preventRequestForgery(array $except = [], bool $originOnly = false, bool $allowSameSite = false)
+    {
+        if (! empty($except)) {
+            PreventRequestForgery::except($except);
+        }
+
+        PreventRequestForgery::useOriginOnly($originOnly);
+        PreventRequestForgery::allowSameSite($allowSameSite);
+
+        return $this;
+    }
+
+    /**
      * Configure the CSRF token validation middleware.
+     *
+     * @deprecated Use preventRequestForgery() instead.
      *
      * @param  array  $except
      * @return $this
      */
     public function validateCsrfTokens(array $except = [])
     {
-        ValidateCsrfToken::except($except);
-
-        return $this;
+        return $this->preventRequestForgery($except);
     }
 
     /**
@@ -580,7 +648,7 @@ class Middleware
      */
     public function convertEmptyStringsToNull(array $except = [])
     {
-        collect($except)->each(fn (Closure $callback) => ConvertEmptyStringsToNull::skipWhen($callback));
+        (new Collection($except))->each(fn (Closure $callback) => ConvertEmptyStringsToNull::skipWhen($callback));
 
         return $this;
     }
@@ -593,7 +661,7 @@ class Middleware
      */
     public function trimStrings(array $except = [])
     {
-        [$skipWhen, $except] = collect($except)->partition(fn ($value) => $value instanceof Closure);
+        [$skipWhen, $except] = (new Collection($except))->partition(fn ($value) => $value instanceof Closure);
 
         $skipWhen->each(fn (Closure $callback) => TrimStrings::skipWhen($callback));
 
@@ -765,5 +833,25 @@ class Middleware
     public function getMiddlewarePriority()
     {
         return $this->priority;
+    }
+
+    /**
+     * Get the middleware to prepend to the middleware priority definition.
+     *
+     * @return array
+     */
+    public function getMiddlewarePriorityPrepends()
+    {
+        return $this->prependPriority;
+    }
+
+    /**
+     * Get the middleware to append to the middleware priority definition.
+     *
+     * @return array
+     */
+    public function getMiddlewarePriorityAppends()
+    {
+        return $this->appendPriority;
     }
 }

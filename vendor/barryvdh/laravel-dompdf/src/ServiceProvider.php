@@ -44,6 +44,10 @@ class ServiceProvider extends IlluminateServiceProvider
                 $options = $app['config']->get('dompdf.options');
             }
 
+            if ($app['config']->get('dompdf.pdfa.enabled')) {
+                $options['isPdfAEnabled'] = true;
+            }
+
             return $options;
         });
 

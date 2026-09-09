@@ -22,7 +22,11 @@ class PaymentGatewaySettingServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        $paymentGatewaySetting = $this->app->make(PaymentGatewaySettingService::class);
-        $paymentGatewaySetting->setGlobalSettings();
+        try {
+            $paymentGatewaySetting = $this->app->make(PaymentGatewaySettingService::class);
+            $paymentGatewaySetting->setGlobalSettings();
+        } catch (\Throwable $th) {
+            // Ignored when database is not yet migrated or connected
+        }
     }
 }

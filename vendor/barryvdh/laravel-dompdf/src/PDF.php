@@ -23,19 +23,19 @@ use Symfony\Component\HttpFoundation\HeaderUtils;
  * @method PDF setBaseHost(string $baseHost)
  * @method PDF setBasePath(string $basePath)
  * @method PDF setCanvas(\Dompdf\Canvas $canvas)
- * @method PDF setCallbacks(array $callbacks)
+ * @method PDF setCallbacks(array<string, mixed> $callbacks)
  * @method PDF setCss(\Dompdf\Css\Stylesheet $css)
- * @method PDF setDefaultView(string $defaultView, array $options)
+ * @method PDF setDefaultView(string $defaultView, array<string, mixed> $options)
  * @method PDF setDom(\DOMDocument $dom)
  * @method PDF setFontMetrics(\Dompdf\FontMetrics $fontMetrics)
- * @method PDF setHttpContext(resource|array $httpContext)
+ * @method PDF setHttpContext(resource|array<string, mixed> $httpContext)
  * @method PDF setPaper(string|float[] $paper, string $orientation = 'portrait')
  * @method PDF setProtocol(string $protocol)
  * @method PDF setTree(\Dompdf\Frame\FrameTree $tree)
  * @method string getBaseHost()
  * @method string getBasePath()
  * @method \Dompdf\Canvas getCanvas()
- * @method array getCallbacks()
+ * @method array<string, mixed> getCallbacks()
  * @method \Dompdf\Css\Stylesheet getCss()
  * @method \DOMDocument getDom()
  * @method \Dompdf\FontMetrics getFontMetrics()
@@ -144,6 +144,34 @@ class PDF
     }
 
     /**
+     * Enable or disable PDF/A-3b compliance.
+     *
+     * PDF/A requires all fonts to be embedded. Core PDF fonts (Helvetica,
+     * Courier, Times) are NOT embedded and will cause validation failures.
+     * Use fonts like DejaVu Sans/Serif instead.
+     *
+     * Requires dompdf >= 3.1.0 and the CPDF backend.
+     */
+    public function setPdfA(bool $enabled = true): self
+    {
+        $this->dompdf->getOptions()->setIsPdfAEnabled($enabled);
+        $this->dompdf->getOptions()->setIsFontSubsettingEnabled($enabled);
+        $this->dompdf->getOptions()->setDefaultFont("DejaVu Sans");
+
+        $font_metrics = $this->dompdf->getFontMetrics();
+        $font_metrics->setFontFamily("courier", $font_metrics->getFamily("DejaVu Sans Mono"));
+        $font_metrics->setFontFamily("fixed", $font_metrics->getFamily("DejaVu Sans Mono"));
+        $font_metrics->setFontFamily("helvetica", $font_metrics->getFamily("DejaVu Sans"));
+        $font_metrics->setFontFamily("monospace", $font_metrics->getFamily("DejaVu Sans Mono"));
+        $font_metrics->setFontFamily("sans-serif", $font_metrics->getFamily("DejaVu Sans"));
+        $font_metrics->setFontFamily("serif", $font_metrics->getFamily("DejaVu Serif"));
+        $font_metrics->setFontFamily("times", $font_metrics->getFamily("DejaVu Serif"));
+        $font_metrics->setFontFamily("times-roman", $font_metrics->getFamily("DejaVu Serif"));
+
+        return $this;
+    }
+
+    /**
      * Set/Change an option (or array of options) in Dompdf
      *
      * @param array<string, mixed>|string $attribute
@@ -193,7 +221,7 @@ class PDF
     /**
      * Save the PDF to a file
      */
-    public function save(string $filename, string $disk = null): self
+    public function save(string $filename, ?string $disk = null): self
     {
         $disk = $disk ?: $this->config->get('dompdf.disk');
 
@@ -257,6 +285,46 @@ class PDF
             }
         }
         $this->rendered = true;
+    }
+
+    /**
+     * Add an embedded file attachment to the PDF (useful for Zugferd/Factur-X).
+     *
+     * Requires PDF/A mode to be enabled and the CPDF backend.
+     */
+    public function addEmbeddedFile(string $filePath, string $name, string $description = '', string $mimeType = 'text/xml'): self
+    {
+        if (!$this->rendered) {
+            $this->render();
+        }
+
+        $canvas = $this->dompdf->getCanvas();
+        if (! $canvas instanceof CPDF) {
+            throw new \RuntimeException('Embedded files are only supported when using CPDF');
+        }
+
+        $canvas->get_cpdf()->addEmbeddedFile($filePath, $name, $description, $mimeType);
+        return $this;
+    }
+
+    /**
+     * Set additional XMP RDF metadata (useful for Zugferd/Factur-X).
+     *
+     * Requires PDF/A mode to be enabled and the CPDF backend.
+     */
+    public function setAdditionalXmpRdf(string $xmpRdf): self
+    {
+        if (!$this->rendered) {
+            $this->render();
+        }
+
+        $canvas = $this->dompdf->getCanvas();
+        if (! $canvas instanceof CPDF) {
+            throw new \RuntimeException('Additional XMP RDF is only supported when using CPDF');
+        }
+
+        $canvas->get_cpdf()->setAdditionalXmpRdf($xmpRdf);
+        return $this;
     }
 
     /** @param array<string> $pc */

@@ -6,10 +6,13 @@ namespace Flasher\Prime\Stamp;
 
 final readonly class PresenterStamp implements StampInterface
 {
+    /**
+     * @throws \InvalidArgumentException
+     */
     public function __construct(private string $pattern)
     {
         if (false === @preg_match($pattern, '')) {
-            throw new \InvalidArgumentException(sprintf("The provided regex pattern '%s' is invalid for the presenter stamp. Please ensure it is a valid regex expression.", $pattern));
+            throw new \InvalidArgumentException(\sprintf("The provided regex pattern '%s' is invalid for the presenter stamp. Please ensure it is a valid regex expression.", $pattern));
         }
     }
 

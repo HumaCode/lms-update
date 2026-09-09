@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Log\Context\Events\ContextDehydrating as Dehydrating;
 use Illuminate\Log\Context\Events\ContextHydrated as Hydrated;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Traits\Conditionable;
 use Illuminate\Support\Traits\Macroable;
 use RuntimeException;
@@ -21,7 +22,7 @@ class Repository
     /**
      * The event dispatcher instance.
      *
-     * @var \Illuminate\Events\Dispatcher
+     * @var \Illuminate\Contracts\Events\Dispatcher
      */
     protected $events;
 
@@ -66,6 +67,17 @@ class Repository
     }
 
     /**
+     * Determine if the given key is missing.
+     *
+     * @param  string  $key
+     * @return bool
+     */
+    public function missing($key)
+    {
+        return ! $this->has($key);
+    }
+
+    /**
      * Determine if the given key exists within the hidden context data.
      *
      * @param  string  $key
@@ -74,6 +86,17 @@ class Repository
     public function hasHidden($key)
     {
         return array_key_exists($key, $this->hidden);
+    }
+
+    /**
+     * Determine if the given key is missing within the hidden context data.
+     *
+     * @param  string  $key
+     * @return bool
+     */
+    public function missingHidden($key)
+    {
+        return ! $this->hasHidden($key);
     }
 
     /**
@@ -171,6 +194,28 @@ class Repository
     }
 
     /**
+     * Retrieve all values except those with the given keys.
+     *
+     * @param  array<int, string>  $keys
+     * @return array<string, mixed>
+     */
+    public function except($keys)
+    {
+        return array_diff_key($this->data, array_flip($keys));
+    }
+
+    /**
+     * Retrieve all hidden values except those with the given keys.
+     *
+     * @param  array<int, string>  $keys
+     * @return array<string, mixed>
+     */
+    public function exceptHidden($keys)
+    {
+        return array_diff_key($this->hidden, array_flip($keys));
+    }
+
+    /**
      * Add a context value.
      *
      * @param  string|array<string, mixed>  $key
@@ -202,6 +247,42 @@ class Repository
         );
 
         return $this;
+    }
+
+    /**
+     * Add a context value if it does not exist yet, and return the value.
+     *
+     * @param  string  $key
+     * @param  mixed  $value
+     * @return mixed
+     */
+    public function remember($key, $value)
+    {
+        if ($this->has($key)) {
+            return $this->get($key);
+        }
+
+        return tap(value($value), function ($value) use ($key) {
+            $this->add($key, $value);
+        });
+    }
+
+    /**
+     * Add a hidden context value if it does not exist yet, and return the value.
+     *
+     * @param  string  $key
+     * @param  mixed  $value
+     * @return mixed
+     */
+    public function rememberHidden($key, #[\SensitiveParameter] $value)
+    {
+        if ($this->hasHidden($key)) {
+            return $this->getHidden($key);
+        }
+
+        return tap(value($value), function ($value) use ($key) {
+            $this->addHidden($key, $value);
+        });
     }
 
     /**
@@ -290,6 +371,23 @@ class Repository
     }
 
     /**
+     * Pop the latest value from the key's stack.
+     *
+     * @param  string  $key
+     * @return mixed
+     *
+     * @throws \RuntimeException
+     */
+    public function pop($key)
+    {
+        if (! $this->isStackable($key) || ! count($this->data[$key])) {
+            throw new RuntimeException("Unable to pop value from context stack for key [{$key}].");
+        }
+
+        return array_pop($this->data[$key]);
+    }
+
+    /**
      * Push the given hidden values onto the key's stack.
      *
      * @param  string  $key
@@ -313,6 +411,52 @@ class Repository
     }
 
     /**
+     * Pop the latest hidden value from the key's stack.
+     *
+     * @param  string  $key
+     * @return mixed
+     *
+     * @throws \RuntimeException
+     */
+    public function popHidden($key)
+    {
+        if (! $this->isHiddenStackable($key) || ! count($this->hidden[$key])) {
+            throw new RuntimeException("Unable to pop value from hidden context stack for key [{$key}].");
+        }
+
+        return array_pop($this->hidden[$key]);
+    }
+
+    /**
+     * Increment a context counter.
+     *
+     * @param  string  $key
+     * @param  int  $amount
+     * @return $this
+     */
+    public function increment(string $key, int $amount = 1)
+    {
+        $this->add(
+            $key,
+            (int) $this->get($key, 0) + $amount,
+        );
+
+        return $this;
+    }
+
+    /**
+     * Decrement a context counter.
+     *
+     * @param  string  $key
+     * @param  int  $amount
+     * @return $this
+     */
+    public function decrement(string $key, int $amount = 1)
+    {
+        return $this->increment($key, $amount * -1);
+    }
+
+    /**
      * Determine if the given value is in the given stack.
      *
      * @param  string  $key
@@ -333,7 +477,7 @@ class Repository
         }
 
         if ($value instanceof Closure) {
-            return collect($this->data[$key])->contains($value);
+            return (new Collection($this->data[$key]))->contains($value);
         }
 
         return in_array($value, $this->data[$key], $strict);
@@ -360,7 +504,7 @@ class Repository
         }
 
         if ($value instanceof Closure) {
-            return collect($this->hidden[$key])->contains($value);
+            return (new Collection($this->hidden[$key]))->contains($value);
         }
 
         return in_array($value, $this->hidden[$key], $strict);
@@ -391,6 +535,39 @@ class Repository
     }
 
     /**
+     * @template TReturn of mixed
+     *
+     * Run the callback function with the given context values and restore the original context state when complete.
+     *
+     * @param  (callable(): TReturn)  $callback
+     * @param  array<string, mixed>  $data
+     * @param  array<string, mixed>  $hidden
+     * @return TReturn
+     *
+     * @throws \Throwable
+     */
+    public function scope(callable $callback, array $data = [], array $hidden = [])
+    {
+        $dataBefore = $this->data;
+        $hiddenBefore = $this->hidden;
+
+        if ($data !== []) {
+            $this->add($data);
+        }
+
+        if ($hidden !== []) {
+            $this->addHidden($hidden);
+        }
+
+        try {
+            return $callback();
+        } finally {
+            $this->data = $dataBefore;
+            $this->hidden = $hiddenBefore;
+        }
+    }
+
+    /**
      * Determine if the repository is empty.
      *
      * @return bool
@@ -403,7 +580,7 @@ class Repository
     /**
      * Execute the given callback when context is about to be dehydrated.
      *
-     * @param  callable  $callback
+     * @param  (callable(static): void)  $callback
      * @return $this
      */
     public function dehydrating($callback)
@@ -416,7 +593,7 @@ class Repository
     /**
      * Execute the given callback when context has been hydrated.
      *
-     * @param  callable  $callback
+     * @param  (callable(static): void)  $callback
      * @return $this
      */
     public function hydrated($callback)
@@ -430,7 +607,7 @@ class Repository
      * Handle unserialize exceptions using the given callback.
      *
      * @param  callable|null  $callback
-     * @return static
+     * @return $this
      */
     public function handleUnserializeExceptionsUsing($callback)
     {
@@ -512,8 +689,8 @@ class Repository
         };
 
         [$data, $hidden] = [
-            collect($context['data'] ?? [])->map(fn ($value, $key) => $unserialize($value, $key, false))->all(),
-            collect($context['hidden'] ?? [])->map(fn ($value, $key) => $unserialize($value, $key, true))->all(),
+            (new Collection($context['data'] ?? []))->map(fn ($value, $key) => $unserialize($value, $key, false))->all(),
+            (new Collection($context['hidden'] ?? []))->map(fn ($value, $key) => $unserialize($value, $key, true))->all(),
         ];
 
         $this->events->dispatch(new Hydrated(

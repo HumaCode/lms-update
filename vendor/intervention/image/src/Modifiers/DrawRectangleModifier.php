@@ -10,21 +10,17 @@ use Intervention\Image\Interfaces\DrawableInterface;
 class DrawRectangleModifier extends AbstractDrawModifier
 {
     /**
-     *
-     * Create new modifier object
-     * @param Rectangle $drawable
-     * @return void
+     * Create new modifier object.
      */
     public function __construct(public Rectangle $drawable)
     {
+        //
     }
 
     /**
-     * Return object to be drawn
-     *
-     * @return DrawableInterface
+     * Return object to be drawn.
      */
-    public function drawable(): DrawableInterface
+    protected function drawable(): DrawableInterface
     {
         return $this->drawable;
     }

@@ -11,9 +11,13 @@ class DrawEllipseModifier extends AbstractDrawModifier
 {
     public function __construct(public Ellipse $drawable)
     {
+        //
     }
 
-    public function drawable(): DrawableInterface
+    /**
+     * Return object to be drawn.
+     */
+    protected function drawable(): DrawableInterface
     {
         return $this->drawable;
     }

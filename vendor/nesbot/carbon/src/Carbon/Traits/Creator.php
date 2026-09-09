@@ -50,7 +50,7 @@ trait Creator
     /**
      * The errors that can occur.
      */
-    protected static ?array $lastErrors = null;
+    protected static array|bool $lastErrors = false;
 
     /**
      * Create a new Carbon instance.
@@ -146,7 +146,8 @@ trait Creator
             return clone $date;
         }
 
-        $instance = new static($date->format('Y-m-d H:i:s.u'), $date->getTimezone());
+        $instance = parent::createFromFormat('U.u', $date->format('U.u'))
+            ->setTimezone($date->getTimezone());
 
         if ($date instanceof CarbonInterface) {
             $settings = $date->getSettings();
@@ -235,7 +236,9 @@ trait Creator
         ?string $locale = null,
         DateTimeZone|string|int|null $timezone = null,
     ): static {
-        return static::rawParse(static::translateTimeString($time, $locale, static::DEFAULT_LOCALE), $timezone);
+        $text = static::translateTimeString($time, $locale, static::DEFAULT_LOCALE);
+
+        return static::rawParse(str_replace("'", '', $text), $timezone);
     }
 
     /**
@@ -318,7 +321,7 @@ trait Creator
      *
      * @return static|null
      */
-    public static function create($year = 0, $month = 1, $day = 1, $hour = 0, $minute = 0, $second = 0, $timezone = null): ?self
+    public static function create($year = 0, $month = 1, $day = 1, $hour = 0, $minute = 0, $second = 0, $timezone = null): ?static
     {
         $month = self::monthToInt($month);
 
@@ -404,7 +407,7 @@ trait Creator
      *
      * @return static|null
      */
-    public static function createSafe($year = null, $month = null, $day = null, $hour = null, $minute = null, $second = null, $timezone = null): ?self
+    public static function createSafe($year = null, $month = null, $day = null, $hour = null, $minute = null, $second = null, $timezone = null): ?static
     {
         $month = self::monthToInt($month);
         $fields = static::getRangesByUnit();
@@ -562,7 +565,7 @@ trait Creator
      *
      * @return static|null
      */
-    public static function rawCreateFromFormat(string $format, string $time, $timezone = null): ?self
+    public static function rawCreateFromFormat(string $format, string $time, $timezone = null): ?static
     {
         // Work-around for https://bugs.php.net/bug.php?id=80141
         $format = preg_replace('/(?<!\\\\)((?:\\\\{2})*)c/', '$1Y-m-d\TH:i:sP', $format);
@@ -639,7 +642,7 @@ trait Creator
      * @return static|null
      */
     #[ReturnTypeWillChange]
-    public static function createFromFormat($format, $time, $timezone = null): ?self
+    public static function createFromFormat($format, $time, $timezone = null): ?static
     {
         $function = static::$createFromFormatFunction;
 
@@ -650,7 +653,7 @@ trait Creator
 
         if (!\is_string($time)) {
             @trigger_error(
-                'createFromFormat() will only accept string or integer for 1-letter format representing a numeric unit int next version',
+                'createFromFormat() $time parameter will only accept string or integer for 1-letter format representing a numeric unit in the next version',
                 \E_USER_DEPRECATED,
             );
             $time = (string) $time;
@@ -684,9 +687,9 @@ trait Creator
         string $format,
         string $time,
         $timezone = null,
-        ?string $locale = self::DEFAULT_LOCALE,
+        ?string $locale = CarbonInterface::DEFAULT_LOCALE,
         ?TranslatorInterface $translator = null
-    ): ?self {
+    ): ?static {
         $format = preg_replace_callback('/(?<!\\\\)(\\\\{2})*(LTS|LT|[Ll]{1,4})/', function ($match) use ($locale, $translator) {
             [$code] = $match;
 
@@ -824,7 +827,7 @@ trait Creator
      *
      * @return static|null
      */
-    public static function createFromLocaleFormat(string $format, string $locale, string $time, $timezone = null): ?self
+    public static function createFromLocaleFormat(string $format, string $locale, string $time, $timezone = null): ?static
     {
         $format = preg_replace_callback(
             '/(?:\\\\[a-zA-Z]|[bfkqCEJKQRV]){2,}/',
@@ -854,7 +857,7 @@ trait Creator
      *
      * @return static|null
      */
-    public static function createFromLocaleIsoFormat(string $format, string $locale, string $time, $timezone = null): ?self
+    public static function createFromLocaleIsoFormat(string $format, string $locale, string $time, $timezone = null): ?static
     {
         $time = static::translateTimeString($time, $locale, static::DEFAULT_LOCALE, CarbonInterface::TRANSLATE_MONTHS | CarbonInterface::TRANSLATE_DAYS | CarbonInterface::TRANSLATE_MERIDIEM);
 
@@ -873,7 +876,7 @@ trait Creator
      *
      * @return static|null
      */
-    public static function make($var, DateTimeZone|string|null $timezone = null): ?self
+    public static function make($var, DateTimeZone|string|null $timezone = null): ?static
     {
         if ($var instanceof DateTimeInterface) {
             return static::instance($var);
@@ -904,14 +907,7 @@ trait Creator
      */
     private static function setLastErrors($lastErrors): void
     {
-        if (\is_array($lastErrors) || $lastErrors === false) {
-            static::$lastErrors = \is_array($lastErrors) ? $lastErrors : [
-                'warning_count' => 0,
-                'warnings' => [],
-                'error_count' => 0,
-                'errors' => [],
-            ];
-        }
+        static::$lastErrors = $lastErrors;
     }
 
     /**
@@ -919,7 +915,7 @@ trait Creator
      */
     public static function getLastErrors(): array|false
     {
-        return static::$lastErrors ?? false;
+        return static::$lastErrors;
     }
 
     private static function monthToInt(mixed $value, string $unit = 'month'): mixed

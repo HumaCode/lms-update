@@ -8,18 +8,10 @@ use Flasher\Prime\EventDispatcher\Event\NotificationEvents;
 use Flasher\Prime\Notification\NotificationInterface;
 use PHPUnit\Framework\Constraint\Constraint;
 
-/**
- * Checks for the existence of a notification with specified details.
- */
 final class Notification extends Constraint
 {
     /**
-     * Constructor to initialize notification expectations.
-     *
-     * @param string               $expectedType    expected type of the notification
-     * @param string|null          $expectedMessage expected message content
-     * @param array<string, mixed> $expectedOptions expected options array
-     * @param string|null          $expectedTitle   expected title of the notification
+     * @param array<string, mixed> $expectedOptions
      */
     public function __construct(
         private readonly string $expectedType,
@@ -32,15 +24,15 @@ final class Notification extends Constraint
     public function toString(): string
     {
         $details = [
-            sprintf('type: "%s"', $this->expectedType),
+            \sprintf('type: "%s"', $this->expectedType),
         ];
 
         if (null !== $this->expectedMessage) {
-            $details[] = sprintf('message: "%s"', $this->expectedMessage);
+            $details[] = \sprintf('message: "%s"', $this->expectedMessage);
         }
 
         if (null !== $this->expectedTitle) {
-            $details[] = sprintf('title: "%s"', $this->expectedTitle);
+            $details[] = \sprintf('title: "%s"', $this->expectedTitle);
         }
 
         if (!empty($this->expectedOptions)) {
@@ -50,16 +42,13 @@ final class Notification extends Constraint
         return 'contains a notification with '.implode(', ', $details);
     }
 
-    /**
-     * @param NotificationEvents|mixed $other
-     */
     protected function matches(mixed $other): bool
     {
         if (!$other instanceof NotificationEvents) {
             return false;
         }
 
-        foreach ($other->getNotifications() as $notification) {
+        foreach ($other->getEnvelopes() as $notification) {
             if ($this->isNotificationMatching($notification)) {
                 return true;
             }
@@ -82,20 +71,20 @@ final class Notification extends Constraint
     protected function failureDescription(mixed $other): string
     {
         $foundNotifications = array_map(function (NotificationInterface $notification) {
-            return sprintf(
+            return \sprintf(
                 'type: "%s", title: "%s", message: "%s", options: [%s]',
                 $notification->getType(),
                 $notification->getTitle(),
                 $notification->getMessage(),
                 json_encode($notification->getOptions()),
             );
-        }, $other->getNotifications());
+        }, $other->getEnvelopes());
 
         if (empty($foundNotifications)) {
             $foundNotifications[] = 'No notifications found';
         }
 
-        return sprintf(
+        return \sprintf(
             'Failed asserting that NotificationEvents %s. Found: [%s].',
             $this->toString(),
             implode('; ', $foundNotifications)

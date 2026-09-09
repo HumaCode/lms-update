@@ -1,3 +1,8 @@
+/**
+ * @package PHPFlasher
+ * @author Younes ENNAJI
+ * @license MIT
+ */
 import flasher from '@flasher/flasher';
 
 class AbstractPlugin {
@@ -14,32 +19,66 @@ class AbstractPlugin {
     this.flash('warning', message, title, options);
   }
   flash(type, message, title, options) {
+    let normalizedType;
+    let normalizedMessage;
+    let normalizedTitle;
+    let normalizedOptions = {};
     if (typeof type === 'object') {
-      options = type;
-      type = options.type;
-      message = options.message;
-      title = options.title;
+      normalizedOptions = Object.assign({}, type);
+      normalizedType = normalizedOptions.type;
+      normalizedMessage = normalizedOptions.message;
+      normalizedTitle = normalizedOptions.title;
+      delete normalizedOptions.type;
+      delete normalizedOptions.message;
+      delete normalizedOptions.title;
     } else if (typeof message === 'object') {
-      options = message;
-      message = options.message;
-      title = options.title;
-    } else if (typeof title === 'object') {
-      options = title;
-      title = options.title;
+      normalizedOptions = Object.assign({}, message);
+      normalizedType = type;
+      normalizedMessage = normalizedOptions.message;
+      normalizedTitle = normalizedOptions.title;
+      delete normalizedOptions.message;
+      delete normalizedOptions.title;
+    } else {
+      normalizedType = type;
+      normalizedMessage = message;
+      if (title === undefined || title === null) {
+        normalizedTitle = undefined;
+        normalizedOptions = options || {};
+      } else if (typeof title === 'string') {
+        normalizedTitle = title;
+        normalizedOptions = options || {};
+      } else if (typeof title === 'object') {
+        normalizedOptions = Object.assign({}, title);
+        if ('title' in normalizedOptions) {
+          normalizedTitle = normalizedOptions.title;
+          delete normalizedOptions.title;
+        } else {
+          normalizedTitle = undefined;
+        }
+        if (options && typeof options === 'object') {
+          normalizedOptions = Object.assign(Object.assign({}, normalizedOptions), options);
+        }
+      }
     }
-    if (undefined === message) {
-      throw new Error('message option is required');
+    if (!normalizedType) {
+      throw new Error('Type is required for notifications');
+    }
+    if (normalizedMessage === undefined || normalizedMessage === null) {
+      throw new Error('Message is required for notifications');
+    }
+    if (normalizedTitle === undefined || normalizedTitle === null) {
+      normalizedTitle = normalizedType.charAt(0).toUpperCase() + normalizedType.slice(1);
     }
     const envelope = {
-      type,
-      message,
-      title: title || type,
-      options: options || {},
+      type: normalizedType,
+      message: normalizedMessage,
+      title: normalizedTitle,
+      options: normalizedOptions,
       metadata: {
         plugin: ''
       }
     };
-    this.renderOptions(options || {});
+    this.renderOptions({});
     this.renderEnvelopes([envelope]);
   }
 }
@@ -469,18 +508,46 @@ var Notyf = function () {
 
 class NotyfPlugin extends AbstractPlugin {
     renderEnvelopes(envelopes) {
+        if (!this.notyf) {
+            this.initializeNotyf();
+        }
         envelopes.forEach((envelope) => {
             var _a;
-            const options = Object.assign(Object.assign({}, envelope), envelope.options);
-            (_a = this.notyf) === null || _a === void 0 ? void 0 : _a.open(options);
+            try {
+                const options = Object.assign(Object.assign({}, envelope), envelope.options);
+                const notification = (_a = this.notyf) === null || _a === void 0 ? void 0 : _a.open(options);
+                if (notification) {
+                    this.attachEventListeners(notification, envelope);
+                }
+            }
+            catch (error) {
+                console.error('PHPFlasher Notyf: Error rendering notification', error, envelope);
+            }
         });
-        this.notyf.view.container.dataset.turboTemporary = '';
-        this.notyf.view.a11yContainer.dataset.turboTemporary = '';
+        try {
+            if (this.notyf) {
+                const view = this.notyf.view;
+                const container = view.container;
+                const a11yContainer = view.a11yContainer;
+                if (container && container.dataset) {
+                    container.dataset.turboTemporary = '';
+                }
+                if (a11yContainer && a11yContainer.dataset) {
+                    a11yContainer.dataset.turboTemporary = '';
+                }
+            }
+        }
+        catch (error) {
+            console.error('PHPFlasher Notyf: Error setting Turbo compatibility', error);
+        }
     }
     renderOptions(options) {
-        const nOptions = Object.assign({ duration: options.duration || 5000 }, options);
-        nOptions.types = nOptions.types || [];
-        nOptions.types.push({
+        if (!options) {
+            return;
+        }
+        const notyfOptions = Object.assign({ duration: options.duration || 10000 }, options);
+        notyfOptions.types = notyfOptions.types || [];
+        this.addTypeIfNotExists(notyfOptions.types, {
             type: 'info',
             className: 'notyf__toast--info',
             background: '#5784E5',
@@ -489,7 +556,7 @@ class NotyfPlugin extends AbstractPlugin {
                 tagName: 'i',
             },
         });
-        nOptions.types.push({
+        this.addTypeIfNotExists(notyfOptions.types, {
             type: 'warning',
             className: 'notyf__toast--warning',
             background: '#E3A008',
@@ -498,7 +565,43 @@ class NotyfPlugin extends AbstractPlugin {
                 tagName: 'i',
             },
         });
-        this.notyf = this.notyf || new Notyf(nOptions);
+        this.notyf = this.notyf || new Notyf(notyfOptions);
+    }
+    initializeNotyf() {
+        if (!this.notyf) {
+            this.renderOptions({
+                duration: 10000,
+                position: { x: 'right', y: 'top' },
+                dismissible: true,
+            });
+        }
+    }
+    addTypeIfNotExists(types, newType) {
+        const exists = types.some((type) => type.type === newType.type);
+        if (!exists) {
+            types.push(newType);
+        }
+    }
+    attachEventListeners(notification, envelope) {
+        if (!this.notyf) {
+            return;
+        }
+        const notyf = this.notyf;
+        notyf.on('click', ({ target, event }) => {
+            if (target === notification) {
+                this.dispatchEvent('flasher:notyf:click', envelope, { event });
+            }
+        });
+        notyf.on('dismiss', ({ target, event }) => {
+            if (target === notification) {
+                this.dispatchEvent('flasher:notyf:dismiss', envelope, { event });
+            }
+        });
+    }
+    dispatchEvent(eventName, envelope, extra = {}) {
+        window.dispatchEvent(new CustomEvent(eventName, {
+            detail: Object.assign({ envelope }, extra),
+        }));
     }
 }
 

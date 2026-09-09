@@ -98,6 +98,20 @@ class Vite implements Htmlable
     protected static $manifests = [];
 
     /**
+     * The ViteFonts instance.
+     *
+     * @var \Illuminate\Foundation\ViteFonts|null
+     */
+    protected $fonts = null;
+
+    /**
+     * The name of the font manifest file.
+     *
+     * @var string
+     */
+    protected $fontsManifestFilename = 'fonts-manifest.json';
+
+    /**
      * The prefetching strategy to use.
      *
      * @var null|'waterfall'|'aggressive'
@@ -173,6 +187,20 @@ class Vite implements Htmlable
         $this->entryPoints = $entryPoints;
 
         return $this;
+    }
+
+    /**
+     * Merge additional Vite entry points with the current set.
+     *
+     * @param  array  $entryPoints
+     * @return $this
+     */
+    public function mergeEntryPoints($entryPoints)
+    {
+        return $this->withEntryPoints(array_unique([
+            ...$this->entryPoints,
+            ...$entryPoints,
+        ]));
     }
 
     /**
@@ -355,7 +383,7 @@ class Vite implements Htmlable
      */
     public function __invoke($entrypoints, $buildDirectory = null)
     {
-        $entrypoints = collect($entrypoints);
+        $entrypoints = new Collection($entrypoints);
         $buildDirectory ??= $this->buildDirectory;
 
         if ($this->isRunningHot()) {
@@ -369,8 +397,8 @@ class Vite implements Htmlable
 
         $manifest = $this->manifest($buildDirectory);
 
-        $tags = collect();
-        $preloads = collect();
+        $tags = new Collection;
+        $preloads = new Collection;
 
         foreach ($entrypoints as $entrypoint) {
             $chunk = $this->chunk($manifest, $entrypoint);
@@ -382,7 +410,7 @@ class Vite implements Htmlable
                 $manifest,
             ]);
 
-            foreach ($chunk['imports'] ?? [] as $import) {
+            foreach ($this->resolveImports($manifest, $chunk) as $import) {
                 $preloads->push([
                     $import,
                     $this->assetPath("{$buildDirectory}/{$manifest[$import]['file']}"),
@@ -391,7 +419,7 @@ class Vite implements Htmlable
                 ]);
 
                 foreach ($manifest[$import]['css'] ?? [] as $css) {
-                    $partialManifest = Collection::make($manifest)->where('file', $css);
+                    $partialManifest = (new Collection($manifest))->where('file', $css);
 
                     $preloads->push([
                         $partialManifest->keys()->first(),
@@ -417,7 +445,7 @@ class Vite implements Htmlable
             ));
 
             foreach ($chunk['css'] ?? [] as $css) {
-                $partialManifest = Collection::make($manifest)->where('file', $css);
+                $partialManifest = (new Collection($manifest))->where('file', $css);
 
                 $preloads->push([
                     $partialManifest->keys()->first(),
@@ -449,12 +477,12 @@ class Vite implements Htmlable
 
         $discoveredImports = [];
 
-        return collect($entrypoints)
-            ->flatMap(fn ($entrypoint) => collect($manifest[$entrypoint]['dynamicImports'] ?? [])
+        return (new Collection($entrypoints))
+            ->flatMap(fn ($entrypoint) => (new Collection($manifest[$entrypoint]['dynamicImports'] ?? []))
                 ->map(fn ($import) => $manifest[$import])
                 ->filter(fn ($chunk) => str_ends_with($chunk['file'], '.js') || str_ends_with($chunk['file'], '.css'))
                 ->flatMap($f = function ($chunk) use (&$f, $manifest, &$discoveredImports) {
-                    return collect([...$chunk['imports'] ?? [], ...$chunk['dynamicImports'] ?? []])
+                    return (new Collection([...$chunk['imports'] ?? [], ...$chunk['dynamicImports'] ?? []]))
                         ->reject(function ($import) use (&$discoveredImports) {
                             if (isset($discoveredImports[$import])) {
                                 return true;
@@ -465,15 +493,15 @@ class Vite implements Htmlable
                         ->reduce(
                             fn ($chunks, $import) => $chunks->merge(
                                 $f($manifest[$import])
-                            ), collect([$chunk]))
-                        ->merge(collect($chunk['css'] ?? [])->map(
-                            fn ($css) => collect($manifest)->first(fn ($chunk) => $chunk['file'] === $css) ?? [
+                            ), new Collection([$chunk]))
+                        ->merge((new Collection($chunk['css'] ?? []))->map(
+                            fn ($css) => (new Collection($manifest))->first(fn ($chunk) => $chunk['file'] === $css) ?? [
                                 'file' => $css,
                             ],
                         ));
                 })
                 ->map(function ($chunk) use ($buildDirectory, $manifest) {
-                    return collect([
+                    return (new Collection([
                         ...$this->resolvePreloadTagAttributes(
                             $chunk['src'] ?? null,
                             $url = $this->assetPath("{$buildDirectory}/{$chunk['file']}"),
@@ -483,7 +511,7 @@ class Vite implements Htmlable
                         'rel' => 'prefetch',
                         'fetchpriority' => 'low',
                         'href' => $url,
-                    ])->reject(
+                    ]))->reject(
                         fn ($value) => in_array($value, [null, false], true)
                     )->mapWithKeys(fn ($value, $key) => [
                         $key = (is_int($key) ? $value : $key) => $value === true ? $key : $value,
@@ -525,7 +553,7 @@ class Vite implements Htmlable
 
                                     if (assets.length) {
                                         link.onload = () => loadNext(assets, 1)
-                                        link.error = () => loadNext(assets, 1)
+                                        link.onerror = () => loadNext(assets, 1)
                                     }
                                 }
 
@@ -550,7 +578,7 @@ class Vite implements Htmlable
                                 return link
                             }
 
-                            const fragment = new DocumentFragment
+                            const fragment = new DocumentFragment;
                             {$assets}.forEach((asset) => fragment.append(makeLink(asset)))
                             document.head.append(fragment)
                          }))
@@ -610,7 +638,7 @@ class Vite implements Htmlable
         }
 
         $this->preloadedAssets[$url] = $this->parseAttributes(
-            Collection::make($attributes)->forget('href')->all()
+            (new Collection($attributes))->forget('href')->all()
         );
 
         return '<link '.implode(' ', $this->parseAttributes($attributes)).' />';
@@ -679,6 +707,7 @@ class Vite implements Htmlable
             'crossorigin' => $this->resolveStylesheetTagAttributes($src, $url, $chunk, $manifest)['crossorigin'] ?? false,
         ] : [
             'rel' => 'modulepreload',
+            'as' => 'script',
             'href' => $url,
             'nonce' => $this->nonce ?? false,
             'crossorigin' => $this->resolveScriptTagAttributes($src, $url, $chunk, $manifest)['crossorigin'] ?? false,
@@ -786,7 +815,7 @@ class Vite implements Htmlable
      */
     protected function isCssPath($path)
     {
-        return preg_match('/\.(css|less|sass|scss|styl|stylus|pcss|postcss)$/', $path) === 1;
+        return preg_match('/\.(css|less|sass|scss|styl|stylus|pcss|postcss)(\?[^\.]*)?$/', $path) === 1;
     }
 
     /**
@@ -797,7 +826,7 @@ class Vite implements Htmlable
      */
     protected function parseAttributes($attributes)
     {
-        return Collection::make($attributes)
+        return (new Collection($attributes))
             ->reject(fn ($value, $key) => in_array($value, [false, null], true))
             ->flatMap(fn ($value, $key) => $value === true ? [$key] : [$key => $value])
             ->map(fn ($value, $key) => is_int($key) ? $value : $key.'="'.$value.'"')
@@ -844,7 +873,21 @@ class Vite implements Htmlable
      */
     protected function hotAsset($asset)
     {
-        return rtrim(file_get_contents($this->hotFile())).'/'.$asset;
+        return $this->devServerUrl().'/'.$asset;
+    }
+
+    /**
+     * Get the URL of the running Vite development server.
+     *
+     * @return string|null
+     */
+    public function devServerUrl()
+    {
+        if (! $this->isRunningHot()) {
+            return null;
+        }
+
+        return rtrim(file_get_contents($this->hotFile()));
     }
 
     /**
@@ -882,7 +925,7 @@ class Vite implements Htmlable
 
         $chunk = $this->chunk($this->manifest($buildDirectory), $asset);
 
-        $path = public_path($buildDirectory.'/'.$chunk['file']);
+        $path = $this->publicPath($buildDirectory.'/'.$chunk['file']);
 
         if (! is_file($path) || ! file_exists($path)) {
             throw new ViteException("Unable to locate file from Vite manifest: {$path}.");
@@ -901,6 +944,17 @@ class Vite implements Htmlable
     protected function assetPath($path, $secure = null)
     {
         return ($this->assetPathResolver ?? asset(...))($path, $secure);
+    }
+
+    /**
+     * Generate a public path for an asset.
+     *
+     * @param  string  $path
+     * @return string
+     */
+    protected function publicPath($path)
+    {
+        return public_path($path);
     }
 
     /**
@@ -959,6 +1013,35 @@ class Vite implements Htmlable
     }
 
     /**
+     * Recursively resolve all imports for the given chunk.
+     *
+     * @param  array  $manifest
+     * @param  array  $chunk
+     * @param  array  $seen
+     * @return array
+     */
+    protected function resolveImports($manifest, $chunk, $seen = [])
+    {
+        $imports = [];
+
+        foreach ($chunk['imports'] ?? [] as $import) {
+            if (isset($seen[$import])) {
+                continue;
+            }
+
+            $seen[$import] = true;
+
+            $imports[] = $import;
+
+            if (isset($manifest[$import])) {
+                $imports = array_merge($imports, $this->resolveImports($manifest, $manifest[$import], $seen));
+            }
+        }
+
+        return $imports;
+    }
+
+    /**
      * Get the chunk for the given entry point / asset.
      *
      * @param  array  $manifest
@@ -991,6 +1074,160 @@ class Vite implements Htmlable
     }
 
     /**
+     * Render font preload links and inline styles.
+     *
+     * @param  list<string>|string|null  $aliases
+     * @return \Illuminate\Support\HtmlString
+     *
+     * @throws \Illuminate\Foundation\ViteException
+     */
+    public function fonts($aliases = null)
+    {
+        $isHot = $this->isRunningHot();
+
+        $fonts = $this->viteFonts();
+
+        $manifest = $fonts->manifest($isHot, $this->buildDirectory, $this->fontsManifestFilename, $this->hotFile());
+
+        if ($manifest === null) {
+            return new HtmlString('');
+        }
+
+        $fonts->ensureValidManifest($manifest);
+
+        $preloads = $manifest['preloads'] ?? [];
+
+        if ($aliases !== null) {
+            $aliases = is_string($aliases)
+                ? [$aliases]
+                : $aliases;
+
+            $fonts->ensureValidFamilies($aliases, $manifest);
+
+            $preloads = array_filter($preloads, fn ($preload) => in_array($preload['alias'] ?? null, $aliases, true));
+        }
+
+        $fonts->ensureValidPreloads($preloads, $isHot);
+
+        $preloadsHtml = $this->renderFontPreloads($preloads);
+        $styleHtml = $this->renderFontStyle($manifest, $aliases);
+
+        return new HtmlString(match (true) {
+            $preloadsHtml !== '' && $styleHtml !== '' => $preloadsHtml."\n".$styleHtml,
+            default => $preloadsHtml.$styleHtml,
+        });
+    }
+
+    /**
+     * Render preload link tags for font entries.
+     *
+     * @param  list<array<string, string>>  $preloads
+     * @return string
+     */
+    protected function renderFontPreloads($preloads)
+    {
+        $tags = [];
+
+        foreach ($preloads as $preload) {
+            $url = $preload['url'] ?? $this->assetPath($this->buildDirectory.'/'.$preload['file']);
+
+            if (isset($this->preloadedAssets[$url])) {
+                continue;
+            }
+
+            $attributes = $this->resolveFontPreloadAttributes($url, $preload);
+
+            if ($attributes === false) {
+                continue;
+            }
+
+            $this->preloadedAssets[$url] = $this->parseAttributes(
+                (new Collection($attributes))->forget('href')->all()
+            );
+
+            $tags[] = '<link '.implode(' ', $this->parseAttributes($attributes)).' />';
+        }
+
+        return implode("\n", $tags);
+    }
+
+    /**
+     * Resolve the attributes for a font preload tag.
+     *
+     * @param  string  $url
+     * @param  array<string, string>  $preload
+     * @return array<string, string|false>|false
+     */
+    protected function resolveFontPreloadAttributes($url, $preload)
+    {
+        $attributes = [
+            'rel' => 'preload',
+            'as' => $preload['as'] ?? 'font',
+            'href' => $url,
+            'type' => $preload['type'] ?? false,
+            'crossorigin' => $preload['crossorigin'] ?? false,
+            'nonce' => $this->nonce ?? false,
+        ];
+
+        foreach ($this->preloadTagAttributesResolvers as $resolver) {
+            if (false === ($resolved = $resolver('fonts', $url, [], []))) {
+                return false;
+            }
+
+            $attributes = array_merge($attributes, $resolved);
+        }
+
+        return $attributes;
+    }
+
+    /**
+     * Render the inline style block for the font manifest.
+     *
+     * @param  array<string, mixed>  $manifest
+     * @param  list<string>|null  $aliases
+     * @return string
+     */
+    protected function renderFontStyle($manifest, $aliases)
+    {
+        $css = $this->viteFonts()->resolveStyleContent($manifest, $aliases, $this->buildDirectory);
+
+        if ($css === '') {
+            return '';
+        }
+
+        $attributes = $this->parseAttributes([
+            'nonce' => $this->nonce ?? false,
+        ]);
+
+        $attributeString = $attributes ? ' '.implode(' ', $attributes) : '';
+
+        return "<style{$attributeString}>\n".trim($css, "\n")."\n</style>";
+    }
+
+    /**
+     * Get the ViteFonts instance.
+     *
+     * @return \Illuminate\Foundation\ViteFonts
+     */
+    protected function viteFonts()
+    {
+        return $this->fonts ??= new ViteFonts;
+    }
+
+    /**
+     * Set the font manifest filename.
+     *
+     * @param  string  $filename
+     * @return $this
+     */
+    public function useFontsManifestFilename($filename)
+    {
+        $this->fontsManifestFilename = $filename;
+
+        return $this;
+    }
+
+    /**
      * Determine if the HMR server is running.
      *
      * @return bool
@@ -1008,5 +1245,19 @@ class Vite implements Htmlable
     public function toHtml()
     {
         return $this->__invoke($this->entryPoints)->toHtml();
+    }
+
+    /**
+     * Flush state.
+     *
+     * @return void
+     */
+    public function flush()
+    {
+        $this->preloadedAssets = [];
+
+        $this->fonts?->flush();
+
+        $this->fonts = null;
     }
 }

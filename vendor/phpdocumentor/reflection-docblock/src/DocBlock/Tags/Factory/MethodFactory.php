@@ -42,11 +42,6 @@ final class MethodFactory implements PHPStanFactory
 
         return new Method(
             $tagValue->methodName,
-            [],
-            $this->createReturnType($tagValue, $context),
-            $tagValue->isStatic,
-            $this->descriptionFactory->create($tagValue->description, $context),
-            false,
             array_map(
                 function (MethodTagValueParameterNode $param) use ($context) {
                     return new MethodParameter(
@@ -57,11 +52,17 @@ final class MethodFactory implements PHPStanFactory
                         ),
                         $param->isReference,
                         $param->isVariadic,
-                        (string) $param->defaultValue
+                        $param->defaultValue === null ?
+                            MethodParameter::NO_DEFAULT_VALUE :
+                            (string) $param->defaultValue
                     );
                 },
                 $tagValue->parameters
             ),
+            $this->createReturnType($tagValue, $context),
+            $tagValue->isStatic,
+            $this->descriptionFactory->create($tagValue->description, $context),
+            false,
         );
     }
 

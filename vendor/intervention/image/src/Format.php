@@ -9,14 +9,18 @@ use Intervention\Image\Encoders\AvifEncoder;
 use Intervention\Image\Encoders\BmpEncoder;
 use Intervention\Image\Encoders\GifEncoder;
 use Intervention\Image\Encoders\HeicEncoder;
+use Intervention\Image\Encoders\IcoEncoder;
 use Intervention\Image\Encoders\Jpeg2000Encoder;
 use Intervention\Image\Encoders\JpegEncoder;
+use Intervention\Image\Encoders\JxlEncoder;
 use Intervention\Image\Encoders\PngEncoder;
 use Intervention\Image\Encoders\TiffEncoder;
 use Intervention\Image\Encoders\WebpEncoder;
+use Intervention\Image\Exceptions\InvalidArgumentException;
 use Intervention\Image\Exceptions\NotSupportedException;
 use Intervention\Image\Interfaces\EncoderInterface;
 use ReflectionClass;
+use ReflectionParameter;
 
 enum Format
 {
@@ -24,18 +28,18 @@ enum Format
     case BMP;
     case GIF;
     case HEIC;
+    case ICO;
     case JP2;
     case JPEG;
+    case JXL;
     case PNG;
     case TIFF;
     case WEBP;
 
     /**
-     * Create format from given identifier
+     * Create format from given identifier.
      *
-     * @param string|Format|MediaType|FileExtension $identifier
-     * @throws NotSupportedException
-     * @return Format
+     * @throws InvalidArgumentException
      */
     public static function create(string|self|MediaType|FileExtension $identifier): self
     {
@@ -57,7 +61,7 @@ enum Format
             try {
                 $format = FileExtension::from(strtolower($identifier))->format();
             } catch (Error) {
-                throw new NotSupportedException('Unable to create format from "' . $identifier . '".');
+                throw new InvalidArgumentException('Unable to create format from "' . $identifier . '"');
             }
         }
 
@@ -65,7 +69,7 @@ enum Format
     }
 
     /**
-     * Try to create format from given identifier and return null on failure
+     * Try to create format from given identifier and return null on failure.
      *
      * @param string|Format|MediaType|FileExtension $identifier
      * @return Format|null
@@ -74,40 +78,75 @@ enum Format
     {
         try {
             return self::create($identifier);
-        } catch (NotSupportedException) {
+        } catch (InvalidArgumentException) {
             return null;
         }
     }
 
     /**
-     * Return the possible media (MIME) types for the current format
+     * Return the possible media (MIME) types for the current format.
      *
      * @return array<MediaType>
      */
     public function mediaTypes(): array
     {
-        return array_filter(MediaType::cases(), function ($mediaType) {
-            return $mediaType->format() === $this;
-        });
+        return array_filter(
+            MediaType::cases(),
+            fn(MediaType $mediaType): bool => $mediaType->format() === $this,
+        );
     }
 
     /**
-     * Return the possible file extension for the current format
+     * Return the first found media type for the current format.
+     *
+     * @throws NotSupportedException
+     */
+    public function mediaType(): MediaType
+    {
+        $types = $this->mediaTypes();
+
+        $result = reset($types);
+
+        if (!$result instanceof MediaType) {
+            throw new NotSupportedException('Unable to retrieve unsupported media type from format');
+        }
+
+        return $result;
+    }
+
+    /**
+     * Return the possible file extension for the current format.
      *
      * @return array<FileExtension>
      */
     public function fileExtensions(): array
     {
-        return array_filter(FileExtension::cases(), function ($fileExtension) {
-            return $fileExtension->format() === $this;
-        });
+        return array_filter(
+            FileExtension::cases(),
+            fn(FileExtension $fileExtension): bool => $fileExtension->format() === $this,
+        );
     }
 
     /**
-     * Create an encoder instance with given options that matches the format
+     * Return the first found file extension for the current format.
      *
-     * @param mixed $options
-     * @return EncoderInterface
+     * @throws NotSupportedException
+     */
+    public function fileExtension(): FileExtension
+    {
+        $extensions = $this->fileExtensions();
+
+        $result = reset($extensions);
+
+        if (!$result instanceof FileExtension) {
+            throw new NotSupportedException('Unable to retrieve unsupported file extension for format');
+        }
+
+        return $result;
+    }
+
+    /**
+     * Create an encoder instance with given options that matches the format.
      */
     public function encoder(mixed ...$options): EncoderInterface
     {
@@ -117,8 +156,10 @@ enum Format
             self::BMP => BmpEncoder::class,
             self::GIF => GifEncoder::class,
             self::HEIC => HeicEncoder::class,
+            self::ICO => IcoEncoder::class,
             self::JP2 => Jpeg2000Encoder::class,
             self::JPEG => JpegEncoder::class,
+            self::JXL => JxlEncoder::class,
             self::PNG => PngEncoder::class,
             self::TIFF => TiffEncoder::class,
             self::WEBP => WebpEncoder::class,
@@ -127,9 +168,10 @@ enum Format
         // get parameters of target encoder
         $parameters = [];
         $reflectionClass = new ReflectionClass($classname);
-        if ($constructor = $reflectionClass->getConstructor()) {
+        $constructor = $reflectionClass->getConstructor();
+        if ($constructor !== null) {
             $parameters = array_map(
-                fn ($parameter) => $parameter->getName(),
+                fn(ReflectionParameter $parameter): string => $parameter->getName(),
                 $constructor->getParameters(),
             );
         }
@@ -137,7 +179,7 @@ enum Format
         // filter out unavailable options of target encoder
         $options = array_filter(
             $options,
-            fn ($key) => in_array($key, $parameters),
+            fn(mixed $key): bool => in_array($key, $parameters),
             ARRAY_FILTER_USE_KEY,
         );
 

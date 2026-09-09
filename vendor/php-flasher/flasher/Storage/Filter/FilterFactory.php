@@ -40,6 +40,11 @@ final class FilterFactory implements FilterFactoryInterface
         }
     }
 
+    /**
+     * @param array<string, mixed> $config
+     *
+     * @throws CriteriaNotRegisteredException
+     */
     public function createFilter(array $config): Filter
     {
         $filter = new Filter();
@@ -60,6 +65,7 @@ final class FilterFactory implements FilterFactoryInterface
 
     /**
      * @throws CriteriaNotRegisteredException
+     * @throws \UnexpectedValueException
      */
     private function createCriteria(string $name, mixed $value): CriteriaInterface
     {
@@ -71,7 +77,7 @@ final class FilterFactory implements FilterFactoryInterface
         $criteria = \is_callable($criteria) ? $criteria($value) : $criteria;
 
         if (!$criteria instanceof CriteriaInterface) {
-            throw new \UnexpectedValueException(sprintf('Expected an instance of "%s", got "%s" instead.', CriteriaInterface::class, get_debug_type($criteria)));
+            throw new \UnexpectedValueException(\sprintf('Expected an instance of "%s", got "%s" instead.', CriteriaInterface::class, get_debug_type($criteria)));
         }
 
         return $criteria;

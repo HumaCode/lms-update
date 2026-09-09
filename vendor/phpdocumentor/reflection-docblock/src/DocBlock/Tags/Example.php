@@ -26,7 +26,7 @@ use function trim;
 /**
  * Reflection class for a {@}example tag in a Docblock.
  */
-final class Example implements Tag, Factory\StaticMethod
+final class Example implements Tag
 {
     /** @var string Path to a file to use as an example. May also be an absolute URI. */
     private string $filePath;
@@ -94,10 +94,10 @@ final class Example implements Tag, Factory\StaticMethod
 
         $filePath = null;
         $fileUri  = null;
-        if ($matches[1] !== '') {
+        if (array_key_exists(1, $matches) && $matches[1] !== '') {
             $filePath = $matches[1];
         } else {
-            $fileUri = $matches[2];
+            $fileUri = array_key_exists(2, $matches) ? $matches[2] : '';
         }
 
         $startingLine = 1;

@@ -44,6 +44,11 @@ final class ContentSecurityPolicyHandler implements ContentSecurityPolicyHandler
         $this->cspDisabled = true;
     }
 
+    public function reset(): void
+    {
+        $this->cspDisabled = false;
+    }
+
     public function updateResponseHeaders(RequestInterface $request, ResponseInterface $response): array
     {
         if ($this->cspDisabled) {
@@ -60,8 +65,6 @@ final class ContentSecurityPolicyHandler implements ContentSecurityPolicyHandler
     }
 
     /**
-     * Returns nonces from headers if existing, otherwise null.
-     *
      * @return array{csp_script_nonce: ?string, csp_style_nonce: ?string}|null
      */
     private function getHeaderNonces(RequestInterface|ResponseInterface $object): ?array
@@ -90,8 +93,6 @@ final class ContentSecurityPolicyHandler implements ContentSecurityPolicyHandler
     }
 
     /**
-     * Updates Content-Security-Policy headers in a response.
-     *
      * @param array{csp_script_nonce?: ?string, csp_style_nonce?: ?string} $nonces
      *
      * @return array{csp_script_nonce?: ?string, csp_style_nonce?: ?string}
@@ -136,7 +137,7 @@ final class ContentSecurityPolicyHandler implements ContentSecurityPolicyHandler
                 if (!\in_array('\'unsafe-inline\'', $headers[$header][$type], true)) {
                     $headers[$header][$type][] = '\'unsafe-inline\'';
                 }
-                $headers[$header][$type][] = sprintf('\'nonce-%s\'', $nonces[$tokenName]);
+                $headers[$header][$type][] = \sprintf('\'nonce-%s\'', $nonces[$tokenName]);
             }
         }
 
@@ -151,27 +152,20 @@ final class ContentSecurityPolicyHandler implements ContentSecurityPolicyHandler
         return $nonces;
     }
 
-    /**
-     * Generates a valid Content-Security-Policy nonce.
-     */
     private function generateNonce(): string
     {
         return $this->nonceGenerator->generate();
     }
 
     /**
-     * Converts a directive set array into Content-Security-Policy header.
-     *
      * @param array<string, string[]> $directives
      */
     private function generateCspHeader(array $directives): string
     {
-        return array_reduce(array_keys($directives), fn ($res, $name) => ('' !== $res ? $res.'; ' : '').sprintf('%s %s', $name, implode(' ', $directives[$name])), '');
+        return array_reduce(array_keys($directives), fn ($res, $name) => ('' !== $res ? $res.'; ' : '').\sprintf('%s %s', $name, implode(' ', $directives[$name])), '');
     }
 
     /**
-     * Converts a Content-Security-Policy header value into a directive set array.
-     *
      * @return array<string, string[]>
      */
     private function parseDirectives(?string $header): array
@@ -179,10 +173,13 @@ final class ContentSecurityPolicyHandler implements ContentSecurityPolicyHandler
         $directives = [];
 
         foreach (explode(';', $header ?: '') as $directive) {
-            $parts = explode(' ', trim($directive));
-            if (\count($parts) < 1) { // @phpstan-ignore-line
+            $directive = trim($directive);
+
+            if ('' === $directive) {
                 continue;
             }
+
+            $parts = explode(' ', $directive);
             $name = array_shift($parts);
             $directives[$name] = $parts;
         }
@@ -191,8 +188,6 @@ final class ContentSecurityPolicyHandler implements ContentSecurityPolicyHandler
     }
 
     /**
-     * Detects if the 'unsafe-inline' is prevented for a directive within the directive set.
-     *
      * @param array<string, string[]> $directivesSet
      */
     private function authorizesInline(array $directivesSet, string $type): bool
@@ -242,9 +237,6 @@ final class ContentSecurityPolicyHandler implements ContentSecurityPolicyHandler
     }
 
     /**
-     * Retrieves the Content-Security-Policy headers (either X-Content-Security-Policy or Content-Security-Policy) from
-     * a response.
-     *
      * @return array{
      *     Content-Security-Policy?: array<string, string[]>,
      *     Content-Security-Policy-Report-Only?: array<string, string[]>,

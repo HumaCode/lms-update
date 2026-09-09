@@ -10,21 +10,17 @@ use Intervention\Image\Interfaces\DrawableInterface;
 class DrawLineModifier extends AbstractDrawModifier
 {
     /**
-     * Create new modifier object
-     *
-     * @param Line $drawable
-     * @return void
+     * Create new modifier object.
      */
     public function __construct(public Line $drawable)
     {
+        //
     }
 
     /**
-     * Return object to be drawn
-     *
-     * @return DrawableInterface
+     * Return object to be drawn.
      */
-    public function drawable(): DrawableInterface
+    protected function drawable(): DrawableInterface
     {
         return $this->drawable;
     }

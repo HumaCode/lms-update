@@ -4,49 +4,84 @@ declare(strict_types=1);
 
 namespace Intervention\Image\Geometry;
 
-use Intervention\Image\Exceptions\GeometryException;
-use Intervention\Image\Geometry\Tools\RectangleResizer;
+use ArrayIterator;
+use DivisionByZeroError;
+use Intervention\Image\Alignment;
+use Intervention\Image\Exceptions\InvalidArgumentException;
+use Intervention\Image\Exceptions\RuntimeException;
+use Intervention\Image\Exceptions\StateException;
+use Intervention\Image\Geometry\Factories\RectangleFactory;
+use Intervention\Image\Geometry\Tools\Resizer;
+use Intervention\Image\Interfaces\DrawableFactoryInterface;
+use Intervention\Image\Interfaces\DrawableInterface;
 use Intervention\Image\Interfaces\PointInterface;
 use Intervention\Image\Interfaces\SizeInterface;
+use Traversable;
 
-class Rectangle extends Polygon implements SizeInterface
+class Rectangle extends Polygon implements DrawableInterface, SizeInterface
 {
     /**
-     * Create new rectangle instance
+     * Create new rectangle.
      *
-     * @param int $width
-     * @param int $height
-     * @param PointInterface $pivot
-     * @return void
+     * @throws InvalidArgumentException
      */
     public function __construct(
         int $width,
         int $height,
-        protected PointInterface $pivot = new Point()
+        protected PointInterface $pivot = new Point(),
     ) {
-        $this->addPoint(new Point($this->pivot->x(), $this->pivot->y()));
-        $this->addPoint(new Point($this->pivot->x() + $width, $this->pivot->y()));
-        $this->addPoint(new Point($this->pivot->x() + $width, $this->pivot->y() - $height));
-        $this->addPoint(new Point($this->pivot->x(), $this->pivot->y() - $height));
+        if ($width < 0) {
+            throw new InvalidArgumentException(
+                'Width of ' . $this::class . ' must be greater than or equal to 0',
+            );
+        }
+
+        if ($height < 0) {
+            throw new InvalidArgumentException(
+                'Height of ' . $this::class . ' must be greater than or equal to 0',
+            );
+        }
+
+        parent::__construct([
+            new Point(0, 0),
+            new Point($width, 0),
+            new Point($width, $height * -1),
+            new Point(0, $height * -1),
+        ], $pivot);
     }
 
     /**
-     * Set size of rectangle
+     * Create rectangle statically.
      *
-     * @param int $width
-     * @param int $height
-     * @return Rectangle
+     * @deprecated Use Intervention\Image\Size::class instead.
+     *
+     * @throws InvalidArgumentException
      */
-    public function setSize(int $width, int $height): self
+    public static function create(int $width, int $height, PointInterface $pivot = new Point()): self
     {
-        return $this->setWidth($width)->setHeight($height);
+        return new self($width, $height, $pivot);
     }
 
     /**
-     * Set width of rectangle
+     * Calculate width of rectangle.
+     */
+    public function width(): int
+    {
+        return abs($this->mostLeftPoint()->x() - $this->mostRightPoint()->x());
+    }
+
+    /**
+     * Calculate height of rectangle.
+     */
+    public function height(): int
+    {
+        return abs($this->mostBottomPoint()->y() - $this->mostTopPoint()->y());
+    }
+
+    /**
+     * {@inheritdoc}
      *
-     * @param int $width
-     * @return Rectangle
+     * @see SizeInterface::setWidth()
      */
     public function setWidth(int $width): self
     {
@@ -57,10 +92,9 @@ class Rectangle extends Polygon implements SizeInterface
     }
 
     /**
-     * Set height of rectangle
+     * {@inheritdoc}
      *
-     * @param int $height
-     * @return Rectangle
+     * @see SizeInterface::setHeight()
      */
     public function setHeight(int $height): self
     {
@@ -71,165 +105,89 @@ class Rectangle extends Polygon implements SizeInterface
     }
 
     /**
-     * Return pivot point of rectangle
+     * {@inheritdoc}
      *
-     * @return PointInterface
+     * @see DrawableInterface::setPosition()
      */
-    public function pivot(): PointInterface
+    public function setPosition(PointInterface $position): self
+    {
+        $this->pivot = $position;
+
+        return $this;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see DrawableInterface::position()
+     */
+    public function position(): PointInterface
     {
         return $this->pivot;
     }
 
     /**
-     * Set pivot point of rectangle
+     * {@inheritdoc}
      *
-     * @param PointInterface $pivot
-     * @return Rectangle
+     * @see DrawableInterface::factory()
+     *
+     * @throws RuntimeException
      */
-    public function setPivot(PointInterface $pivot): self
+    public function factory(): DrawableFactoryInterface
     {
-        $this->pivot = $pivot;
-
-        return $this;
+        // @phpstan-ignore missingType.checkedException
+        return new RectangleFactory($this);
     }
 
     /**
-     * Move pivot to the given position in the rectangle and adjust the new
-     * position by given offset values.
+     * {@inheritdoc}
      *
-     * @param string $position
-     * @param int $offset_x
-     * @param int $offset_y
-     * @return Rectangle
+     * @see DrawableInterface::adjust()
+     *
+     * @throws RuntimeException
      */
-    public function movePivot(string $position, int $offset_x = 0, int $offset_y = 0): self
+    public function adjust(callable $adjustments): DrawableInterface
     {
-        switch (strtolower($position)) {
-            case 'top':
-            case 'top-center':
-            case 'top-middle':
-            case 'center-top':
-            case 'middle-top':
-                $x = intval(round($this->width() / 2)) + $offset_x;
-                $y = 0 + $offset_y;
-                break;
+        $factory = $this->factory();
+        $adjustments($factory);
 
-            case 'top-right':
-            case 'right-top':
-                $x = $this->width() - $offset_x;
-                $y = 0 + $offset_y;
-                break;
-
-            case 'left':
-            case 'left-center':
-            case 'left-middle':
-            case 'center-left':
-            case 'middle-left':
-                $x = 0 + $offset_x;
-                $y = intval(round($this->height() / 2)) + $offset_y;
-                break;
-
-            case 'right':
-            case 'right-center':
-            case 'right-middle':
-            case 'center-right':
-            case 'middle-right':
-                $x = $this->width() - $offset_x;
-                $y = intval(round($this->height() / 2)) + $offset_y;
-                break;
-
-            case 'bottom-left':
-            case 'left-bottom':
-                $x = 0 + $offset_x;
-                $y = $this->height() - $offset_y;
-                break;
-
-            case 'bottom':
-            case 'bottom-center':
-            case 'bottom-middle':
-            case 'center-bottom':
-            case 'middle-bottom':
-                $x = intval(round($this->width() / 2)) + $offset_x;
-                $y = $this->height() - $offset_y;
-                break;
-
-            case 'bottom-right':
-            case 'right-bottom':
-                $x = $this->width() - $offset_x;
-                $y = $this->height() - $offset_y;
-                break;
-
-            case 'center':
-            case 'middle':
-            case 'center-center':
-            case 'middle-middle':
-                $x = intval(round($this->width() / 2)) + $offset_x;
-                $y = intval(round($this->height() / 2)) + $offset_y;
-                break;
-
-            default:
-            case 'top-left':
-            case 'left-top':
-                $x = 0 + $offset_x;
-                $y = 0 + $offset_y;
-                break;
-        }
-
-        $this->pivot->setPosition($x, $y);
-
-        return $this;
+        return $factory->drawable();
     }
 
     /**
-     * Align pivot relative to given size at given position
+     * Set size of rectangle.
      *
-     * @param SizeInterface $size
-     * @param string $position
-     * @return Rectangle
+     * @deprecated Use Intervention\Image\Size::class instead.
      */
-    public function alignPivotTo(SizeInterface $size, string $position): self
+    public function setSize(int $width, int $height): self
     {
-        $reference = new self($size->width(), $size->height());
-        $reference->movePivot($position);
-
-        $this->movePivot($position)->setPivot(
-            $reference->relativePositionTo($this)
-        );
-
-        return $this;
+        return $this->setWidth($width)->setHeight($height);
     }
 
     /**
-     * Return relative position to given rectangle
+     * {@inheritdoc}
      *
-     * @param SizeInterface $rectangle
-     * @return PointInterface
-     */
-    public function relativePositionTo(SizeInterface $rectangle): PointInterface
-    {
-        return new Point(
-            $this->pivot()->x() - $rectangle->pivot()->x(),
-            $this->pivot()->y() - $rectangle->pivot()->y()
-        );
-    }
-
-    /**
-     * Return aspect ration of rectangle
+     * @deprecated Use Intervention\Image\Size::class instead.
+     * @see SizeInterface::aspectRatio()
      *
-     * @return float
+     * @throws RuntimeException
      */
     public function aspectRatio(): float
     {
-        return $this->width() / $this->height();
+        try {
+            return $this->width() / $this->height();
+        } catch (DivisionByZeroError) {
+            throw new RuntimeException('Division by zero');
+        }
     }
 
     /**
-     * Determine if rectangle fits into given rectangle
+     * {@inheritdoc}
      *
-     * @param SizeInterface $size
-     * @return bool
+     * @deprecated Use Intervention\Image\Size::class instead.
+     * @see SizeInterface::fitsWithin()
      */
-    public function fitsInto(SizeInterface $size): bool
+    public function fitsWithin(SizeInterface $size): bool
     {
         if ($this->width() > $size->width()) {
             return false;
@@ -243,9 +201,10 @@ class Rectangle extends Polygon implements SizeInterface
     }
 
     /**
-     * Determine if rectangle has landscape format
+     * {@inheritdoc}
      *
-     * @return bool
+     * @deprecated Use Intervention\Image\Size::class instead.
+     * @see SizeInterface::isLandscape()
      */
     public function isLandscape(): bool
     {
@@ -253,9 +212,10 @@ class Rectangle extends Polygon implements SizeInterface
     }
 
     /**
-     * Determine if rectangle has landscape format
+     * {@inheritdoc}
      *
-     * @return bool
+     * @deprecated Use Intervention\Image\Size::class instead.
+     * @see SizeInterface::isPortrait()
      */
     public function isPortrait(): bool
     {
@@ -263,65 +223,281 @@ class Rectangle extends Polygon implements SizeInterface
     }
 
     /**
-     * Return most top left point of rectangle
+     * {@inheritdoc}
      *
-     * @return PointInterface
+     * @deprecated Use Intervention\Image\Size::class instead.
+     * @see SizeInterface::setPivot()
      */
-    public function topLeftPoint(): PointInterface
+    public function setPivot(PointInterface $pivot): self
     {
-        return $this->points[0];
+        $this->pivot = $pivot;
+
+        return $this;
     }
 
     /**
-     * Return bottom right point of rectangle
+     * {@inheritdoc}
      *
-     * @return PointInterface
+     * @deprecated Use Intervention\Image\Size::class instead.
+     * @see SizeInterface::movePivot()
+     *
+     * @throws InvalidArgumentException
      */
-    public function bottomRightPoint(): PointInterface
+    public function movePivot(string|Alignment $alignment, int $x = 0, int $y = 0): self
     {
-        return $this->points[2];
+        $alignment = Alignment::create($alignment); // normalize alignment
+
+        $point = match ($alignment) {
+            Alignment::TOP => new Point(
+                intval(round($this->width() / 2)) + $x,
+                $y,
+            ),
+            Alignment::TOP_RIGHT => new Point(
+                $this->width() - $x,
+                $y,
+            ),
+            Alignment::LEFT => new Point(
+                $x,
+                intval(round($this->height() / 2)) + $y,
+            ),
+            Alignment::RIGHT => new Point(
+                $this->width() - $x,
+                intval(round($this->height() / 2)) + $y,
+            ),
+            Alignment::BOTTOM_LEFT => new Point(
+                $x,
+                $this->height() - $y,
+            ),
+            Alignment::BOTTOM => new Point(
+                intval(round($this->width() / 2)) + $x,
+                $this->height() - $y,
+            ),
+            Alignment::BOTTOM_RIGHT => new Point(
+                $this->width() - $x,
+                $this->height() - $y,
+            ),
+            Alignment::CENTER => new Point(
+                intval(round($this->width() / 2)) + $x,
+                intval(round($this->height() / 2)) + $y,
+            ),
+            Alignment::TOP_LEFT => new Point(
+                $x,
+                $y,
+            ),
+        };
+
+        $this->pivot->setPosition(...$point);
+
+        return $this;
     }
 
     /**
-     * @throws GeometryException
+     * {@inheritdoc}
+     *
+     * @deprecated Use Intervention\Image\Size::class instead.
+     * @see SizeInterface::alignPivotTo()
+     *
+     * @throws InvalidArgumentException
      */
-    protected function resizer(?int $width = null, ?int $height = null): RectangleResizer
+    public function alignPivotTo(SizeInterface $size, string|Alignment $alignment): self
     {
-        return new RectangleResizer($width, $height);
+        $reference = new self($size->width(), $size->height());
+        $reference->movePivot($alignment);
+
+        $this->movePivot($alignment)->setPivot(
+            $reference->offsetTo($this),
+        );
+
+        return $this;
     }
 
+    /**
+     * {@inheritdoc}
+     *
+     * @deprecated Use Intervention\Image\Size::class instead.
+     * @see SizeInterface::offsetTo()
+     */
+    public function offsetTo(SizeInterface $rectangle): PointInterface
+    {
+        return new Point(
+            $this->pivot()->x() - $rectangle->pivot()->x(),
+            $this->pivot()->y() - $rectangle->pivot()->y(),
+        );
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @deprecated Use Intervention\Image\Size::class instead.
+     * @see SizeInterface::resize()
+     *
+     * @throws InvalidArgumentException
+     */
     public function resize(?int $width = null, ?int $height = null): SizeInterface
     {
-        return $this->resizer($width, $height)->resize($this);
+        try {
+            return $this->resizer($width, $height)->resize($this);
+        } catch (InvalidArgumentException $e) {
+            throw new InvalidArgumentException(
+                'Invalid target size ' . $width . 'x' . $height,
+                previous: $e,
+            );
+        }
     }
 
+    /**
+     * {@inheritdoc}
+     *
+     * @deprecated Use Intervention\Image\Size::class instead.
+     * @see SizeInterface::resizeDown()
+     *
+     * @throws InvalidArgumentException
+     */
     public function resizeDown(?int $width = null, ?int $height = null): SizeInterface
     {
-        return $this->resizer($width, $height)->resizeDown($this);
+        try {
+            return $this->resizer($width, $height)->resizeDown($this);
+        } catch (InvalidArgumentException $e) {
+            throw new InvalidArgumentException(
+                'Invalid target size ' . $width . 'x' . $height,
+                previous: $e,
+            );
+        }
     }
 
+    /**
+     * {@inheritdoc}
+     *
+     * @deprecated Use Intervention\Image\Size::class instead.
+     * @see SizeInterface::scale()
+     *
+     * @throws InvalidArgumentException
+     */
     public function scale(?int $width = null, ?int $height = null): SizeInterface
     {
-        return $this->resizer($width, $height)->scale($this);
+        try {
+            return $this->resizer($width, $height)->scale($this);
+        } catch (InvalidArgumentException $e) {
+            throw new InvalidArgumentException(
+                'Invalid target size ' . $width . 'x' . $height,
+                previous: $e,
+            );
+        }
     }
 
+    /**
+     * {@inheritdoc}
+     *
+     * @deprecated Use Intervention\Image\Size::class instead.
+     * @see SizeInterface::scaleDown()
+     *
+     * @throws InvalidArgumentException
+     */
     public function scaleDown(?int $width = null, ?int $height = null): SizeInterface
     {
-        return $this->resizer($width, $height)->scaleDown($this);
+        try {
+            return $this->resizer($width, $height)->scaleDown($this);
+        } catch (InvalidArgumentException $e) {
+            throw new InvalidArgumentException(
+                'Invalid target size ' . $width . 'x' . $height,
+                previous: $e,
+            );
+        }
     }
 
+    /**
+     * {@inheritdoc}
+     *
+     * @deprecated Use Intervention\Image\Size::class instead.
+     * @see SizeInterface::cover()
+     *
+     * @throws InvalidArgumentException
+     */
     public function cover(int $width, int $height): SizeInterface
     {
-        return $this->resizer($width, $height)->cover($this);
+        try {
+            return $this->resizer($width, $height)->cover($this);
+        } catch (InvalidArgumentException | StateException $e) {
+            throw new InvalidArgumentException(
+                'Invalid target size ' . $width . 'x' . $height,
+                previous: $e,
+            );
+        }
     }
 
+    /**
+     * {@inheritdoc}
+     *
+     * @deprecated Use Intervention\Image\Size::class instead.
+     * @see SizeInterface::contain()
+     *
+     * @throws InvalidArgumentException
+     */
     public function contain(int $width, int $height): SizeInterface
     {
-        return $this->resizer($width, $height)->contain($this);
+        try {
+            return $this->resizer($width, $height)->contain($this);
+        } catch (StateException $e) {
+            throw new InvalidArgumentException(
+                'Invalid target size ' . $width . 'x' . $height,
+                previous: $e,
+            );
+        }
     }
 
-    public function containMax(int $width, int $height): SizeInterface
+    /**
+     * {@inheritdoc}
+     *
+     * @deprecated Use Intervention\Image\Size::class instead.
+     * @see SizeInterface::containDown()
+     *
+     * @throws InvalidArgumentException
+     */
+    public function containDown(int $width, int $height): SizeInterface
     {
-        return $this->resizer($width, $height)->containDown($this);
+        try {
+            return $this->resizer($width, $height)->containDown($this);
+        } catch (StateException $e) {
+            throw new InvalidArgumentException(
+                'Invalid target size ' . $width . 'x' . $height,
+                previous: $e,
+            );
+        }
+    }
+
+    /**
+     * Create resizer instance with given target size.
+     *
+     * @deprecated Use Intervention\Image\Size::class instead.
+     *
+     * @throws InvalidArgumentException
+     */
+    protected function resizer(?int $width = null, ?int $height = null): Resizer
+    {
+        return new Resizer($width, $height);
+    }
+
+    /**
+     * Implement iteration.
+     *
+     * @return Traversable<mixed>
+     */
+    public function getIterator(): Traversable
+    {
+        return new ArrayIterator([$this->width(), $this->height()]);
+    }
+
+    /**
+     * Show debug info for the current rectangle.
+     *
+     * @return array<string, int|object>
+     */
+    public function __debugInfo(): array
+    {
+        return [
+            'width' => $this->width(),
+            'height' => $this->height(),
+            'pivot' => $this->pivot,
+        ];
     }
 }

@@ -11,10 +11,8 @@ namespace PHPUnit\TextUI\Output\Default\ProgressPrinter;
 
 use function floor;
 use function sprintf;
-use function str_contains;
 use function str_repeat;
 use function strlen;
-use PHPUnit\Event\EventFacadeIsSealedException;
 use PHPUnit\Event\Facade;
 use PHPUnit\Event\Test\DeprecationTriggered;
 use PHPUnit\Event\Test\Errored;
@@ -22,10 +20,11 @@ use PHPUnit\Event\Test\ErrorTriggered;
 use PHPUnit\Event\Test\NoticeTriggered;
 use PHPUnit\Event\Test\PhpDeprecationTriggered;
 use PHPUnit\Event\Test\PhpNoticeTriggered;
+use PHPUnit\Event\Test\PhpunitWarningTriggered;
 use PHPUnit\Event\Test\PhpWarningTriggered;
 use PHPUnit\Event\Test\WarningTriggered;
+use PHPUnit\Event\TestRunner\ChildProcessErrored;
 use PHPUnit\Event\TestRunner\ExecutionStarted;
-use PHPUnit\Event\UnknownSubscriberTypeException;
 use PHPUnit\Framework\TestStatus\TestStatus;
 use PHPUnit\TextUI\Configuration\Source;
 use PHPUnit\TextUI\Configuration\SourceFilter;
@@ -33,6 +32,8 @@ use PHPUnit\TextUI\Output\Printer;
 use PHPUnit\Util\Color;
 
 /**
+ * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
+ *
  * @internal This class is not covered by the backward compatibility promise for PHPUnit
  */
 final class ProgressPrinter
@@ -41,18 +42,15 @@ final class ProgressPrinter
     private readonly bool $colors;
     private readonly int $numberOfColumns;
     private readonly Source $source;
-    private int $column             = 0;
-    private int $numberOfTests      = 0;
-    private int $numberOfTestsWidth = 0;
-    private int $maxColumn          = 0;
-    private int $numberOfTestsRun   = 0;
-    private ?TestStatus $status     = null;
-    private bool $prepared          = false;
+    private int $column               = 0;
+    private int $numberOfTests        = 0;
+    private int $numberOfTestsWidth   = 0;
+    private int $maxColumn            = 0;
+    private int $numberOfTestsRun     = 0;
+    private ?TestStatus $status       = null;
+    private bool $prepared            = false;
+    private bool $childProcessErrored = false;
 
-    /**
-     * @throws EventFacadeIsSealedException
-     * @throws UnknownSubscriberTypeException
-     */
     public function __construct(Printer $printer, Facade $facade, bool $colors, int $numberOfColumns, Source $source)
     {
         $this->printer         = $printer;
@@ -92,6 +90,13 @@ final class ProgressPrinter
         }
     }
 
+    public function testSuiteSkipped(int $countTests): void
+    {
+        for ($i = 0; $i < $countTests; $i++) {
+            $this->testSkipped();
+        }
+    }
+
     public function testMarkedIncomplete(): void
     {
         $this->updateTestStatus(TestStatus::incomplete());
@@ -104,7 +109,7 @@ final class ProgressPrinter
         }
 
         if ($this->source->restrictNotices() &&
-            !(new SourceFilter)->includes($this->source, $event->file())) {
+            !SourceFilter::instance()->includes($event->file())) {
             return;
         }
 
@@ -122,7 +127,7 @@ final class ProgressPrinter
         }
 
         if ($this->source->restrictNotices() &&
-            !(new SourceFilter)->includes($this->source, $event->file())) {
+            !SourceFilter::instance()->includes($event->file())) {
             return;
         }
 
@@ -139,8 +144,15 @@ final class ProgressPrinter
             return;
         }
 
-        if ($this->source->restrictDeprecations() &&
-            !(new SourceFilter)->includes($this->source, $event->file())) {
+        if ($this->source->ignoreSelfDeprecations() && $event->trigger()->isSelf()) {
+            return;
+        }
+
+        if ($this->source->ignoreDirectDeprecations() && $event->trigger()->isDirect()) {
+            return;
+        }
+
+        if ($this->source->ignoreIndirectDeprecations() && $event->trigger()->isIndirect()) {
             return;
         }
 
@@ -157,8 +169,15 @@ final class ProgressPrinter
             return;
         }
 
-        if ($this->source->restrictDeprecations() &&
-            !(new SourceFilter)->includes($this->source, $event->file())) {
+        if ($this->source->ignoreSelfDeprecations() && $event->trigger()->isSelf()) {
+            return;
+        }
+
+        if ($this->source->ignoreDirectDeprecations() && $event->trigger()->isDirect()) {
+            return;
+        }
+
+        if ($this->source->ignoreIndirectDeprecations() && $event->trigger()->isIndirect()) {
             return;
         }
 
@@ -174,6 +193,11 @@ final class ProgressPrinter
         $this->updateTestStatus(TestStatus::deprecation());
     }
 
+    public function testTriggeredPhpunitNotice(): void
+    {
+        $this->updateTestStatus(TestStatus::notice());
+    }
+
     public function testConsideredRisky(): void
     {
         $this->updateTestStatus(TestStatus::risky());
@@ -186,7 +210,7 @@ final class ProgressPrinter
         }
 
         if ($this->source->restrictWarnings() &&
-            !(new SourceFilter)->includes($this->source, $event->file())) {
+            !SourceFilter::instance()->includes($event->file())) {
             return;
         }
 
@@ -204,7 +228,7 @@ final class ProgressPrinter
         }
 
         if ($this->source->restrictWarnings() &&
-            !(new SourceFilter)->includes($this->source, $event->file())) {
+            !SourceFilter::instance()->includes($event->file())) {
             return;
         }
 
@@ -215,8 +239,12 @@ final class ProgressPrinter
         $this->updateTestStatus(TestStatus::warning());
     }
 
-    public function testTriggeredPhpunitWarning(): void
+    public function testTriggeredPhpunitWarning(PhpunitWarningTriggered $event): void
     {
+        if ($event->ignoredByTest()) {
+            return;
+        }
+
         $this->updateTestStatus(TestStatus::warning());
     }
 
@@ -236,10 +264,7 @@ final class ProgressPrinter
 
     public function testErrored(Errored $event): void
     {
-        /*
-         * @todo Eliminate this special case
-         */
-        if (str_contains($event->asString(), 'Test was run in child process and ended unexpectedly')) {
+        if ($this->childProcessErrored) {
             $this->updateTestStatus(TestStatus::error());
 
             return;
@@ -274,14 +299,16 @@ final class ProgressPrinter
             $this->printProgressForError();
         }
 
-        $this->status   = null;
-        $this->prepared = false;
+        $this->status              = null;
+        $this->prepared            = false;
+        $this->childProcessErrored = false;
     }
 
-    /**
-     * @throws EventFacadeIsSealedException
-     * @throws UnknownSubscriberTypeException
-     */
+    public function childProcessErrored(ChildProcessErrored $event): void
+    {
+        $this->childProcessErrored = true;
+    }
+
     private function registerSubscribers(Facade $facade): void
     {
         $facade->registerSubscribers(
@@ -294,14 +321,17 @@ final class ProgressPrinter
             new TestPreparedSubscriber($this),
             new TestRunnerExecutionStartedSubscriber($this),
             new TestSkippedSubscriber($this),
+            new TestSuiteSkippedSubscriber($this),
             new TestTriggeredDeprecationSubscriber($this),
             new TestTriggeredNoticeSubscriber($this),
             new TestTriggeredPhpDeprecationSubscriber($this),
             new TestTriggeredPhpNoticeSubscriber($this),
             new TestTriggeredPhpunitDeprecationSubscriber($this),
+            new TestTriggeredPhpunitNoticeSubscriber($this),
             new TestTriggeredPhpunitWarningSubscriber($this),
             new TestTriggeredPhpWarningSubscriber($this),
             new TestTriggeredWarningSubscriber($this),
+            new ChildProcessErroredSubscriber($this),
         );
     }
 

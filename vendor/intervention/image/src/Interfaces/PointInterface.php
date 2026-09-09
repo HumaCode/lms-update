@@ -4,76 +4,55 @@ declare(strict_types=1);
 
 namespace Intervention\Image\Interfaces;
 
-interface PointInterface
+use IteratorAggregate;
+
+/**
+ * @extends IteratorAggregate<int>
+ */
+interface PointInterface extends IteratorAggregate
 {
     /**
-     * Return x position
-     *
-     * @return int
+     * Return x position.
      */
     public function x(): int;
 
     /**
-     * Return y position
-     *
-     * @return int
+     * Return y position.
      */
     public function y(): int;
 
     /**
-     * Set x position
-     *
-     * @param int $x
-     * @return PointInterface
+     * Set x position.
      */
     public function setX(int $x): self;
 
     /**
-     * Set y position
-     *
-     * @param int $y
-     * @return PointInterface
+     * Set y position.
      */
     public function setY(int $y): self;
 
     /**
-     * Move X coordinate
-     *
-     * @param int $value
+     * Move X coordinate.
      */
     public function moveX(int $value): self;
 
     /**
-     * Move Y coordinate
-     *
-     * @param int $value
+     * Move Y coordinate.
      */
     public function moveY(int $value): self;
 
     /**
-     * Move position of current point by given coordinates
-     *
-     * @param int $x
-     * @param int $y
-     * @return PointInterface
+     * Move position of current point by given coordinates.
      */
     public function move(int $x, int $y): self;
 
     /**
-     * Set position of point
-     *
-     * @param int $x
-     * @param int $y
-     * @return PointInterface
+     * Set position of point.
      */
     public function setPosition(int $x, int $y): self;
 
     /**
-     * Rotate point counter clock wise around given pivot point
-     *
-     * @param float $angle
-     * @param PointInterface $pivot
-     * @return PointInterface
+     * Rotate the current point clockwise around given pivot point.
      */
     public function rotate(float $angle, self $pivot): self;
 }

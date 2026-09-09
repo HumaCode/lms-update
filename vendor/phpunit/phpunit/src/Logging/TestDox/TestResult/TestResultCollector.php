@@ -13,12 +13,12 @@ use function array_keys;
 use function array_merge;
 use function assert;
 use function is_subclass_of;
-use function ksort;
+use function strnatcasecmp;
+use function uasort;
 use function uksort;
 use function usort;
 use PHPUnit\Event\Code\TestMethod;
 use PHPUnit\Event\Code\Throwable;
-use PHPUnit\Event\EventFacadeIsSealedException;
 use PHPUnit\Event\Facade;
 use PHPUnit\Event\InvalidArgumentException;
 use PHPUnit\Event\Test\ConsideredRisky;
@@ -38,41 +38,43 @@ use PHPUnit\Event\Test\PhpWarningTriggered;
 use PHPUnit\Event\Test\Prepared;
 use PHPUnit\Event\Test\Skipped;
 use PHPUnit\Event\Test\WarningTriggered;
-use PHPUnit\Event\UnknownSubscriberTypeException;
 use PHPUnit\Framework\TestStatus\TestStatus;
 use PHPUnit\Logging\TestDox\TestResult as TestDoxTestMethod;
+use PHPUnit\TestRunner\IssueFilter;
 use ReflectionMethod;
 
 /**
+ * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
+ *
  * @internal This class is not covered by the backward compatibility promise for PHPUnit
  */
 final class TestResultCollector
 {
+    private readonly IssueFilter $issueFilter;
+
     /**
-     * @psalm-var array<string, list<TestDoxTestMethod>>
+     * @var array<class-string, list<TestDoxTestMethod>>
      */
     private array $tests          = [];
     private ?TestStatus $status   = null;
     private ?Throwable $throwable = null;
     private bool $prepared        = false;
 
-    /**
-     * @throws EventFacadeIsSealedException
-     * @throws UnknownSubscriberTypeException
-     */
-    public function __construct(Facade $facade)
+    public function __construct(Facade $facade, IssueFilter $issueFilter)
     {
+        $this->issueFilter = $issueFilter;
+
         $this->registerSubscribers($facade);
     }
 
     /**
-     * @psalm-return array<string, TestResultCollection>
+     * @return array<class-string, TestResultCollection>
      */
     public function testMethodsGroupedByClass(): array
     {
         $result = [];
 
-        foreach ($this->tests as $prettifiedClassName => $tests) {
+        foreach ($this->tests as $className => $tests) {
             $testsByDeclaringClass = [];
 
             foreach ($tests as $test) {
@@ -98,8 +100,8 @@ final class TestResultCollector
             uksort(
                 $testsByDeclaringClass,
                 /**
-                 * @psalm-param class-string $a
-                 * @psalm-param class-string $b
+                 * @param class-string $a
+                 * @param class-string $b
                  */
                 static function (string $a, string $b): int
                 {
@@ -121,10 +123,19 @@ final class TestResultCollector
                 $tests = array_merge($tests, $_tests);
             }
 
-            $result[$prettifiedClassName] = TestResultCollection::fromArray($tests);
+            $result[$className] = TestResultCollection::fromArray($tests);
         }
 
-        ksort($result);
+        uasort(
+            $result,
+            static function (TestResultCollection $a, TestResultCollection $b): int
+            {
+                return strnatcasecmp(
+                    $a->asArray()[0]->test()->testDox()->prettifiedClassName(),
+                    $b->asArray()[0]->test()->testDox()->prettifiedClassName(),
+                );
+            },
+        );
 
         return $result;
     }
@@ -208,7 +219,11 @@ final class TestResultCollector
 
     public function testTriggeredDeprecation(DeprecationTriggered $event): void
     {
-        if (!$event->test()->isTestMethod()) {
+        if (!$this->issueFilter->shouldBeProcessed($event, true)) {
+            return;
+        }
+
+        if ($event->ignoredByBaseline()) {
             return;
         }
 
@@ -217,7 +232,11 @@ final class TestResultCollector
 
     public function testTriggeredNotice(NoticeTriggered $event): void
     {
-        if (!$event->test()->isTestMethod()) {
+        if (!$this->issueFilter->shouldBeProcessed($event, true)) {
+            return;
+        }
+
+        if ($event->ignoredByBaseline()) {
             return;
         }
 
@@ -226,7 +245,11 @@ final class TestResultCollector
 
     public function testTriggeredWarning(WarningTriggered $event): void
     {
-        if (!$event->test()->isTestMethod()) {
+        if (!$this->issueFilter->shouldBeProcessed($event, true)) {
+            return;
+        }
+
+        if ($event->ignoredByBaseline()) {
             return;
         }
 
@@ -235,7 +258,11 @@ final class TestResultCollector
 
     public function testTriggeredPhpDeprecation(PhpDeprecationTriggered $event): void
     {
-        if (!$event->test()->isTestMethod()) {
+        if (!$this->issueFilter->shouldBeProcessed($event, true)) {
+            return;
+        }
+
+        if ($event->ignoredByBaseline()) {
             return;
         }
 
@@ -244,7 +271,11 @@ final class TestResultCollector
 
     public function testTriggeredPhpNotice(PhpNoticeTriggered $event): void
     {
-        if (!$event->test()->isTestMethod()) {
+        if (!$this->issueFilter->shouldBeProcessed($event, true)) {
+            return;
+        }
+
+        if ($event->ignoredByBaseline()) {
             return;
         }
 
@@ -253,7 +284,11 @@ final class TestResultCollector
 
     public function testTriggeredPhpWarning(PhpWarningTriggered $event): void
     {
-        if (!$event->test()->isTestMethod()) {
+        if (!$this->issueFilter->shouldBeProcessed($event, true)) {
+            return;
+        }
+
+        if ($event->ignoredByBaseline()) {
             return;
         }
 
@@ -284,6 +319,10 @@ final class TestResultCollector
             return;
         }
 
+        if ($event->ignoredByTest()) {
+            return;
+        }
+
         $this->updateTestStatus(TestStatus::warning());
     }
 
@@ -307,10 +346,6 @@ final class TestResultCollector
         $this->prepared  = false;
     }
 
-    /**
-     * @throws EventFacadeIsSealedException
-     * @throws UnknownSubscriberTypeException
-     */
     private function registerSubscribers(Facade $facade): void
     {
         $facade->registerSubscribers(
@@ -346,11 +381,11 @@ final class TestResultCollector
 
     private function process(TestMethod $test): void
     {
-        if (!isset($this->tests[$test->testDox()->prettifiedClassName()])) {
-            $this->tests[$test->testDox()->prettifiedClassName()] = [];
+        if (!isset($this->tests[$test->className()])) {
+            $this->tests[$test->className()] = [];
         }
 
-        $this->tests[$test->testDox()->prettifiedClassName()][] = new TestDoxTestMethod(
+        $this->tests[$test->className()][] = new TestDoxTestMethod(
             $test,
             $this->status,
             $this->throwable,

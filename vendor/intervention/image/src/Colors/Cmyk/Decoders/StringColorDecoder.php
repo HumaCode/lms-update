@@ -6,31 +6,49 @@ namespace Intervention\Image\Colors\Cmyk\Decoders;
 
 use Intervention\Image\Colors\Cmyk\Color;
 use Intervention\Image\Drivers\AbstractDecoder;
-use Intervention\Image\Exceptions\DecoderException;
+use Intervention\Image\Exceptions\InvalidArgumentException;
 use Intervention\Image\Interfaces\ColorInterface;
 use Intervention\Image\Interfaces\DecoderInterface;
-use Intervention\Image\Interfaces\ImageInterface;
 
 class StringColorDecoder extends AbstractDecoder implements DecoderInterface
 {
+    private const string PATTERN =
+        '/^cmyk ?\(' .
+        '(?P<c>[0-9\.]+%?)((, ?)| )' .
+        '(?P<m>[0-9\.]+%?)((, ?)| )' .
+        '(?P<y>[0-9\.]+%?)((, ?)| )' .
+        '(?P<k>[0-9\.]+%?)\)$/i';
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see DecoderInterface::supports()
+     */
+    public function supports(mixed $input): bool
+    {
+        if (!is_string($input)) {
+            return false;
+        }
+
+        if (!str_starts_with(strtolower($input), 'cmyk')) {
+            return false;
+        }
+
+        return true;
+    }
+
     /**
      * Decode CMYK color strings
      *
-     * @param mixed $input
-     * @return ImageInterface|ColorInterface
+     * @throws InvalidArgumentException
      */
-    public function decode(mixed $input): ImageInterface|ColorInterface
+    public function decode(mixed $input): ColorInterface
     {
-        if (!is_string($input)) {
-            throw new DecoderException('Unable to decode input');
+        if (preg_match(self::PATTERN, (string) $input, $matches) !== 1) {
+            throw new InvalidArgumentException('Invalid cmyk() color syntax "' . $input . '"');
         }
 
-        $pattern = '/^cmyk\((?P<c>[0-9\.]+%?), ?(?P<m>[0-9\.]+%?), ?(?P<y>[0-9\.]+%?), ?(?P<k>[0-9\.]+%?)\)$/i';
-        if (preg_match($pattern, $input, $matches) != 1) {
-            throw new DecoderException('Unable to decode input');
-        }
-
-        $values = array_map(function ($value) {
+        $values = array_map(function (string $value): int {
             return intval(round(floatval(trim(str_replace('%', '', $value)))));
         }, [$matches['c'], $matches['m'], $matches['y'], $matches['k']]);
 

@@ -9,6 +9,7 @@ use Illuminate\Database\Events\SchemaLoaded;
 use Illuminate\Database\Migrations\Migrator;
 use Illuminate\Database\SQLiteDatabaseDoesNotExistException;
 use Illuminate\Database\SqlServerConnection;
+use Illuminate\Support\Str;
 use PDOException;
 use RuntimeException;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -63,7 +64,6 @@ class MigrateCommand extends BaseCommand implements Isolatable
      *
      * @param  \Illuminate\Database\Migrations\Migrator  $migrator
      * @param  \Illuminate\Contracts\Events\Dispatcher  $dispatcher
-     * @return void
      */
     public function __construct(Migrator $migrator, Dispatcher $dispatcher)
     {
@@ -77,11 +77,13 @@ class MigrateCommand extends BaseCommand implements Isolatable
      * Execute the console command.
      *
      * @return int
+     *
+     * @throws \Throwable
      */
     public function handle()
     {
         if (! $this->confirmToProceed()) {
-            return 1;
+            return self::FAILURE;
         }
 
         try {
@@ -90,13 +92,13 @@ class MigrateCommand extends BaseCommand implements Isolatable
             if ($this->option('graceful')) {
                 $this->components->warn($e->getMessage());
 
-                return 0;
+                return self::SUCCESS;
             }
 
             throw $e;
         }
 
-        return 0;
+        return self::SUCCESS;
     }
 
     /**
@@ -143,7 +145,7 @@ class MigrateCommand extends BaseCommand implements Isolatable
             $this->components->task('Creating migration table', function () {
                 return $this->callSilent('migrate:install', array_filter([
                     '--database' => $this->option('database'),
-                ])) == 0;
+                ])) === 0;
             });
 
             $this->newLine();
@@ -163,24 +165,39 @@ class MigrateCommand extends BaseCommand implements Isolatable
     {
         return retry(2, fn () => $this->migrator->repositoryExists(), 0, function ($e) {
             try {
-                if ($e->getPrevious() instanceof SQLiteDatabaseDoesNotExistException) {
-                    return $this->createMissingSqliteDatabase($e->getPrevious()->path);
-                }
-
-                $connection = $this->migrator->resolveConnection($this->option('database'));
-
-                if (
-                    $e->getPrevious() instanceof PDOException &&
-                    $e->getPrevious()->getCode() === 1049 &&
-                    in_array($connection->getDriverName(), ['mysql', 'mariadb'])) {
-                    return $this->createMissingMysqlDatabase($connection);
-                }
-
-                return false;
+                return $this->handleMissingDatabase($e->getPrevious());
             } catch (Throwable) {
                 return false;
             }
         });
+    }
+
+    /**
+     * Attempt to create the database if it is missing.
+     *
+     * @param  \Throwable  $e
+     * @return bool
+     */
+    protected function handleMissingDatabase(Throwable $e)
+    {
+        if ($e instanceof SQLiteDatabaseDoesNotExistException) {
+            return $this->createMissingSqliteDatabase($e->path);
+        }
+
+        $connection = $this->migrator->resolveConnection($this->option('database'));
+
+        if (! $e instanceof PDOException) {
+            return false;
+        }
+
+        if (($e->getCode() === 1049 && in_array($connection->getDriverName(), ['mysql', 'mariadb'])) ||
+            (($e->errorInfo[0] ?? null) == '08006' &&
+              $connection->getDriverName() === 'pgsql' &&
+              Str::contains($e->getMessage(), '"'.$connection->getDatabaseName().'"'))) {
+            return $this->createMissingMySqlOrPgsqlDatabase($connection);
+        }
+
+        return false;
     }
 
     /**
@@ -213,15 +230,19 @@ class MigrateCommand extends BaseCommand implements Isolatable
     }
 
     /**
-     * Create a missing MySQL database.
+     * Create a missing MySQL or Postgres database.
      *
+     * @param  \Illuminate\Database\Connection  $connection
      * @return bool
      *
      * @throws \RuntimeException
      */
-    protected function createMissingMysqlDatabase($connection)
+    protected function createMissingMySqlOrPgsqlDatabase($connection)
     {
-        if ($this->laravel['config']->get("database.connections.{$connection->getName()}.database") !== $connection->getDatabaseName()) {
+        $configKey = 'database.connections.'.Str::before($connection->getName(), '::');
+
+        if ($this->laravel['config']->get("{$configKey}.database") !==
+            $connection->getDatabaseName()) {
             return false;
         }
 
@@ -238,19 +259,29 @@ class MigrateCommand extends BaseCommand implements Isolatable
                 throw new RuntimeException('Database was not created. Aborting migration.');
             }
         }
-
         try {
-            $this->laravel['config']->set("database.connections.{$connection->getName()}.database", null);
+            $this->laravel['config']->set(
+                "{$configKey}.database",
+                match ($connection->getDriverName()) {
+                    'mysql', 'mariadb' => null,
+                    'pgsql' => 'postgres',
+                },
+            );
 
             $this->laravel['db']->purge();
 
             $freshConnection = $this->migrator->resolveConnection($this->option('database'));
 
-            return tap($freshConnection->unprepared("CREATE DATABASE IF NOT EXISTS `{$connection->getDatabaseName()}`"), function () {
+            return tap($freshConnection->unprepared(
+                match ($connection->getDriverName()) {
+                    'mysql', 'mariadb' => "CREATE DATABASE IF NOT EXISTS `{$connection->getDatabaseName()}`",
+                    'pgsql' => 'CREATE DATABASE "'.$connection->getDatabaseName().'"',
+                }
+            ), function () {
                 $this->laravel['db']->purge();
             });
         } finally {
-            $this->laravel['config']->set("database.connections.{$connection->getName()}.database", $connection->getDatabaseName());
+            $this->laravel['config']->set("{$configKey}.database", $connection->getDatabaseName());
         }
     }
 

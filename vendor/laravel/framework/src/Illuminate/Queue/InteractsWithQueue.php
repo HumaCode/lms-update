@@ -49,6 +49,8 @@ trait InteractsWithQueue
      *
      * @param  \Throwable|string|null  $exception
      * @return void
+     *
+     * @throws \InvalidArgumentException
      */
     public function fail($exception = null)
     {
@@ -120,8 +122,8 @@ trait InteractsWithQueue
     {
         $this->ensureQueueInteractionsHaveBeenFaked();
 
-        PHPUnit::assertTrue(
-            ! $this->job->isDeleted(),
+        PHPUnit::assertFalse(
+            $this->job->isDeleted(),
             'Job was unexpectedly deleted.'
         );
 
@@ -146,6 +148,52 @@ trait InteractsWithQueue
     }
 
     /**
+     * Assert that the job was manually failed with a specific exception.
+     *
+     * @param  \Throwable|string  $exception
+     * @return $this
+     */
+    public function assertFailedWith($exception)
+    {
+        $this->assertFailed();
+
+        if (is_string($exception) && class_exists($exception)) {
+            PHPUnit::assertInstanceOf(
+                $exception,
+                $this->job->failedWith,
+                'Expected job to be manually failed with ['.$exception.'] but job failed with ['.get_class($this->job->failedWith).'].'
+            );
+
+            return $this;
+        }
+
+        if (is_string($exception)) {
+            $exception = new ManuallyFailedException($exception);
+        }
+
+        if ($exception instanceof Throwable) {
+            PHPUnit::assertInstanceOf(
+                get_class($exception),
+                $this->job->failedWith,
+                'Expected job to be manually failed with ['.get_class($exception).'] but job failed with ['.get_class($this->job->failedWith).'].'
+            );
+
+            PHPUnit::assertEquals(
+                $exception->getCode(),
+                $this->job->failedWith->getCode(),
+                'Expected exception code ['.$exception->getCode().'] but job failed with exception code ['.$this->job->failedWith->getCode().'].'
+            );
+
+            PHPUnit::assertEquals(
+                $exception->getMessage(),
+                $this->job->failedWith->getMessage(),
+                'Expected exception message ['.$exception->getMessage().'] but job failed with exception message ['.$this->job->failedWith->getMessage().'].');
+        }
+
+        return $this;
+    }
+
+    /**
      * Assert that the job was not manually failed.
      *
      * @return $this
@@ -154,8 +202,8 @@ trait InteractsWithQueue
     {
         $this->ensureQueueInteractionsHaveBeenFaked();
 
-        PHPUnit::assertTrue(
-            ! $this->job->hasFailed(),
+        PHPUnit::assertFalse(
+            $this->job->hasFailed(),
             'Job was unexpectedly failed manually.'
         );
 
@@ -165,7 +213,7 @@ trait InteractsWithQueue
     /**
      * Assert that the job was released back onto the queue.
      *
-     * @param  \DateTimeInterface|\DateInterval|int  $delay
+     * @param  \DateTimeInterface|\DateInterval|int|null  $delay
      * @return $this
      */
     public function assertReleased($delay = null)
@@ -201,8 +249,8 @@ trait InteractsWithQueue
     {
         $this->ensureQueueInteractionsHaveBeenFaked();
 
-        PHPUnit::assertTrue(
-            ! $this->job->isReleased(),
+        PHPUnit::assertFalse(
+            $this->job->isReleased(),
             'Job was unexpectedly released.'
         );
 
@@ -213,6 +261,8 @@ trait InteractsWithQueue
      * Ensure that queue interactions have been faked.
      *
      * @return void
+     *
+     * @throws \RuntimeException
      */
     private function ensureQueueInteractionsHaveBeenFaked()
     {

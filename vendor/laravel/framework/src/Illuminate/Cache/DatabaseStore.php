@@ -3,17 +3,21 @@
 namespace Illuminate\Cache;
 
 use Closure;
+use Illuminate\Contracts\Cache\CanFlushLocks;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\Store;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\PostgresConnection;
 use Illuminate\Database\QueryException;
+use Illuminate\Database\SQLiteConnection;
 use Illuminate\Database\SqlServerConnection;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\InteractsWithTime;
 use Illuminate\Support\Str;
+use RuntimeException;
 
-class DatabaseStore implements LockProvider, Store
+class DatabaseStore implements CanFlushLocks, LockProvider, Store
 {
     use InteractsWithTime;
 
@@ -67,6 +71,13 @@ class DatabaseStore implements LockProvider, Store
     protected $defaultLockTimeoutInSeconds;
 
     /**
+     * The classes that should be allowed during unserialization.
+     *
+     * @var array|bool|null
+     */
+    protected $serializableClasses;
+
+    /**
      * Create a new database store.
      *
      * @param  \Illuminate\Database\ConnectionInterface  $connection
@@ -74,21 +85,25 @@ class DatabaseStore implements LockProvider, Store
      * @param  string  $prefix
      * @param  string  $lockTable
      * @param  array  $lockLottery
-     * @return void
+     * @param  int  $defaultLockTimeoutInSeconds
+     * @param  array|bool|null  $serializableClasses
      */
-    public function __construct(ConnectionInterface $connection,
-                                                    $table,
-                                                    $prefix = '',
-                                                    $lockTable = 'cache_locks',
-                                                    $lockLottery = [2, 100],
-                                                    $defaultLockTimeoutInSeconds = 86400)
-    {
+    public function __construct(
+        ConnectionInterface $connection,
+        $table,
+        $prefix = '',
+        $lockTable = 'cache_locks',
+        $lockLottery = [2, 100],
+        $defaultLockTimeoutInSeconds = 86400,
+        $serializableClasses = null,
+    ) {
         $this->table = $table;
         $this->prefix = $prefix;
         $this->connection = $connection;
         $this->lockTable = $lockTable;
         $this->lockLottery = $lockLottery;
         $this->defaultLockTimeoutInSeconds = $defaultLockTimeoutInSeconds;
+        $this->serializableClasses = $serializableClasses;
     }
 
     /**
@@ -111,7 +126,7 @@ class DatabaseStore implements LockProvider, Store
      */
     public function many(array $keys)
     {
-        if (count($keys) === 0) {
+        if ($keys === []) {
             return [];
         }
 
@@ -167,6 +182,7 @@ class DatabaseStore implements LockProvider, Store
     /**
      * Store multiple items in the cache for a given number of seconds.
      *
+     * @param  array  $values
      * @param  int  $seconds
      * @return bool
      */
@@ -206,11 +222,11 @@ class DatabaseStore implements LockProvider, Store
         $expiration = $this->getTime() + $seconds;
 
         if (! $this->getConnection() instanceof SqlServerConnection) {
-            return $this->table()->insertOrIgnore(compact('key', 'value', 'expiration')) > 0;
+            return $this->table()->insertOrIgnore(['key' => $key, 'value' => $value, 'expiration' => $expiration]) > 0;
         }
 
         try {
-            return $this->table()->insert(compact('key', 'value', 'expiration'));
+            return $this->table()->insert(['key' => $key, 'value' => $value, 'expiration' => $expiration]);
         } catch (QueryException) {
             // ...
         }
@@ -260,7 +276,7 @@ class DatabaseStore implements LockProvider, Store
             $prefixed = $this->prefix.$key;
 
             $cache = $this->table()->where('key', $prefixed)
-                        ->lockForUpdate()->first();
+                ->lockForUpdate()->first();
 
             // If there is no value in the cache, we will return false here. Otherwise the
             // value will be decrypted and we will proceed with this function to either
@@ -349,6 +365,21 @@ class DatabaseStore implements LockProvider, Store
     }
 
     /**
+     * Adjust the expiration time of a cached item.
+     *
+     * @param  string  $key
+     * @param  int  $seconds
+     * @return bool
+     */
+    public function touch($key, $seconds)
+    {
+        return (bool) $this->table()
+            ->where('key', '=', $this->getPrefix().$key)
+            ->where('expiration', '>', $now = $this->getTime())
+            ->update(['expiration' => $now + $seconds]);
+    }
+
+    /**
      * Remove an item from the cache.
      *
      * @param  string  $key
@@ -378,9 +409,10 @@ class DatabaseStore implements LockProvider, Store
      */
     protected function forgetMany(array $keys)
     {
-        $this->table()->whereIn('key', array_map(function ($key) {
-            return $this->prefix.$key;
-        }, $keys))->delete();
+        $this->table()->whereIn('key', (new Collection($keys))->flatMap(fn ($key) => [
+            $this->prefix.$key,
+            $this->prefix.Repository::FLEXIBLE_CREATED_KEY_PREFIX.$key,
+        ])->all())->delete();
 
         return true;
     }
@@ -395,9 +427,13 @@ class DatabaseStore implements LockProvider, Store
     protected function forgetManyIfExpired(array $keys, bool $prefixed = false)
     {
         $this->table()
-            ->whereIn('key', $prefixed ? $keys : array_map(function ($key) {
-                return $this->prefix.$key;
-            }, $keys))
+            ->whereIn('key', (new Collection($keys))->flatMap(fn ($key) => $prefixed ? [
+                $key,
+                $this->prefix.Repository::FLEXIBLE_CREATED_KEY_PREFIX.Str::chopStart($key, $this->prefix),
+            ] : [
+                "{$this->prefix}{$key}",
+                $this->prefix.Repository::FLEXIBLE_CREATED_KEY_PREFIX.$key,
+            ])->all())
             ->where('expiration', '<=', $this->getTime())
             ->delete();
 
@@ -417,6 +453,24 @@ class DatabaseStore implements LockProvider, Store
     }
 
     /**
+     * Remove all locks from the store.
+     *
+     * @return bool
+     *
+     * @throws \RuntimeException
+     */
+    public function flushLocks(): bool
+    {
+        if (! $this->hasSeparateLockStore()) {
+            throw new RuntimeException('Flushing locks is only supported when the lock store is separate from the cache store.');
+        }
+
+        $this->lockTable()->delete();
+
+        return true;
+    }
+
+    /**
      * Get a query builder for the cache table.
      *
      * @return \Illuminate\Database\Query\Builder
@@ -424,6 +478,16 @@ class DatabaseStore implements LockProvider, Store
     protected function table()
     {
         return $this->connection->table($this->table);
+    }
+
+    /**
+     * Get a query builder for the cache locks table.
+     *
+     * @return \Illuminate\Database\Query\Builder
+     */
+    protected function lockTable()
+    {
+        return $this->lockConnection->table($this->lockTable);
     }
 
     /**
@@ -437,7 +501,30 @@ class DatabaseStore implements LockProvider, Store
     }
 
     /**
-     * Specify the name of the connection that should be used to manage locks.
+     * Set the underlying database connection.
+     *
+     * @param  \Illuminate\Database\ConnectionInterface  $connection
+     * @return $this
+     */
+    public function setConnection($connection)
+    {
+        $this->connection = $connection;
+
+        return $this;
+    }
+
+    /**
+     * Get the connection used to manage locks.
+     *
+     * @return \Illuminate\Database\ConnectionInterface
+     */
+    public function getLockConnection()
+    {
+        return $this->lockConnection;
+    }
+
+    /**
+     * Specify the connection that should be used to manage locks.
      *
      * @param  \Illuminate\Database\ConnectionInterface  $connection
      * @return $this
@@ -480,7 +567,9 @@ class DatabaseStore implements LockProvider, Store
     {
         $result = serialize($value);
 
-        if ($this->connection instanceof PostgresConnection && str_contains($result, "\0")) {
+        if (($this->connection instanceof PostgresConnection ||
+             $this->connection instanceof SQLiteConnection) &&
+            str_contains($result, "\0")) {
             $result = base64_encode($result);
         }
 
@@ -495,10 +584,26 @@ class DatabaseStore implements LockProvider, Store
      */
     protected function unserialize($value)
     {
-        if ($this->connection instanceof PostgresConnection && ! Str::contains($value, [':', ';'])) {
+        if (($this->connection instanceof PostgresConnection ||
+             $this->connection instanceof SQLiteConnection) &&
+            ! Str::contains($value, [':', ';'])) {
             $value = base64_decode($value);
         }
 
+        if ($this->serializableClasses !== null) {
+            return unserialize($value, ['allowed_classes' => $this->serializableClasses]);
+        }
+
         return unserialize($value);
+    }
+
+    /**
+     * Determine if the lock store is separate from the cache store.
+     *
+     * @return bool
+     */
+    public function hasSeparateLockStore(): bool
+    {
+        return $this->lockTable !== $this->table;
     }
 }

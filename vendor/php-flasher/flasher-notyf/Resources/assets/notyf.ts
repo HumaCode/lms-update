@@ -6,29 +6,58 @@ import type { INotyfOptions } from 'notyf/notyf.options'
 import 'notyf/notyf.min.css'
 
 export default class NotyfPlugin extends AbstractPlugin {
-    notyf?: Notyf
+    private notyf?: Notyf
 
     public renderEnvelopes(envelopes: Envelope[]): void {
+        if (!this.notyf) {
+            this.initializeNotyf()
+        }
+
         envelopes.forEach((envelope) => {
-            const options = { ...envelope, ...envelope.options }
-            this.notyf?.open(options)
+            try {
+                const options = { ...envelope, ...envelope.options }
+                const notification = this.notyf?.open(options)
+
+                if (notification) {
+                    this.attachEventListeners(notification, envelope)
+                }
+            } catch (error) {
+                console.error('PHPFlasher Notyf: Error rendering notification', error, envelope)
+            }
         })
 
-        // @ts-expect-error
-        this.notyf.view.container.dataset.turboTemporary = ''
-        // @ts-expect-error
-        this.notyf.view.a11yContainer.dataset.turboTemporary = ''
+        try {
+            if (this.notyf) {
+                const view = (this.notyf as unknown as { view: { container: { dataset?: DOMStringMap }; a11yContainer: { dataset?: DOMStringMap } } }).view
+                const container = view.container
+                const a11yContainer = view.a11yContainer
+
+                if (container && container.dataset) {
+                    container.dataset.turboTemporary = ''
+                }
+
+                if (a11yContainer && a11yContainer.dataset) {
+                    a11yContainer.dataset.turboTemporary = ''
+                }
+            }
+        } catch (error) {
+            console.error('PHPFlasher Notyf: Error setting Turbo compatibility', error)
+        }
     }
 
     public renderOptions(options: Options): void {
-        const nOptions = {
-            duration: options.duration || 5000,
+        if (!options) {
+            return
+        }
+
+        const notyfOptions = {
+            duration: options.duration || 10000,
             ...options,
         } as unknown as INotyfOptions
 
-        nOptions.types = nOptions.types || []
+        notyfOptions.types = notyfOptions.types || []
 
-        nOptions.types.push({
+        this.addTypeIfNotExists(notyfOptions.types, {
             type: 'info',
             className: 'notyf__toast--info',
             background: '#5784E5',
@@ -38,7 +67,7 @@ export default class NotyfPlugin extends AbstractPlugin {
             },
         })
 
-        nOptions.types.push({
+        this.addTypeIfNotExists(notyfOptions.types, {
             type: 'warning',
             className: 'notyf__toast--warning',
             background: '#E3A008',
@@ -48,6 +77,54 @@ export default class NotyfPlugin extends AbstractPlugin {
             },
         })
 
-        this.notyf = this.notyf || new Notyf(nOptions as Partial<INotyfOptions>)
+        this.notyf = this.notyf || new Notyf(notyfOptions)
+    }
+
+    private initializeNotyf(): void {
+        if (!this.notyf) {
+            this.renderOptions({
+                duration: 10000,
+                position: { x: 'right', y: 'top' },
+                dismissible: true,
+            })
+        }
+    }
+
+    private addTypeIfNotExists(types: any[], newType: any): void {
+        const exists = types.some((type) => type.type === newType.type)
+        if (!exists) {
+            types.push(newType)
+        }
+    }
+
+    private attachEventListeners(notification: unknown, envelope: Envelope): void {
+        if (!this.notyf) {
+            return
+        }
+
+        // Notyf supports events at runtime but types don't include them
+        const notyf = this.notyf as unknown as {
+            on: (event: string, callback: (params: { target: unknown, event: Event }) => void) => void
+        }
+
+        // Listen for click events
+        notyf.on('click', ({ target, event }) => {
+            if (target === notification) {
+                this.dispatchEvent('flasher:notyf:click', envelope, { event })
+            }
+        })
+
+        // Listen for dismiss events
+        notyf.on('dismiss', ({ target, event }) => {
+            if (target === notification) {
+                this.dispatchEvent('flasher:notyf:dismiss', envelope, { event })
+            }
+        })
+    }
+
+    private dispatchEvent(eventName: string, envelope: Envelope, extra: Record<string, any> = {}): void {
+        window.dispatchEvent(new CustomEvent(eventName, {
+            detail: { envelope, ...extra },
+        }))
     }
 }

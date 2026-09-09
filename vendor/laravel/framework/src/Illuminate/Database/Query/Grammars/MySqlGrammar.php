@@ -4,7 +4,9 @@ namespace Illuminate\Database\Query\Grammars;
 
 use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Query\JoinLateralClause;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 
 class MySqlGrammar extends Grammar
 {
@@ -14,6 +16,44 @@ class MySqlGrammar extends Grammar
      * @var string[]
      */
     protected $operators = ['sounds like'];
+
+    /**
+     * Compile a select query into SQL.
+     *
+     * @param  \Illuminate\Database\Query\Builder  $query
+     * @return string
+     */
+    public function compileSelect(Builder $query)
+    {
+        $sql = parent::compileSelect($query);
+
+        if ($query->timeout === null) {
+            return $sql;
+        }
+
+        $milliseconds = $query->timeout * 1000;
+
+        return preg_replace(
+            '/^select\b/i',
+            'select /*+ MAX_EXECUTION_TIME('.$milliseconds.') */',
+            $sql,
+            1
+        );
+    }
+
+    /**
+     * Compile a "where binary" clause.
+     *
+     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  array  $where
+     * @return string
+     */
+    protected function whereBinary(Builder $query, $where)
+    {
+        $where['operator'] = ($where['not'] ? '!=' : '=').' binary';
+
+        return $this->whereBasic($query, $where);
+    }
 
     /**
      * Compile a "where like" clause.
@@ -29,6 +69,18 @@ class MySqlGrammar extends Grammar
         $where['operator'] .= $where['caseSensitive'] ? 'like binary' : 'like';
 
         return $this->whereBasic($query, $where);
+    }
+
+    /**
+     * Compile a "where null safe equals" clause.
+     *
+     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  array  $where
+     * @return string
+     */
+    protected function whereNullSafeEquals(Builder $query, $where)
+    {
+        return $this->wrap($where['column']).' <=> '.$this->parameter($where['value']);
     }
 
     /**
@@ -101,13 +153,25 @@ class MySqlGrammar extends Grammar
      * @param  \Illuminate\Database\Query\Builder  $query
      * @param  \Illuminate\Database\Query\IndexHint  $indexHint
      * @return string
+     *
+     * @throws \InvalidArgumentException
      */
     protected function compileIndexHint(Builder $query, $indexHint)
     {
+        $index = $indexHint->index;
+
+        $indexes = array_map('trim', explode(',', $index));
+
+        foreach ($indexes as $i) {
+            if (! preg_match('/^[a-zA-Z0-9_$]+$/', $i)) {
+                throw new InvalidArgumentException('Index name contains invalid characters.');
+            }
+        }
+
         return match ($indexHint->type) {
-            'hint' => "use index ({$indexHint->index})",
-            'force' => "force index ({$indexHint->index})",
-            default => "ignore index ({$indexHint->index})",
+            'hint' => "use index ({$index})",
+            'force' => "force index ({$index})",
+            default => "ignore index ({$index})",
         };
     }
 
@@ -134,7 +198,7 @@ class MySqlGrammar extends Grammar
     {
         $version = $query->getConnection()->getServerVersion();
 
-        return ! $query->getConnection()->isMaria() && version_compare($version, '8.0.11') < 0;
+        return ! $query->getConnection()->isMaria() && version_compare($version, '8.0.11', '<');
     }
 
     /**
@@ -284,10 +348,20 @@ class MySqlGrammar extends Grammar
      *
      * @param  string|int  $seed
      * @return string
+     *
+     * @throws \InvalidArgumentException
      */
     public function compileRandom($seed)
     {
-        return 'RAND('.$seed.')';
+        if ($seed === '' || $seed === null) {
+            return 'RAND()';
+        }
+
+        if (! is_numeric($seed)) {
+            throw new InvalidArgumentException('The seed value must be numeric.');
+        }
+
+        return 'RAND('.(int) $seed.')';
     }
 
     /**
@@ -331,7 +405,7 @@ class MySqlGrammar extends Grammar
      */
     protected function compileUpdateColumns(Builder $query, array $values)
     {
-        return collect($values)->map(function ($value, $key) {
+        return (new Collection($values))->map(function ($value, $key) {
             if ($this->isJsonSelector($key)) {
                 return $this->compileJsonUpdateColumn($key, $value);
             }
@@ -361,7 +435,7 @@ class MySqlGrammar extends Grammar
 
         $sql .= ' on duplicate key update ';
 
-        $columns = collect($update)->map(function ($value, $key) use ($useUpsertAlias) {
+        $columns = (new Collection($update))->map(function ($value, $key) use ($useUpsertAlias) {
             if (! is_numeric($key)) {
                 return $this->wrap($key).' = '.$this->parameter($value);
             }
@@ -384,6 +458,14 @@ class MySqlGrammar extends Grammar
     public function compileJoinLateral(JoinLateralClause $join, string $expression): string
     {
         return trim("{$join->type} join lateral {$expression} on true");
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function supportsStraightJoins()
+    {
+        return true;
     }
 
     /**
@@ -441,19 +523,19 @@ class MySqlGrammar extends Grammar
      * @param  array  $values
      * @return array
      */
+    #[\Override]
     public function prepareBindingsForUpdate(array $bindings, array $values)
     {
-        $values = collect($values)->reject(function ($value, $column) {
-            return $this->isJsonSelector($column) && is_bool($value);
-        })->map(function ($value) {
-            return is_array($value) ? json_encode($value) : $value;
-        })->all();
+        $values = (new Collection($values))
+            ->reject(fn ($value, $column) => $this->isJsonSelector($column) && is_bool($value))
+            ->map(fn ($value) => is_array($value) ? json_encode($value) : $value)
+            ->all();
 
         return parent::prepareBindingsForUpdate($bindings, $values);
     }
 
     /**
-     * Compile a delete query that does not use joins.
+     * Compile a delete statement without joins into SQL.
      *
      * @param  \Illuminate\Database\Query\Builder  $query
      * @param  string  $table
@@ -464,9 +546,33 @@ class MySqlGrammar extends Grammar
     {
         $sql = parent::compileDeleteWithoutJoins($query, $table, $where);
 
-        // When using MySQL, delete statements may contain order by statements and limits
-        // so we will compile both of those here. Once we have finished compiling this
-        // we will return the completed SQL statement so it will be executed for us.
+        if (! empty($query->orders)) {
+            $sql .= ' '.$this->compileOrders($query, $query->orders);
+        }
+
+        if (isset($query->limit)) {
+            $sql .= ' '.$this->compileLimit($query, $query->limit);
+        }
+
+        return $sql;
+    }
+
+    /**
+     * Compile a delete statement with joins into SQL.
+     *
+     * Adds ORDER BY and LIMIT if present, for platforms that allow them (e.g., PlanetScale).
+     *
+     * Standard MySQL does not support ORDER BY or LIMIT with joined deletes and will throw a syntax error.
+     *
+     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  string  $table
+     * @param  string  $where
+     * @return string
+     */
+    protected function compileDeleteWithJoins(Builder $query, $table, $where)
+    {
+        $sql = parent::compileDeleteWithJoins($query, $table, $where);
+
         if (! empty($query->orders)) {
             $sql .= ' '.$this->compileOrders($query, $query->orders);
         }

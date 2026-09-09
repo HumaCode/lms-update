@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Intervention\Image\Drivers\Gd\Encoders;
 
-use Intervention\Image\EncodedImage;
 use Intervention\Image\Encoders\AvifEncoder as GenericAvifEncoder;
+use Intervention\Image\Exceptions\StreamException;
+use Intervention\Image\Exceptions\InvalidArgumentException;
+use Intervention\Image\Interfaces\EncodedImageInterface;
 use Intervention\Image\Interfaces\ImageInterface;
 use Intervention\Image\Interfaces\SpecializedInterface;
 
@@ -15,14 +17,14 @@ class AvifEncoder extends GenericAvifEncoder implements SpecializedInterface
      * {@inheritdoc}
      *
      * @see EncoderInterface::encode()
+     *
+     * @throws InvalidArgumentException
+     * @throws StreamException
      */
-    public function encode(ImageInterface $image): EncodedImage
+    public function encode(ImageInterface $image): EncodedImageInterface
     {
-        $gd = $image->core()->native();
-        $data = $this->buffered(function () use ($gd) {
-            imageavif($gd, null, $this->quality);
-        });
-
-        return new EncodedImage($data, 'image/avif');
+        return $this->createEncodedImage(function ($stream) use ($image): void {
+            imageavif($image->core()->native(), $stream, $this->quality);
+        }, 'image/avif');
     }
 }

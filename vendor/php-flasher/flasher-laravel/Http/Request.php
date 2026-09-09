@@ -14,6 +14,11 @@ final readonly class Request implements RequestInterface
     {
     }
 
+    public function getUri(): string
+    {
+        return $this->request->getUri();
+    }
+
     public function isXmlHttpRequest(): bool
     {
         return $this->request->ajax();
@@ -51,14 +56,14 @@ final readonly class Request implements RequestInterface
     {
         $session = $this->getSession();
 
-        /** @var false|string|string[] $type */
-        $type = $session?->get($type);
+        /** @var false|string|string[] $value */
+        $value = $session?->get($type);
 
-        if (!\is_string($type) && !\is_array($type)) {
+        if (!\is_string($value) && !\is_array($value)) {
             return [];
         }
 
-        return $type;
+        return $value;
     }
 
     public function forgetType(string $type): void

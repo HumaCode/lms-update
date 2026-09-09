@@ -8,12 +8,12 @@ use Illuminate\Contracts\Console\Kernel as ConsoleKernel;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\Foundation\ExceptionRenderer;
 use Illuminate\Contracts\Foundation\MaintenanceMode as MaintenanceModeContract;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Grammar;
 use Illuminate\Foundation\Console\CliDumper;
-use Illuminate\Foundation\Defer\DeferredCallbackCollection;
 use Illuminate\Foundation\Exceptions\Renderer\Listener;
 use Illuminate\Foundation\Exceptions\Renderer\Mappers\BladeMapper;
 use Illuminate\Foundation\Exceptions\Renderer\Renderer;
@@ -26,7 +26,9 @@ use Illuminate\Http\Request;
 use Illuminate\Log\Events\MessageLogged;
 use Illuminate\Queue\Events\JobAttempted;
 use Illuminate\Support\AggregateServiceProvider;
+use Illuminate\Support\Defer\DeferredCallbackCollection;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Uri;
 use Illuminate\Testing\LoggedExceptionCollection;
 use Illuminate\Testing\ParallelTestingServiceProvider;
 use Illuminate\Validation\ValidationException;
@@ -39,7 +41,7 @@ class FoundationServiceProvider extends AggregateServiceProvider
     /**
      * The provider class names.
      *
-     * @var string[]
+     * @var array<int, class-string<\Illuminate\Support\ServiceProvider>>
      */
     protected $providers = [
         FormRequestServiceProvider::class,
@@ -69,7 +71,7 @@ class FoundationServiceProvider extends AggregateServiceProvider
             ], 'laravel-errors');
         }
 
-        if ($this->app->hasDebugModeEnabled()) {
+        if ($this->app->hasDebugModeEnabled() && ! $this->app->has(ExceptionRenderer::class)) {
             $this->app->make(Listener::class)->registerListeners(
                 $this->app->make(Dispatcher::class)
             );
@@ -89,6 +91,7 @@ class FoundationServiceProvider extends AggregateServiceProvider
         $this->registerDumper();
         $this->registerRequestValidation();
         $this->registerRequestSignatureValidation();
+        $this->registerUriUrlGeneration();
         $this->registerDeferHandler();
         $this->registerExceptionTracking();
         $this->registerExceptionRenderer();
@@ -139,6 +142,8 @@ class FoundationServiceProvider extends AggregateServiceProvider
      * Register the "validate" macro on the request.
      *
      * @return void
+     *
+     * @throws \Illuminate\Validation\ValidationException
      */
     public function registerRequestValidation()
     {
@@ -189,6 +194,16 @@ class FoundationServiceProvider extends AggregateServiceProvider
     }
 
     /**
+     * Register the URL resolver for the URI generator.
+     *
+     * @return void
+     */
+    protected function registerUriUrlGeneration()
+    {
+        Uri::setUrlGeneratorResolver(fn () => app('url'));
+    }
+
+    /**
      * Register the "defer" function termination handler.
      *
      * @return void
@@ -198,13 +213,15 @@ class FoundationServiceProvider extends AggregateServiceProvider
         $this->app->scoped(DeferredCallbackCollection::class);
 
         $this->app['events']->listen(function (CommandFinished $event) {
-            app(DeferredCallbackCollection::class)->invokeWhen(fn ($callback) => app()->runningInConsole() && ($event->exitCode === 0 || $callback->always)
-            );
+            app(DeferredCallbackCollection::class)->invokeWhen(fn ($callback) => app()->runningInConsole() && ($event->exitCode === 0 || $callback->always));
         });
 
         $this->app['events']->listen(function (JobAttempted $event) {
-            app(DeferredCallbackCollection::class)->invokeWhen(fn ($callback) => $event->connectionName !== 'sync' && ($event->successful() || $callback->always)
-            );
+            if (in_array($event->connectionName, ['sync', 'deferred'])) {
+                return;
+            }
+
+            app(DeferredCallbackCollection::class)->invokeWhen(fn ($callback) => ($event->successful() || $callback->always));
         });
     }
 
@@ -227,7 +244,7 @@ class FoundationServiceProvider extends AggregateServiceProvider
         $this->app->make('events')->listen(MessageLogged::class, function ($event) {
             if (isset($event->context['exception'])) {
                 $this->app->make(LoggedExceptionCollection::class)
-                        ->push($event->context['exception']);
+                    ->push($event->context['exception']);
             }
         });
     }
@@ -239,6 +256,8 @@ class FoundationServiceProvider extends AggregateServiceProvider
      */
     protected function registerExceptionRenderer()
     {
+        $this->loadViewsFrom(__DIR__.'/../Exceptions/views', 'laravel-exceptions');
+
         if (! $this->app->hasDebugModeEnabled()) {
             return;
         }

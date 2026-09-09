@@ -7,10 +7,13 @@ namespace Intervention\Image\Geometry;
 use ArrayAccess;
 use ArrayIterator;
 use Countable;
+use Intervention\Image\Colors\AbstractColor;
+use Intervention\Image\Geometry\Factories\BezierFactory;
 use Traversable;
 use IteratorAggregate;
 use Intervention\Image\Geometry\Traits\HasBackgroundColor;
 use Intervention\Image\Geometry\Traits\HasBorder;
+use Intervention\Image\Interfaces\DrawableFactoryInterface;
 use Intervention\Image\Interfaces\DrawableInterface;
 use Intervention\Image\Interfaces\PointInterface;
 
@@ -24,16 +27,15 @@ class Bezier implements IteratorAggregate, Countable, ArrayAccess, DrawableInter
     use HasBackgroundColor;
 
     /**
-     * Create new bezier instance
+     * Create new bezier instance.
      *
      * @param array<PointInterface> $points
-     * @param PointInterface $pivot
-     * @return void
      */
     public function __construct(
         protected array $points = [],
-        protected PointInterface $pivot = new Point()
+        protected PointInterface $pivot = new Point(),
     ) {
+        //
     }
 
     /**
@@ -51,7 +53,7 @@ class Bezier implements IteratorAggregate, Countable, ArrayAccess, DrawableInter
      *
      * @see DrawableInterface::setPosition()
      */
-    public function setPosition(PointInterface $position): DrawableInterface
+    public function setPosition(PointInterface $position): self
     {
         $this->pivot = $position;
 
@@ -59,7 +61,7 @@ class Bezier implements IteratorAggregate, Countable, ArrayAccess, DrawableInter
     }
 
     /**
-     * Implement iteration through all points of bezier
+     * Implement iteration through all points of bezier.
      *
      * @return Traversable<PointInterface>
      */
@@ -69,9 +71,7 @@ class Bezier implements IteratorAggregate, Countable, ArrayAccess, DrawableInter
     }
 
     /**
-     * Return current pivot point
-     *
-     * @return PointInterface
+     * Return current pivot point.
      */
     public function pivot(): PointInterface
     {
@@ -79,10 +79,7 @@ class Bezier implements IteratorAggregate, Countable, ArrayAccess, DrawableInter
     }
 
     /**
-     * Change pivot point to given point
-     *
-     * @param PointInterface $pivot
-     * @return Bezier
+     * Change pivot point to given point.
      */
     public function setPivot(PointInterface $pivot): self
     {
@@ -92,9 +89,7 @@ class Bezier implements IteratorAggregate, Countable, ArrayAccess, DrawableInter
     }
 
     /**
-     * Return first control point of bezier
-     *
-     * @return ?PointInterface
+     * Return first control point of bezier.
      */
     public function first(): ?PointInterface
     {
@@ -106,9 +101,7 @@ class Bezier implements IteratorAggregate, Countable, ArrayAccess, DrawableInter
     }
 
     /**
-     * Return second control point of bezier
-     *
-     * @return ?PointInterface
+     * Return second control point of bezier.
      */
     public function second(): ?PointInterface
     {
@@ -120,9 +113,7 @@ class Bezier implements IteratorAggregate, Countable, ArrayAccess, DrawableInter
     }
 
     /**
-     * Return third control point of bezier
-     *
-     * @return ?PointInterface
+     * Return third control point of bezier.
      */
     public function third(): ?PointInterface
     {
@@ -134,9 +125,7 @@ class Bezier implements IteratorAggregate, Countable, ArrayAccess, DrawableInter
     }
 
     /**
-     * Return last control point of bezier
-     *
-     * @return ?PointInterface
+     * Return last control point of bezier.
      */
     public function last(): ?PointInterface
     {
@@ -148,9 +137,7 @@ class Bezier implements IteratorAggregate, Countable, ArrayAccess, DrawableInter
     }
 
     /**
-     * Return bezier's point count
-     *
-     * @return int
+     * Return bezier's point count.
      */
     public function count(): int
     {
@@ -158,55 +145,39 @@ class Bezier implements IteratorAggregate, Countable, ArrayAccess, DrawableInter
     }
 
     /**
-     * Determine if point exists at given offset
-     *
-     * @param mixed $offset
-     * @return bool
+     * Determine if point exists at given offset.
      */
-    public function offsetExists($offset): bool
+    public function offsetExists(mixed $offset): bool
     {
         return array_key_exists($offset, $this->points);
     }
 
     /**
-     * Return point at given offset
-     *
-     * @param mixed $offset
-     * @return PointInterface
+     * Return point at given offset.
      */
-    public function offsetGet($offset): mixed
+    public function offsetGet(mixed $offset): mixed
     {
         return $this->points[$offset];
     }
 
     /**
-     * Set point at given offset
-     *
-     * @param mixed $offset
-     * @param PointInterface $value
-     * @return void
+     * Set point at given offset.
      */
-    public function offsetSet($offset, $value): void
+    public function offsetSet(mixed $offset, mixed $value): void
     {
         $this->points[$offset] = $value;
     }
 
     /**
-     * Unset offset at given offset
-     *
-     * @param mixed $offset
-     * @return void
+     * Unset offset at given offset.
      */
-    public function offsetUnset($offset): void
+    public function offsetUnset(mixed $offset): void
     {
         unset($this->points[$offset]);
     }
 
     /**
-     * Add given point to bezier
-     *
-     * @param PointInterface $point
-     * @return Bezier
+     * Add given point to bezier.
      */
     public function addPoint(PointInterface $point): self
     {
@@ -216,7 +187,7 @@ class Bezier implements IteratorAggregate, Countable, ArrayAccess, DrawableInter
     }
 
     /**
-     * Return array of all x/y values of all points of bezier
+     * Return array of all x/y values of all points of bezier.
      *
      * @return array<int>
      */
@@ -229,5 +200,45 @@ class Bezier implements IteratorAggregate, Countable, ArrayAccess, DrawableInter
         }
 
         return $coordinates;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see DrawableInterface::factory()
+     */
+    public function factory(): DrawableFactoryInterface
+    {
+        return new BezierFactory($this);
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see DrawableInterface::adjust()
+     */
+    public function adjust(callable $adjustments): DrawableInterface
+    {
+        $factory = $this->factory();
+        $adjustments($factory);
+
+        return $factory->drawable();
+    }
+
+    /**
+     * Clone bezier.
+     */
+    public function __clone(): void
+    {
+        $this->points = array_map(fn($point) => clone $point, $this->points);
+        $this->pivot = clone $this->pivot;
+
+        if ($this->backgroundColor instanceof AbstractColor) {
+            $this->backgroundColor = clone $this->backgroundColor;
+        }
+
+        if ($this->borderColor instanceof AbstractColor) {
+            $this->borderColor = clone $this->borderColor;
+        }
     }
 }

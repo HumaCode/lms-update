@@ -3,7 +3,7 @@ ParaTest
 
 [![Latest Stable Version](https://img.shields.io/packagist/v/brianium/paratest.svg)](https://packagist.org/packages/brianium/paratest)
 [![Downloads](https://img.shields.io/packagist/dt/brianium/paratest.svg)](https://packagist.org/packages/brianium/paratest)
-[![Integrate](https://github.com/paratestphp/paratest/workflows/CI/badge.svg)](https://github.com/paratestphp/paratest/actions)
+[![Integrate](https://github.com/paratestphp/paratest/actions/workflows/ci.yml/badge.svg?branch=7.x)](https://github.com/paratestphp/paratest/actions)
 [![Infection MSI](https://img.shields.io/endpoint?style=flat&url=https%3A%2F%2Fbadge-api.stryker-mutator.io%2Fgithub.com%2Fparatestphp%2Fparatest%2F7.x)](https://dashboard.stryker-mutator.io/reports/github.com/paratestphp/paratest/7.x)
 
 The objective of ParaTest is to support parallel testing in PHPUnit. Provided you have well-written PHPUnit tests, you can drop `paratest` in your project and
@@ -122,24 +122,11 @@ public function setUp(): void
 ## Troubleshooting
 
 If you run into problems with `paratest`, try to get more information about the issue by enabling debug output via
-`--verbose --debug`.
+`--verbose`.
 
 When a sub-process fails, the originating command is given in the output and can then be copy-pasted in the terminal
 to be run and debugged. All internal commands run with `--printer [...]\NullPhpunitPrinter` which silence the original
 PHPUnit output: during a debugging run remove that option to restore the output and see what PHPUnit is doing.
-
-## Windows
-
-Windows users be sure to use the appropriate batch files.
-
-An example being:
-
-`vendor\bin\paratest.bat ...`
-
-ParaTest assumes [PSR-0](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-0.md) for loading tests.
-
-For convenience, ParaTest for Windows uses 79 columns mode to prevent blank lines in the standard
-80x25 windows console.
 
 ## Caveats
 

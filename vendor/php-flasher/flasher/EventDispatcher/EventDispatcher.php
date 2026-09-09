@@ -24,6 +24,9 @@ final class EventDispatcher implements EventDispatcherInterface
         $this->addListener(new AddToStorageListener());
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     public function dispatch(object $event): object
     {
         $listeners = $this->getListeners($event::class);
@@ -34,7 +37,7 @@ final class EventDispatcher implements EventDispatcherInterface
             }
 
             if (!\is_callable($listener)) {
-                throw new \InvalidArgumentException(sprintf('Listener "%s" is not callable. Listeners must implement __invoke method.', $listener::class));
+                throw new \InvalidArgumentException(\sprintf('Listener "%s" is not callable. Listeners must implement __invoke method.', $listener::class));
             }
 
             $listener($event);
@@ -50,9 +53,6 @@ final class EventDispatcher implements EventDispatcherInterface
         }
     }
 
-    /**
-     * @return EventListenerInterface[]
-     */
     public function getListeners(string $eventName): array
     {
         return $this->listeners[$eventName] ?? [];

@@ -10,20 +10,27 @@ use Intervention\Image\Interfaces\ModifierInterface;
 class ModifierStack implements ModifierInterface
 {
     /**
-     * Create new modifier stack object with an array of modifier objects
+     * Create new modifier stack object with an array of modifier objects.
      *
      * @param array<ModifierInterface> $modifiers
-     * @return void
      */
-    public function __construct(protected array $modifiers)
+    public function __construct(protected array $modifiers = [])
     {
+        //
     }
 
     /**
-     * Apply all modifiers in stack to the given image
+     * Create new modifier stack object statically.
      *
-     * @param ImageInterface $image
-     * @return ImageInterface
+     * @param array<ModifierInterface> $modifiers
+     */
+    public static function create(array $modifiers = []): self
+    {
+        return new self($modifiers);
+    }
+
+    /**
+     * Apply all modifiers in stack to the given image.
      */
     public function apply(ImageInterface $image): ImageInterface
     {
@@ -35,10 +42,7 @@ class ModifierStack implements ModifierInterface
     }
 
     /**
-     * Append new modifier to the stack
-     *
-     * @param ModifierInterface $modifier
-     * @return ModifierStack
+     * Append new modifier to the stack.
      */
     public function push(ModifierInterface $modifier): self
     {

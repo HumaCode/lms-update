@@ -5,34 +5,32 @@ declare(strict_types=1);
 namespace Intervention\Gif\Encoders;
 
 use Intervention\Gif\Blocks\ApplicationExtension;
+use Intervention\Gif\Blocks\DataSubBlock;
+use Intervention\Gif\Exceptions\EncoderException;
 
 class ApplicationExtensionEncoder extends AbstractEncoder
 {
     /**
-     * Create new decoder instance
-     *
-     * @param ApplicationExtension $source
+     * Create new decoder instance.
      */
-    public function __construct(ApplicationExtension $source)
+    public function __construct(ApplicationExtension $entity)
     {
-        $this->source = $source;
+        parent::__construct($entity);
     }
 
     /**
-     * Encode current source
+     * Encode current entity.
      *
-     * @return string
+     * @throws EncoderException
      */
     public function encode(): string
     {
         return implode('', [
             ApplicationExtension::MARKER,
             ApplicationExtension::LABEL,
-            pack('C', $this->source->getBlockSize()),
-            $this->source->getApplication(),
-            implode('', array_map(function ($block) {
-                return $block->encode();
-            }, $this->source->getBlocks())),
+            pack('C', $this->entity->blockSize()),
+            $this->entity->application(),
+            implode('', array_map(fn(DataSubBlock $block): string => $block->encode(), $this->entity->blocks())),
             ApplicationExtension::TERMINATOR,
         ]);
     }

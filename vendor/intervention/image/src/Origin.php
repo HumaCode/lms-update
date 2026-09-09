@@ -4,25 +4,26 @@ declare(strict_types=1);
 
 namespace Intervention\Image;
 
-class Origin
+use Intervention\Image\Exceptions\InvalidArgumentException;
+use Intervention\Image\Exceptions\NotSupportedException;
+use Intervention\Image\Interfaces\OriginInterface;
+
+class Origin implements OriginInterface
 {
     /**
-     * Create new origin instance
-     *
-     * @param string $mediaType
-     * @param null|string $filePath
-     * @return void
+     * Create new origin instance.
      */
     public function __construct(
         protected string $mediaType = 'application/octet-stream',
-        protected ?string $filePath = null
+        protected ?string $filePath = null,
     ) {
+        //
     }
 
     /**
-     * Return media type of origin
+     * {@inheritdoc}
      *
-     * @return string
+     * @see OriginInterface::mediaType()
      */
     public function mediaType(): string
     {
@@ -30,7 +31,7 @@ class Origin
     }
 
     /**
-     * Alias of self::mediaType()
+     * @see self::mediaType()
      */
     public function mimetype(): string
     {
@@ -38,25 +39,21 @@ class Origin
     }
 
     /**
-     * Set media type of current instance
+     * {@inheritdoc}
      *
-     * @param string|MediaType $type
-     * @return Origin
+     * @see OriginInterface::setMediaType()
      */
     public function setMediaType(string|MediaType $type): self
     {
-        $this->mediaType = match (true) {
-            is_string($type) => $type,
-            default => $type->value,
-        };
+        $this->mediaType = is_string($type) ? $type : $type->value;
 
         return $this;
     }
 
     /**
-     * Return file path of origin
+     * {@inheritdoc}
      *
-     * @return null|string
+     * @see OriginInterface::filePath()
      */
     public function filePath(): ?string
     {
@@ -64,10 +61,9 @@ class Origin
     }
 
     /**
-     * Set file path for origin
+     * {@inheritdoc}
      *
-     * @param string $path
-     * @return Origin
+     * @see OriginInterface::setFilePath()
      */
     public function setFilePath(string $path): self
     {
@@ -77,12 +73,41 @@ class Origin
     }
 
     /**
-     * Return file extension if origin was created from file path
+     * {@inheritdoc}
      *
-     * @return null|string
+     * @see OriginInterface::fileExtension()
      */
     public function fileExtension(): ?string
     {
-        return empty($this->filePath) ? null : pathinfo($this->filePath, PATHINFO_EXTENSION);
+        return pathinfo($this->filePath ?: '', PATHINFO_EXTENSION) ?: null;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see OriginInterface::format()
+     *
+     * @throws NotSupportedException
+     */
+    public function format(): Format
+    {
+        try {
+            return MediaType::create($this->mediaType())->format();
+        } catch (InvalidArgumentException) {
+            throw new NotSupportedException('Media type "' . $this->mediaType() . '" is not supported');
+        }
+    }
+
+    /**
+     * Show debug info for the current image.
+     *
+     * @return array<string, null|string>
+     */
+    public function __debugInfo(): array
+    {
+        return [
+            'mediaType' => $this->mediaType(),
+            'filePath' => $this->filePath(),
+        ];
     }
 }

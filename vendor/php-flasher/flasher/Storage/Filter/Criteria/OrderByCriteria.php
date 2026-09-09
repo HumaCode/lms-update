@@ -22,6 +22,7 @@ use Flasher\Prime\Stamp\WhenStamp;
 final class OrderByCriteria implements CriteriaInterface
 {
     public const ASC = 'ASC';
+
     public const DESC = 'DESC';
 
     /**
@@ -46,10 +47,13 @@ final class OrderByCriteria implements CriteriaInterface
      */
     private array $orderings = [];
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     public function __construct(mixed $criteria)
     {
         if (!\is_string($criteria) && !\is_array($criteria)) {
-            throw new \InvalidArgumentException(sprintf('Invalid type for criteria "order_by". Expect a "string" or an "array", got "%s".', get_debug_type($criteria)));
+            throw new \InvalidArgumentException(\sprintf('Invalid type for criteria "order_by". Expect a "string" or an "array", got "%s".', get_debug_type($criteria)));
         }
 
         foreach ((array) $criteria as $field => $direction) {
@@ -59,28 +63,33 @@ final class OrderByCriteria implements CriteriaInterface
             }
 
             if (!\is_string($field)) {
-                throw new \InvalidArgumentException(sprintf('Invalid Field value, must be "string", got "%s".', get_debug_type($field)));
+                throw new \InvalidArgumentException(\sprintf('Invalid Field value, must be "string", got "%s".', get_debug_type($field)));
             }
 
             if (!\is_string($direction)) {
-                throw new \InvalidArgumentException(sprintf('Invalid Direction value, must be "string", got "%s".', get_debug_type($direction)));
+                throw new \InvalidArgumentException(\sprintf('Invalid Direction value, must be "string", got "%s".', get_debug_type($direction)));
             }
 
             $direction = strtoupper($direction);
 
             if (!\in_array($direction, [self::ASC, self::DESC], true)) {
-                throw new \InvalidArgumentException(sprintf('Invalid ordering direction: must be "ASC" or "DESC", got "%s".', $direction));
+                throw new \InvalidArgumentException(\sprintf('Invalid ordering direction: must be "ASC" or "DESC", got "%s".', $direction));
             }
 
             $field = $this->aliases[$field] ?? $field;
             if (!is_a($field, StampInterface::class, true)) {
-                throw new \InvalidArgumentException(sprintf('Field "%s" is not a valid class-string of "%s".', $field, StampInterface::class));
+                throw new \InvalidArgumentException(\sprintf('Field "%s" is not a valid class-string of "%s".', $field, StampInterface::class));
             }
 
             $this->orderings[$field] = $direction;
         }
     }
 
+    /**
+     * @param Envelope[] $envelopes
+     *
+     * @return Envelope[]
+     */
     public function apply(array $envelopes): array
     {
         usort($envelopes, function (Envelope $first, Envelope $second): int {
@@ -89,12 +98,16 @@ final class OrderByCriteria implements CriteriaInterface
                 $stampB = $second->get($field);
 
                 if (!$stampA instanceof OrderableStampInterface || !$stampB instanceof OrderableStampInterface) {
-                    return 0;
+                    continue;
                 }
 
-                return self::ASC === $ordering
+                $comparison = self::ASC === $ordering
                     ? $stampA->compare($stampB)
                     : $stampB->compare($stampA);
+
+                if (0 !== $comparison) {
+                    return $comparison;
+                }
             }
 
             return 0;

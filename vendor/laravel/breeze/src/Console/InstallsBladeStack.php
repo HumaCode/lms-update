@@ -3,6 +3,7 @@
 namespace Laravel\Breeze\Console;
 
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Foundation\Application;
 use Symfony\Component\Finder\Finder;
 
 trait InstallsBladeStack
@@ -70,13 +71,17 @@ trait InstallsBladeStack
         copy(__DIR__.'/../../stubs/default/resources/css/app.css', resource_path('css/app.css'));
         copy(__DIR__.'/../../stubs/default/resources/js/app.js', resource_path('js/app.js'));
 
+        if (version_compare(Application::VERSION, '13.0.0', '>=')) {
+            $this->replaceInFile("import './bootstrap';", '', resource_path('js/app.js'));
+        }
+
         $this->components->info('Installing and building Node dependencies.');
 
         if (file_exists(base_path('pnpm-lock.yaml'))) {
             $this->runCommands(['pnpm install', 'pnpm run build']);
         } elseif (file_exists(base_path('yarn.lock'))) {
             $this->runCommands(['yarn install', 'yarn run build']);
-        } elseif (file_exists(base_path('bun.lockb'))) {
+        } elseif (file_exists(base_path('bun.lock')) || file_exists(base_path('bun.lockb'))) {
             $this->runCommands(['bun install', 'bun run build']);
         } elseif (file_exists(base_path('deno.lock'))) {
             $this->runCommands(['deno install', 'deno task build']);

@@ -20,6 +20,23 @@ return [
      */
     'convert_entities' => true,
 
+    /*
+    |--------------------------------------------------------------------------
+    | PDF/A Compliance
+    |--------------------------------------------------------------------------
+    |
+    | PDF/A-3b compliance mode for archival-quality PDFs.
+    | Requires dompdf >= 3.1.0 and the CPDF backend.
+    |
+    | IMPORTANT: PDF/A requires all fonts to be embedded. Core PDF fonts
+    | (Helvetica, Courier, Times) are NOT embedded and will cause validation
+    | failures. Use fonts like DejaVu Sans/Serif instead.
+    |
+    */
+    'pdfa' => [
+        'enabled' => false,
+    ],
+
     'options' => [
         /**
          * The location of the DOMPDF font directory
@@ -91,6 +108,7 @@ return [
          * @var array
          */
         'allowed_protocols' => [
+            'data://' => ['rules' => []],
             'file://' => ['rules' => []],
             'http://' => ['rules' => []],
             'https://' => ['rules' => []],
@@ -235,7 +253,7 @@ return [
         'enable_php' => false,
 
         /**
-         * Rnable inline JavaScript
+         * Enable inline JavaScript
          *
          * If this setting is set to true then DOMPDF will automatically insert JavaScript code contained
          * within <script type="text/javascript"> ... </script> tags as written into the PDF.

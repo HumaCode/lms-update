@@ -32,12 +32,13 @@ class DeleteController extends LfmController
                 event(new ImageIsDeleting($file->path('absolute')));
             }
 
-            if (!Storage::disk($this->helper->config('disk'))->exists($file->path('storage'))) {
-                abort(404);
-            }
-
             $file_to_delete = $this->lfm->pretty($name_to_delete);
             $file_path = $file_to_delete->path('absolute');
+            
+            if (!Storage::disk($this->helper->config('disk'))->exists($file->path('storage'))) {
+                $errors[] = parent::error('folder-not-found', ['folder' => $file_path]);
+                continue;
+            }
 
             if (is_null($name_to_delete)) {
                 array_push($errors, parent::error('folder-name'));

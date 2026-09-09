@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Intervention\Image\Geometry;
 
+use Intervention\Image\Colors\AbstractColor;
+use Intervention\Image\Geometry\Factories\LineFactory;
 use Intervention\Image\Geometry\Traits\HasBackgroundColor;
 use Intervention\Image\Geometry\Traits\HasBorder;
+use Intervention\Image\Interfaces\DrawableFactoryInterface;
 use Intervention\Image\Interfaces\DrawableInterface;
 use Intervention\Image\Interfaces\PointInterface;
 
@@ -15,18 +18,14 @@ class Line implements DrawableInterface
     use HasBackgroundColor;
 
     /**
-     * Create new line instance
-     *
-     * @param PointInterface $start
-     * @param PointInterface $end
-     * @param int $width
-     * @return void
+     * Create new line instance.
      */
     public function __construct(
         protected PointInterface $start,
         protected PointInterface $end,
-        protected int $width = 1
+        protected int $width = 1,
     ) {
+        //
     }
 
     /**
@@ -44,7 +43,7 @@ class Line implements DrawableInterface
      *
      * @see DrawableInterface::setPosition()
      */
-    public function setPosition(PointInterface $position): DrawableInterface
+    public function setPosition(PointInterface $position): self
     {
         $this->start = $position;
 
@@ -53,8 +52,6 @@ class Line implements DrawableInterface
 
     /**
      * Return line width
-     *
-     * @return int
      */
     public function width(): int
     {
@@ -62,10 +59,7 @@ class Line implements DrawableInterface
     }
 
     /**
-     * Set line width
-     *
-     * @param int $width
-     * @return Line
+     * Set line width.
      */
     public function setWidth(int $width): self
     {
@@ -75,9 +69,7 @@ class Line implements DrawableInterface
     }
 
     /**
-     * Get starting point of line
-     *
-     * @return PointInterface
+     * Get starting point of line.
      */
     public function start(): PointInterface
     {
@@ -85,9 +77,7 @@ class Line implements DrawableInterface
     }
 
     /**
-     * get end point of line
-     *
-     * @return PointInterface
+     * get end point of line.
      */
     public function end(): PointInterface
     {
@@ -95,10 +85,7 @@ class Line implements DrawableInterface
     }
 
     /**
-     * Set starting point of line
-     *
-     * @param PointInterface $start
-     * @return Line
+     * Set starting point of line.
      */
     public function setStart(PointInterface $start): self
     {
@@ -108,11 +95,7 @@ class Line implements DrawableInterface
     }
 
     /**
-     * Set starting point of line by coordinates
-     *
-     * @param int $x
-     * @param int $y
-     * @return Line
+     * Set starting point of line by coordinates.
      */
     public function from(int $x, int $y): self
     {
@@ -123,11 +106,7 @@ class Line implements DrawableInterface
     }
 
     /**
-     * Set end point of line by coordinates
-     *
-     * @param int $x
-     * @param int $y
-     * @return Line
+     * Set end point of line by coordinates.
      */
     public function to(int $x, int $y): self
     {
@@ -138,15 +117,52 @@ class Line implements DrawableInterface
     }
 
     /**
-     * Set end point of line
-     *
-     * @param PointInterface $end
-     * @return Line
+     * Set end point of line.
      */
     public function setEnd(PointInterface $end): self
     {
         $this->end = $end;
 
         return $this;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see DrawableInterface::factory()
+     */
+    public function factory(): DrawableFactoryInterface
+    {
+        return new LineFactory($this);
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see DrawableInterface::adjust()
+     */
+    public function adjust(callable $adjustments): DrawableInterface
+    {
+        $factory = $this->factory();
+        $adjustments($factory);
+
+        return $factory->drawable();
+    }
+
+    /**
+     * Clone line.
+     */
+    public function __clone(): void
+    {
+        $this->start = clone $this->start;
+        $this->end = clone $this->end;
+
+        if ($this->backgroundColor instanceof AbstractColor) {
+            $this->backgroundColor = clone $this->backgroundColor;
+        }
+
+        if ($this->borderColor instanceof AbstractColor) {
+            $this->borderColor = clone $this->borderColor;
+        }
     }
 }

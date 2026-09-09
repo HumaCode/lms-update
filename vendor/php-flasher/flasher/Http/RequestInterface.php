@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Flasher\Prime\Http;
 
+/**
+ * @method string getUri()
+ */
 interface RequestInterface
 {
     public function isXmlHttpRequest(): bool;

@@ -22,19 +22,21 @@ use Flasher\Prime\Template\TemplateEngineInterface;
 final readonly class ResourceManager implements ResourceManagerInterface
 {
     /**
-     * @phpstan-param ResourceType[] $resources
+     * @param ResourceType[] $resources
      */
     public function __construct(
         private TemplateEngineInterface $templateEngine,
         private AssetManagerInterface $assetManager,
-        private string $mainScript,
-        private array $resources,
+        private ?string $mainScript = null,
+        private array $resources = [],
     ) {
     }
 
     public function populateResponse(Response $response): Response
     {
-        $response->setMainScript($this->assetManager->getPath($this->mainScript));
+        if (null !== $this->mainScript) {
+            $response->setMainScript($this->assetManager->getPath($this->mainScript));
+        }
 
         $plugins = [];
         foreach ($response->getEnvelopes() as $envelope) {

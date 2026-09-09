@@ -4,13 +4,16 @@ namespace Illuminate\Foundation\Console;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Env;
 use Illuminate\Support\InteractsWithTime;
+use Illuminate\Support\Stringable;
 use Symfony\Component\Console\Attribute\AsCommand;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Process\PhpExecutableFinder;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Process;
 
+use function Illuminate\Support\php_binary;
 use function Termwind\terminal;
 
 #[AsCommand(name: 'serve')]
@@ -19,11 +22,15 @@ class ServeCommand extends Command
     use InteractsWithTime;
 
     /**
-     * The console command name.
+     * The name and signature of the console command.
      *
      * @var string
      */
-    protected $name = 'serve';
+    protected $signature = 'serve
+                    {--host= : The host address to serve the application on}
+                    {--port= : The port to serve the application on}
+                    {--tries=10 : The max number of ports to attempt to serve from}
+                    {--no-reload : Do not reload the development server on .env file changes}';
 
     /**
      * The console command description.
@@ -31,6 +38,13 @@ class ServeCommand extends Command
      * @var string
      */
     protected $description = 'Serve the application on the PHP development server';
+
+    /**
+     * The number of PHP CLI server workers.
+     *
+     * @var int<2, max>|false
+     */
+    protected $phpServerWorkers = 1;
 
     /**
      * The current port offset.
@@ -70,16 +84,49 @@ class ServeCommand extends Command
         'HERD_PHP_81_INI_SCAN_DIR',
         'HERD_PHP_82_INI_SCAN_DIR',
         'HERD_PHP_83_INI_SCAN_DIR',
+        'HERD_PHP_84_INI_SCAN_DIR',
+        'HERD_PHP_85_INI_SCAN_DIR',
         'IGNITION_LOCAL_SITES_PATH',
         'LARAVEL_SAIL',
         'PATH',
-        'PHP_CLI_SERVER_WORKERS',
         'PHP_IDE_CONFIG',
         'SYSTEMROOT',
         'XDEBUG_CONFIG',
         'XDEBUG_MODE',
         'XDEBUG_SESSION',
     ];
+
+    #[\Override]
+    protected function configureDefaults(): void
+    {
+        // The host and port default to whatever is configured via the environment, so
+        // they can't be expressed as static defaults in the signature above.
+        $this->getDefinition()->getOption('host')->setDefault(Env::get('SERVER_HOST', '127.0.0.1'));
+        $this->getDefinition()->getOption('port')->setDefault(Env::get('SERVER_PORT'));
+    }
+
+    /** {@inheritdoc} */
+    #[\Override]
+    protected function initialize(InputInterface $input, OutputInterface $output): void
+    {
+        $this->phpServerWorkers = transform((int) env('PHP_CLI_SERVER_WORKERS', 1), function (int $workers) {
+            if ($workers < 2) {
+                return false;
+            }
+
+            if ($workers > 1 &&
+                ! $this->option('no-reload') &&
+                ! (int) env('LARAVEL_SAIL', 0)) {
+                $this->components->warn('Unable to respect the `PHP_CLI_SERVER_WORKERS` environment variable without the `--no-reload` flag. Only creating a single server.');
+
+                return false;
+            }
+
+            return $workers;
+        });
+
+        parent::initialize($input, $output);
+    }
 
     /**
      * Execute the console command.
@@ -98,7 +145,7 @@ class ServeCommand extends Command
 
         $environmentLastModified = $hasEnvironment
             ? filemtime($environmentFile)
-            : now()->addDays(30)->getTimestamp();
+            : Carbon::now()->addDays(30)->getTimestamp();
 
         $process = $this->startProcess($hasEnvironment);
 
@@ -145,13 +192,13 @@ class ServeCommand extends Command
      */
     protected function startProcess($hasEnvironment)
     {
-        $process = new Process($this->serverCommand(), public_path(), collect($_ENV)->mapWithKeys(function ($value, $key) use ($hasEnvironment) {
+        $process = new Process($this->serverCommand(), public_path(), (new Collection($_ENV))->mapWithKeys(function ($value, $key) use ($hasEnvironment) {
             if ($this->option('no-reload') || ! $hasEnvironment) {
                 return [$key => $value];
             }
 
-            return in_array($key, static::$passthroughVariables) ? [$key => $value] : [$key => false];
-        })->all());
+            return $this->shouldPassThroughEnvironmentVariable($key) ? [$key => $value] : [$key => false];
+        })->merge(['PHP_CLI_SERVER_WORKERS' => $this->phpServerWorkers])->all());
 
         $this->trap(fn () => [SIGTERM, SIGINT, SIGHUP, SIGUSR1, SIGUSR2, SIGQUIT], function ($signal) use ($process) {
             if ($process->isRunning()) {
@@ -178,7 +225,7 @@ class ServeCommand extends Command
             : __DIR__.'/../resources/server.php';
 
         return [
-            (new PhpExecutableFinder)->find(false) ?: 'php',
+            php_binary(),
             '-S',
             $this->host().':'.$this->port(),
             $server,
@@ -222,7 +269,7 @@ class ServeCommand extends Command
      */
     protected function getHostAndPort()
     {
-        if (preg_match('/(\[.*\]):?([0-9]+)?/', $this->input->getOption('host'), $matches) !== false) {
+        if (preg_match('/(\[.*\]):?([0-9]+)?/', $this->input->getOption('host'), $matches) === 1) {
             return [
                 $matches[1] ?? $this->input->getOption('host'),
                 $matches[2] ?? null,
@@ -249,6 +296,21 @@ class ServeCommand extends Command
     }
 
     /**
+     * Determine if the environment variable should be passed to the PHP server process.
+     *
+     * @param  string  $key
+     * @return bool
+     */
+    protected function shouldPassThroughEnvironmentVariable($key)
+    {
+        if (PHP_OS_FAMILY === 'Windows') {
+            return in_array(strtoupper($key), array_map(strtoupper(...), static::$passthroughVariables), true);
+        }
+
+        return in_array($key, static::$passthroughVariables, true);
+    }
+
+    /**
      * Returns a "callable" to handle the process output.
      *
      * @return callable(string, string): void
@@ -269,7 +331,7 @@ class ServeCommand extends Command
      */
     protected function flushOutputBuffer()
     {
-        $lines = str($this->outputBuffer)->explode("\n");
+        $lines = (new Stringable($this->outputBuffer))->explode("\n");
 
         $this->outputBuffer = (string) $lines->pop();
 
@@ -277,7 +339,7 @@ class ServeCommand extends Command
             ->map(fn ($line) => trim($line))
             ->filter()
             ->each(function ($line) {
-                if (str($line)->contains('Development Server (http')) {
+                if ((new Stringable($line))->contains('Development Server (http')) {
                     if ($this->serverRunningHasBeenDisplayed === false) {
                         $this->serverRunningHasBeenDisplayed = true;
 
@@ -290,26 +352,26 @@ class ServeCommand extends Command
                     return;
                 }
 
-                if (str($line)->contains(' Accepted')) {
-                    $requestPort = $this->getRequestPortFromLine($line);
+                if ((new Stringable($line))->contains(' Accepted')) {
+                    $requestPort = static::getRequestPortFromLine($line);
 
                     $this->requestsPool[$requestPort] = [
                         $this->getDateFromLine($line),
                         $this->requestsPool[$requestPort][1] ?? false,
                         microtime(true),
                     ];
-                } elseif (str($line)->contains([' [200]: GET '])) {
-                    $requestPort = $this->getRequestPortFromLine($line);
+                } elseif ((new Stringable($line))->contains([' [200]: GET '])) {
+                    $requestPort = static::getRequestPortFromLine($line);
 
                     $this->requestsPool[$requestPort][1] = trim(explode('[200]: GET', $line)[1]);
-                } elseif (str($line)->contains('URI:')) {
-                    $requestPort = $this->getRequestPortFromLine($line);
+                } elseif ((new Stringable($line))->contains('URI:')) {
+                    $requestPort = static::getRequestPortFromLine($line);
 
                     $this->requestsPool[$requestPort][1] = trim(explode('URI: ', $line)[1]);
-                } elseif (str($line)->contains(' Closing')) {
-                    $requestPort = $this->getRequestPortFromLine($line);
+                } elseif ((new Stringable($line))->contains(' Closing')) {
+                    $requestPort = static::getRequestPortFromLine($line);
 
-                    if (empty($this->requestsPool[$requestPort])) {
+                    if (empty($this->requestsPool[$requestPort]) || count($this->requestsPool[$requestPort] ?? []) !== 3) {
                         $this->requestsPool[$requestPort] = [
                             $this->getDateFromLine($line),
                             false,
@@ -337,11 +399,11 @@ class ServeCommand extends Command
 
                     $this->output->write(' '.str_repeat('<fg=gray>.</>', $dots));
                     $this->output->writeln(" <fg=gray>~ {$runTime}</>");
-                } elseif (str($line)->contains(['Closed without sending a request', 'Failed to poll event'])) {
+                } elseif ((new Stringable($line))->contains(['Closed without sending a request', 'Failed to poll event'])) {
                     // ...
                 } elseif (! empty($line)) {
-                    if (str($line)->startsWith('[')) {
-                        $line = str($line)->after('] ');
+                    if ((new Stringable($line))->startsWith('[')) {
+                        $line = (new Stringable($line))->after('] ');
                     }
 
                     $this->output->writeln("  <fg=gray>$line</>");
@@ -357,7 +419,7 @@ class ServeCommand extends Command
      */
     protected function getDateFromLine($line)
     {
-        $regex = env('PHP_CLI_SERVER_WORKERS', 1) > 1
+        $regex = ! windows_os() && is_int($this->phpServerWorkers)
             ? '/^\[\d+]\s\[([a-zA-Z0-9: ]+)\]/'
             : '/^\[([^\]]+)\]/';
 
@@ -373,26 +435,17 @@ class ServeCommand extends Command
      *
      * @param  string  $line
      * @return int
-     */
-    protected function getRequestPortFromLine($line)
-    {
-        preg_match('/:(\d+)\s(?:(?:\w+$)|(?:\[.*))/', $line, $matches);
-
-        return (int) $matches[1];
-    }
-
-    /**
-     * Get the console command options.
      *
-     * @return array
+     * @throws \InvalidArgumentException
      */
-    protected function getOptions()
+    public static function getRequestPortFromLine($line)
     {
-        return [
-            ['host', null, InputOption::VALUE_OPTIONAL, 'The host address to serve the application on', Env::get('SERVER_HOST', '127.0.0.1')],
-            ['port', null, InputOption::VALUE_OPTIONAL, 'The port to serve the application on', Env::get('SERVER_PORT')],
-            ['tries', null, InputOption::VALUE_OPTIONAL, 'The max number of ports to attempt to serve from', 10],
-            ['no-reload', null, InputOption::VALUE_NONE, 'Do not reload the development server on .env file changes'],
-        ];
+        preg_match('/(\[\w+\s\w+\s\d+\s[\d:]+\s\d{4}\]\s)?:(\d+)\s(?:(?:\w+$)|(?:\[.*))/', $line, $matches);
+
+        if (! isset($matches[2])) {
+            throw new \InvalidArgumentException("Failed to extract the request port. Ensure the log line contains a valid port: {$line}");
+        }
+
+        return (int) $matches[2];
     }
 }

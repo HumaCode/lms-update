@@ -4,75 +4,65 @@ declare(strict_types=1);
 
 namespace Intervention\Image\Geometry\Factories;
 
-use Closure;
-use Intervention\Image\Geometry\Point;
+use Intervention\Image\Exceptions\InvalidArgumentException;
 use Intervention\Image\Geometry\Rectangle;
+use Intervention\Image\Interfaces\ColorInterface;
 use Intervention\Image\Interfaces\DrawableFactoryInterface;
 use Intervention\Image\Interfaces\DrawableInterface;
-use Intervention\Image\Interfaces\PointInterface;
 
 class RectangleFactory implements DrawableFactoryInterface
 {
     protected Rectangle $rectangle;
 
     /**
-     * Create new instance
+     * Create new instance.
      *
-     * @param PointInterface $pivot
-     * @param null|Closure|Rectangle $init
-     * @return void
+     * @throws InvalidArgumentException
      */
-    public function __construct(
-        protected PointInterface $pivot = new Point(),
-        null|Closure|Rectangle $init = null,
-    ) {
-        $this->rectangle = is_a($init, Rectangle::class) ? $init : new Rectangle(0, 0, $pivot);
-        $this->rectangle->setPosition($pivot);
+    public function __construct(null|callable|Rectangle $rectangle = null)
+    {
+        $this->rectangle = $rectangle instanceof Rectangle ? clone $rectangle : new Rectangle(0, 0);
 
-        if (is_callable($init)) {
-            $init($this);
+        if (is_callable($rectangle)) {
+            $rectangle($this);
         }
     }
 
     /**
      * {@inheritdoc}
      *
-     * @see DrawableFactoryInterface::init()
+     * @see DrawableFactoryInterface::build()
+     *
+     * @throws InvalidArgumentException
      */
-    public static function init(null|Closure|DrawableInterface $init = null): self
+    public static function build(null|callable|DrawableInterface $drawable = null): Rectangle
     {
-        return new self(init: $init);
+        return (new self($drawable))->drawable();
     }
 
     /**
      * {@inheritdoc}
      *
-     * @see DrawableFactoryInterface::create()
+     * @see DrawableFactoryInterface::drawable()
      */
-    public function create(): DrawableInterface
+    public function drawable(): Rectangle
     {
         return $this->rectangle;
     }
 
     /**
-     * Set the size of the rectangle to be produced
-     *
-     * @param int $width
-     * @param int $height
-     * @return RectangleFactory
+     * Set the size of the rectangle to be produced.
      */
     public function size(int $width, int $height): self
     {
-        $this->rectangle->setSize($width, $height);
+        $this->rectangle->setWidth($width);
+        $this->rectangle->setHeight($height);
 
         return $this;
     }
 
     /**
-     * Set the width of the rectangle to be produced
-     *
-     * @param int $width
-     * @return RectangleFactory
+     * Set the width of the rectangle to be produced.
      */
     public function width(int $width): self
     {
@@ -82,10 +72,7 @@ class RectangleFactory implements DrawableFactoryInterface
     }
 
     /**
-     * Set the height of the rectangle to be produced
-     *
-     * @param int $height
-     * @return RectangleFactory
+     * Set the height of the rectangle to be produced.
      */
     public function height(int $height): self
     {
@@ -95,12 +82,9 @@ class RectangleFactory implements DrawableFactoryInterface
     }
 
     /**
-     * Set the background color of the rectangle to be produced
-     *
-     * @param mixed $color
-     * @return RectangleFactory
+     * Set the background color of the rectangle to be produced.
      */
-    public function background(mixed $color): self
+    public function background(string|ColorInterface $color): self
     {
         $this->rectangle->setBackgroundColor($color);
 
@@ -108,13 +92,11 @@ class RectangleFactory implements DrawableFactoryInterface
     }
 
     /**
-     * Set the border color & border size of the rectangle to be produced
+     * Set the border color & border size of the rectangle to be produced.
      *
-     * @param mixed $color
-     * @param int $size
-     * @return RectangleFactory
+     * @throws InvalidArgumentException
      */
-    public function border(mixed $color, int $size = 1): self
+    public function border(string|ColorInterface $color, int $size = 1): self
     {
         $this->rectangle->setBorder($color, $size);
 
@@ -122,12 +104,12 @@ class RectangleFactory implements DrawableFactoryInterface
     }
 
     /**
-     * Produce the rectangle
-     *
-     * @return Rectangle
+     * Set the position where the rectangle should be drawn.
      */
-    public function __invoke(): Rectangle
+    public function at(int $x, int $y): self
     {
-        return $this->rectangle;
+        $this->rectangle->position()->setPosition($x, $y);
+
+        return $this;
     }
 }

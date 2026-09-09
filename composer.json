@@ -7,6 +7,7 @@
     "require": {
         "php": "^8.3",
         "barryvdh/laravel-dompdf": "dev-master",
+        "inertiajs/inertia-laravel": "^3.3",
         "intervention/image-laravel": "^4.1",
         "laravel/framework": "^13.31",
         "laravel/tinker": "^3.0",
@@ -15,6 +16,7 @@
         "razorpay/razorpay": "2.*",
         "srmklive/paypal": "^3.1.1",
         "stripe/stripe-php": "^16.1",
+        "tightenco/ziggy": "^2.6",
         "unisharp/laravel-filemanager": "dev-master"
     },
     "require-dev": {

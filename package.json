@@ -16,6 +16,11 @@
         "vite": "^5.0"
     },
     "dependencies": {
-        "jquery": "^3.7.1"
+        "@inertiajs/react": "^3.7.0",
+        "@vitejs/plugin-react": "^4.7.0",
+        "jquery": "^3.7.1",
+        "react": "^19.2.8",
+        "react-dom": "^19.2.8",
+        "ziggy-js": "^2.6.4"
     }
 }

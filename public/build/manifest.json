@@ -1,7 +1,18 @@
 {
-  "_jquery-T8mbjkVg.js": {
-    "file": "assets/jquery-T8mbjkVg.js",
-    "name": "jquery"
+  "__commonjsHelpers-BosuxZz1.js": {
+    "file": "assets/_commonjsHelpers-BosuxZz1.js",
+    "name": "_commonjsHelpers"
+  },
+  "_bootstrap-CxeR16Iq.js": {
+    "file": "assets/bootstrap-CxeR16Iq.js",
+    "name": "bootstrap"
+  },
+  "_jquery-JkAoMJ1f.js": {
+    "file": "assets/jquery-JkAoMJ1f.js",
+    "name": "jquery",
+    "imports": [
+      "__commonjsHelpers-BosuxZz1.js"
+    ]
   },
   "resources/css/admin.css": {
     "file": "assets/admin-QTktU2sh.css",
@@ -9,7 +20,7 @@
     "isEntry": true
   },
   "resources/css/app.css": {
-    "file": "assets/app-DkknBia5.css",
+    "file": "assets/app-DZ0j1uZ_.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
@@ -19,37 +30,53 @@
     "isEntry": true
   },
   "resources/js/admin/admin.js": {
-    "file": "assets/admin-DYD668aJ.js",
+    "file": "assets/admin-04kfi_wb.js",
     "name": "admin",
     "src": "resources/js/admin/admin.js",
     "isEntry": true,
     "imports": [
-      "_jquery-T8mbjkVg.js"
+      "__commonjsHelpers-BosuxZz1.js",
+      "_jquery-JkAoMJ1f.js"
     ]
   },
   "resources/js/admin/course.js": {
-    "file": "assets/course-DiPJmS-l.js",
+    "file": "assets/course-rE9XimVf.js",
     "name": "course",
     "src": "resources/js/admin/course.js",
     "isEntry": true,
     "imports": [
-      "_jquery-T8mbjkVg.js"
+      "_jquery-JkAoMJ1f.js",
+      "__commonjsHelpers-BosuxZz1.js"
     ]
   },
   "resources/js/admin/login.js": {
-    "file": "assets/login-BVyPtBik.js",
+    "file": "assets/login-DF4c3LoV.js",
     "name": "login",
     "src": "resources/js/admin/login.js",
     "isEntry": true,
     "imports": [
-      "_jquery-T8mbjkVg.js"
+      "_jquery-JkAoMJ1f.js",
+      "__commonjsHelpers-BosuxZz1.js"
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-DLXkxiZ3.js",
+    "file": "assets/app-DM5bnWpa.js",
     "name": "app",
     "src": "resources/js/app.js",
-    "isEntry": true
+    "isEntry": true,
+    "imports": [
+      "_bootstrap-CxeR16Iq.js"
+    ]
+  },
+  "resources/js/app.jsx": {
+    "file": "assets/app-B87Y-UeD.js",
+    "name": "app",
+    "src": "resources/js/app.jsx",
+    "isEntry": true,
+    "imports": [
+      "_bootstrap-CxeR16Iq.js",
+      "__commonjsHelpers-BosuxZz1.js"
+    ]
   },
   "resources/js/frontend/course.js": {
     "file": "assets/course-Cm13yVQK.js",

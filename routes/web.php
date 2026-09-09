@@ -176,3 +176,4 @@ Route::group(['middleware' => ['auth:web', 'verified', 'check_role:instructor'],
 require __DIR__.'/auth.php';
 
 require __DIR__.'/admin.php';
+

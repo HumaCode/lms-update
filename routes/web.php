@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\CertificateController;
+use App\Http\Controllers\Frontend\AboutController;
 use App\Http\Controllers\Frontend\BlogController;
 use App\Http\Controllers\Frontend\CartController;
 use App\Http\Controllers\Frontend\CheckoutController;
@@ -56,7 +57,7 @@ use Illuminate\Support\Facades\Route;
 
  Route::post('newsletter-subscribe', [FrontendController::class, 'subscribe'])->name('newsletter.subscribe');
  /** about route */
- Route::get('about', [FrontendController::class, 'about'])->name('about.index');
+ Route::get('about', [AboutController::class, 'index'])->name('about.index');
 
  /** Contact route */
  Route::get('contact', [FrontendContactController::class, 'index'])->name('contact.index');

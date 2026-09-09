@@ -84,20 +84,6 @@ class FrontendController extends Controller
         ]);
     }
 
-    function about()
-    {
-        $about = AboutUsSection::first();
-        $counter = Counter::first();
-        $testimonials = Testimonial::all();
-        $blogs = Blog::where('status', 1)->latest()->limit(8)->get();
-
-        return \Inertia\Inertia::render('User/About/Index', [
-            'about' => $about,
-            'counter' => $counter,
-            'testimonials' => $testimonials,
-            'blogs' => $blogs,
-        ]);
-    }
 
     function subscribe(Request $request) : Response {
         $request->validate([

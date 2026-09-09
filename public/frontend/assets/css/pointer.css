@@ -36,6 +36,12 @@
     -o-border-radius: 50% !important;
 }
 
-html {
+html.has-custom-pointer,
+body.has-custom-pointer {
     cursor: none !important;
+}
+
+html:not(.has-custom-pointer),
+body:not(.has-custom-pointer) {
+    cursor: auto !important;
 }

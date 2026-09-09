@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Head, useForm, usePage, Link } from '@inertiajs/react';
 import { route } from '@/Utils/routes';
 import { useFlashNotification } from '@/Hooks/useFlashNotification';
@@ -7,6 +7,23 @@ export default function Login({ status }) {
     useFlashNotification();
     const { props } = usePage();
     const settings = props?.settings || {};
+
+    useEffect(() => {
+        document.documentElement.classList.remove('has-custom-pointer');
+        document.body.classList.remove('has-custom-pointer');
+        document.documentElement.style.cursor = 'default';
+        document.body.style.cursor = 'default';
+
+        const dot = document.getElementById('pointer-dot');
+        if (dot) dot.remove();
+        const ring = document.getElementById('pointer-ring');
+        if (ring) ring.remove();
+
+        return () => {
+            document.documentElement.style.cursor = '';
+            document.body.style.cursor = '';
+        };
+    }, []);
 
     const [showPassword, setShowPassword] = useState(false);
 

@@ -226,7 +226,7 @@ export default function Header() {
                             </li>
 
                             <li>
-                                <Link className="admin" href={route('admin.login')}>
+                                <a className="admin" href={route('admin.login')}>
                                     <span>
                                         <img
                                             src="/frontend/assets/images/user_icon_black.png"
@@ -235,7 +235,7 @@ export default function Header() {
                                         />
                                     </span>
                                     Admin
-                                </Link>
+                                </a>
                             </li>
 
                             <li>

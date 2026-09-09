@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, router, usePage } from '@inertiajs/react';
 import { route } from '@/Utils/routes';
 
@@ -7,11 +7,21 @@ export default function Header() {
     const admin = auth?.admin;
 
     const [theme, setTheme] = useState('light');
+    const [userMenuOpen, setUserMenuOpen] = useState(false);
+    const dropdownRef = useRef(null);
 
     useEffect(() => {
         const savedTheme = localStorage.getItem('tablerTheme') || 'light';
         setTheme(savedTheme);
         document.body.setAttribute('data-bs-theme', savedTheme);
+
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setUserMenuOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
     const toggleTheme = (newTheme) => {
@@ -90,12 +100,14 @@ export default function Header() {
                         )}
                     </div>
 
-                    <div className="nav-item dropdown">
-                        <a
-                            href="#"
-                            className="nav-link d-flex lh-1 text-reset p-0"
-                            data-bs-toggle="dropdown"
+                    <div className={`nav-item dropdown ${userMenuOpen ? 'show' : ''}`} ref={dropdownRef}>
+                        <button
+                            type="button"
+                            className="nav-link d-flex lh-1 text-reset p-0 bg-transparent border-0"
+                            onClick={() => setUserMenuOpen((prev) => !prev)}
+                            aria-expanded={userMenuOpen}
                             aria-label="Open user menu"
+                            style={{ cursor: 'pointer' }}
                         >
                             <span
                                 className="avatar avatar-sm"
@@ -103,22 +115,40 @@ export default function Header() {
                                     backgroundImage: `url(${admin?.image || '/default-files/avatar.png'})`,
                                 }}
                             ></span>
-                            <div className="d-none d-xl-block ps-2">
+                            <div className="d-none d-xl-block ps-2 text-start">
                                 <div>{admin?.name || 'Administrator'}</div>
                                 <div className="mt-1 small text-secondary">Super Admin</div>
                             </div>
-                        </a>
-                        <div className="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
-                            <Link href={route('admin.profile.index')} className="dropdown-item">
+                        </button>
+                        <div
+                            className={`dropdown-menu dropdown-menu-end dropdown-menu-arrow ${userMenuOpen ? 'show' : ''}`}
+                            style={userMenuOpen ? { display: 'block', position: 'absolute', right: 0, top: '100%', zIndex: 1050 } : {}}
+                        >
+                            <Link
+                                href={route('admin.profile.index')}
+                                className="dropdown-item"
+                                onClick={() => setUserMenuOpen(false)}
+                            >
                                 <i className="ti ti-user me-2"></i> Profile
                             </Link>
-                            <Link href={route('admin.settings.index')} className="dropdown-item">
+                            <Link
+                                href={route('admin.settings.index')}
+                                className="dropdown-item"
+                                onClick={() => setUserMenuOpen(false)}
+                            >
                                 <i className="ti ti-settings me-2"></i> Settings
                             </Link>
                             <div className="dropdown-divider"></div>
-                            <button onClick={handleLogout} className="dropdown-item text-danger">
+                            <Link
+                                href={route('admin.logout')}
+                                method="post"
+                                as="button"
+                                className="dropdown-item text-danger w-100 text-start"
+                                onClick={() => setUserMenuOpen(false)}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                            >
                                 <i className="ti ti-logout me-2"></i> Logout
-                            </button>
+                            </Link>
                         </div>
                     </div>
                 </div>

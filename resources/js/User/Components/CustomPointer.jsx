@@ -12,6 +12,9 @@ export default function CustomPointer() {
             return;
         }
 
+        document.documentElement.classList.add('has-custom-pointer');
+        document.body.classList.add('has-custom-pointer');
+
         let mouseX = -100;
         let mouseY = -100;
         let ringX = -100;
@@ -101,6 +104,8 @@ export default function CustomPointer() {
 
         return () => {
             cancelAnimationFrame(animId);
+            document.documentElement.classList.remove('has-custom-pointer');
+            document.body.classList.remove('has-custom-pointer');
             window.removeEventListener('mousemove', handleMouseMove);
             window.removeEventListener('mousedown', handleMouseDown);
             window.removeEventListener('mouseup', handleMouseUp);

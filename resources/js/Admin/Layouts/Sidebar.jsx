@@ -281,6 +281,28 @@ export default function Sidebar() {
                                 <span className="nav-link-title">Database Clear</span>
                             </Link>
                         </li>
+
+                        {/* Logout */}
+                        <li className="nav-item mt-3 pt-2 border-top border-secondary border-opacity-25">
+                            <Link
+                                className="nav-link text-danger"
+                                href={route('admin.logout')}
+                                method="post"
+                                as="button"
+                                style={{
+                                    width: '100%',
+                                    textAlign: 'left',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                <span className="nav-link-icon text-danger d-md-none d-lg-inline-block">
+                                    <i className="ti ti-logout fs-2"></i>
+                                </span>
+                                <span className="nav-link-title fw-bold">Logout</span>
+                            </Link>
+                        </li>
                     </ul>
                 </div>
             </div>

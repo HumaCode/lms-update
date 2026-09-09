@@ -12,6 +12,7 @@ use App\Models\CourseLevel;
 use App\Traits\FileUpload;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
+use App\Http\Resources\PaginateResource;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 
@@ -26,9 +27,11 @@ class CourseController extends Controller
             ->withCount('enrollments')
             ->where('instructor_id', Auth::user()->id)
             ->orderBy('id', 'DESC')
-            ->get();
+            ->paginate(10)
+            ->withQueryString();
+
         return \Inertia\Inertia::render('Instructor/Course/Index', [
-            'courses' => $courses,
+            'courses' => new PaginateResource($courses),
         ]);
     }
 

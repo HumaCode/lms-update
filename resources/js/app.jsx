@@ -1,8 +1,51 @@
 import './bootstrap';
-import { createInertiaApp } from '@inertiajs/react';
+import { createInertiaApp, router } from '@inertiajs/react';
 import { createRoot } from 'react-dom/client';
 
 const appName = import.meta.env.VITE_APP_NAME || 'EduCore LMS';
+
+let preloaderHideTimeout = null;
+
+const showPreloader = () => {
+    const el = document.getElementById('preloader');
+    if (!el) return;
+    if (preloaderHideTimeout) {
+        clearTimeout(preloaderHideTimeout);
+        preloaderHideTimeout = null;
+    }
+    el.classList.remove('preloader-hidden');
+    el.style.display = 'flex';
+};
+
+const hidePreloader = () => {
+    const el = document.getElementById('preloader');
+    if (!el) return;
+    el.classList.add('preloader-hidden');
+    preloaderHideTimeout = setTimeout(() => {
+        el.style.display = 'none';
+    }, 350);
+};
+
+// Global helper access
+if (typeof window !== 'undefined') {
+    window.showPreloader = showPreloader;
+    window.hidePreloader = hidePreloader;
+
+    window.addEventListener('load', () => {
+        setTimeout(hidePreloader, 350);
+    });
+}
+
+// Trigger preloader on Inertia navigation
+router.on('start', () => {
+    showPreloader();
+});
+
+router.on('finish', () => {
+    setTimeout(() => {
+        hidePreloader();
+    }, 200);
+});
 
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
@@ -36,6 +79,11 @@ createInertiaApp({
     setup({ el, App, props }) {
         const root = createRoot(el);
         root.render(<App {...props} />);
+
+        // Hide preloader shortly after initial app render
+        setTimeout(() => {
+            hidePreloader();
+        }, 300);
     },
     progress: {
         color: '#ff497c',

@@ -1,10 +1,14 @@
 import React from 'react';
 import { Head, Link } from '@inertiajs/react';
 import InstructorLayout from '@/Instructor/Layouts/InstructorLayout';
+import Pagination from '@/Components/UI/Pagination';
 import { formatCurrency } from '@/Utils/formatters';
 import { route } from '@/Utils/routes';
 
-export default function Index({ courses = [] }) {
+export default function Index({ courses }) {
+    const courseList = Array.isArray(courses) ? courses : (courses?.data || []);
+    const meta = courses?.meta;
+
     const renderStars = (rating) => {
         const rounded = Math.round(rating || 0);
         const stars = [];
@@ -33,12 +37,19 @@ export default function Index({ courses = [] }) {
                         <h5 className="fw-bold mb-0 text-dark">Your Course Curriculum</h5>
                         <p className="text-muted small mb-0">Manage published courses, review feedback and update content</p>
                     </div>
-                    <Link
-                        href={route('instructor.courses.create')}
-                        className="btn btn-primary px-3"
-                    >
-                        <i className="fas fa-plus me-1"></i> Add New Course
-                    </Link>
+                    <div className="d-flex align-items-center gap-2">
+                        {meta && (
+                            <span className="badge bg-light text-secondary border px-3 py-2">
+                                Total: {meta.total} Courses
+                            </span>
+                        )}
+                        <Link
+                            href={route('instructor.courses.create')}
+                            className="btn btn-primary px-3"
+                        >
+                            <i className="fas fa-plus me-1"></i> Add New Course
+                        </Link>
+                    </div>
                 </div>
 
                 <div className="table-responsive">
@@ -55,8 +66,8 @@ export default function Index({ courses = [] }) {
                             </tr>
                         </thead>
                         <tbody>
-                            {courses.length > 0 ? (
-                                courses.map((course) => (
+                            {courseList.length > 0 ? (
+                                courseList.map((course) => (
                                     <tr key={course.id}>
                                         <td style={{ width: '90px' }}>
                                             <img
@@ -128,6 +139,17 @@ export default function Index({ courses = [] }) {
                         </tbody>
                     </table>
                 </div>
+
+                {meta && meta.last_page > 1 && (
+                    <div className="card-footer bg-white border-top py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div className="text-muted small">
+                            Showing <span className="fw-semibold text-dark">{meta.from || 1}</span> to{' '}
+                            <span className="fw-semibold text-dark">{meta.to || courseList.length}</span> of{' '}
+                            <span className="fw-semibold text-dark">{meta.total}</span> courses
+                        </div>
+                        <Pagination meta={meta} />
+                    </div>
+                )}
             </div>
         </InstructorLayout>
     );

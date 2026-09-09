@@ -1,20 +1,21 @@
 import React from 'react';
-import InstructorHeader from './InstructorHeader';
+import Header from '@/User/Components/Header';
+import Footer from '@/User/Components/Footer';
 import InstructorSidebar from './InstructorSidebar';
 import Breadcrumb from '../Components/Breadcrumb';
 import CustomPointer from '@/User/Components/CustomPointer';
 import { useFlashNotification } from '@/Hooks/useFlashNotification';
 
-export default function InstructorLayout({ title = 'Instructor Studio', crumbs = [], children }) {
+export default function InstructorLayout({ title = 'Courses', crumbs = [], children }) {
     useFlashNotification();
 
     return (
         <div className="instructor-layout-wrapper d-flex flex-column min-vh-100 bg-light">
             <CustomPointer />
-            <InstructorHeader />
+            <Header />
             <Breadcrumb title={title} crumbs={crumbs} />
 
-            <section className="wsus__dashboard py-5 flex-grow-1">
+            <section className="wsus__dashboard mt_90 xs_mt_70 pb_120 xs_pb_100 flex-grow-1">
                 <div className="container">
                     <div className="row">
                         <InstructorSidebar />
@@ -25,11 +26,7 @@ export default function InstructorLayout({ title = 'Instructor Studio', crumbs =
                 </div>
             </section>
 
-            <footer className="footer-bottom py-3 bg-white border-top text-center text-muted small">
-                <div className="container">
-                    &copy; {new Date().getFullYear()} LMS Platform. All rights reserved.
-                </div>
-            </footer>
+            <Footer />
         </div>
     );
 }

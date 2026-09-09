@@ -20,6 +20,7 @@ class RepositoryServiceProvider extends ServiceProvider
         \App\Contracts\Services\CourseLanguageServiceInterface::class => \App\Services\CourseLanguageService::class,
         \App\Contracts\Repositories\CourseLevelRepositoryInterface::class => \App\Repositories\Eloquent\CourseLevelRepository::class,
         \App\Contracts\Services\CourseLevelServiceInterface::class => \App\Services\CourseLevelService::class,
+        \App\Contracts\Services\InstructorDashboardServiceInterface::class => \App\Services\InstructorDashboardService::class,
     ];
 
     /**

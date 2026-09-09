@@ -3,13 +3,14 @@ import { Link, usePage } from '@inertiajs/react';
 import { route } from '@/Utils/routes';
 
 export default function SettingSidebar() {
-    const { url } = usePage();
+    const { url = '' } = usePage();
+    const currentUrl = typeof url === 'string' ? url : '';
 
     const links = [
-        { label: 'General Settings', url: route('admin.settings.index'), active: url.endsWith('/settings') },
-        { label: 'Logo & Favicon', url: route('admin.logo-settings.index'), active: url.includes('/logo-settings') },
-        { label: 'Commission Settings', url: route('admin.commission-settings.index'), active: url.includes('/commission-settings') },
-        { label: 'SMTP Mail Settings', url: route('admin.smtp-settings.index'), active: url.includes('/smtp-settings') },
+        { label: 'General Settings', url: route('admin.settings.index'), active: currentUrl.endsWith('/settings') },
+        { label: 'Logo & Favicon', url: route('admin.logo-settings.index'), active: currentUrl.includes('/logo-settings') },
+        { label: 'Commission Settings', url: route('admin.commission-settings.index'), active: currentUrl.includes('/commission-settings') },
+        { label: 'SMTP Mail Settings', url: route('admin.smtp-settings.index'), active: currentUrl.includes('/smtp-settings') },
     ];
 
     return (

@@ -3,7 +3,9 @@ import { Link, usePage, router } from '@inertiajs/react';
 import { route } from '@/Utils/routes';
 
 export default function InstructorSidebar() {
-    const { auth, url } = usePage().props;
+    const { auth } = usePage().props;
+    const { url = '' } = usePage();
+    const currentUrl = typeof url === 'string' ? url : '';
     const user = auth?.user;
 
     const handleLogout = (e) => {
@@ -15,81 +17,150 @@ export default function InstructorSidebar() {
         {
             label: 'Dashboard',
             url: route('instructor.dashboard'),
-            active: url === '/instructor/dashboard' || url.endsWith('/instructor'),
-            icon: 'fas fa-home',
+            active: currentUrl === '/instructor/dashboard' || currentUrl.endsWith('/instructor'),
+            icon: '/frontend/assets/images/dash_icon_8.png',
         },
         {
-            label: 'Instructor Profile',
+            label: 'Profile',
             url: route('instructor.profile.index'),
-            active: url.includes('/instructor/profile'),
-            icon: 'fas fa-user-tie',
+            active: currentUrl.includes('/instructor/profile'),
+            icon: '/frontend/assets/images/dash_icon_1.png',
         },
         {
             label: 'Courses',
             url: route('instructor.courses.index'),
-            active: url.includes('/instructor/courses'),
-            icon: 'fas fa-graduation-cap',
+            active: currentUrl.includes('/instructor/courses'),
+            icon: '/frontend/assets/images/dash_icon_2.png',
         },
         {
             label: 'Orders',
             url: route('instructor.orders.index'),
-            active: url.includes('/instructor/orders'),
-            icon: 'fas fa-shopping-bag',
+            active: currentUrl.includes('/instructor/orders'),
+            icon: '/frontend/assets/images/dash_icon_5.png',
         },
         {
-            label: 'Withdrawals',
+            label: 'Payouts',
             url: route('instructor.withdraw.index'),
-            active: url.includes('/instructor/withdrawals'),
-            icon: 'fas fa-wallet',
+            active: currentUrl.includes('/instructor/withdrawals'),
+            icon: '/frontend/assets/images/dash_icon_7.png',
         },
     ];
 
+    const avatarSrc = user?.image
+        ? (user.image.startsWith('/') ? user.image : `/${user.image}`)
+        : '/frontend/assets/images/dashboard_profile_img.png';
+
     return (
         <div className="col-xl-3 col-md-4 mb-4">
-            <div className="wsus__dashboard_sidebar shadow-sm rounded bg-white overflow-hidden">
-                <div className="wsus__dashboard_sidebar_top p-4 text-center border-bottom">
-                    <div className="img mb-3">
+            <div className="wsus__dashboard_sidebar">
+                {/* PROFILE HEADER TOP */}
+                <div className="wsus__dashboard_sidebar_top">
+                    <div className="dashboard_banner">
                         <img
-                            src={user?.image ? `/${user.image}` : '/frontend/assets/images/dash_icon_8.png'}
-                            alt={user?.name}
-                            className="img-fluid rounded-circle border border-3 border-primary shadow-sm"
-                            style={{ width: '88px', height: '88px', objectFit: 'cover' }}
+                            src="/frontend/assets/images/single_topic_sidebar_banner.jpg"
+                            alt="Banner"
+                            className="img-fluid w-100 h-100"
+                            style={{ objectFit: 'cover' }}
                         />
                     </div>
-                    <h4 className="fs-5 fw-bold mb-1">{user?.name}</h4>
-                    <p className="badge bg-primary text-white text-capitalize mb-0 px-3 py-1">
-                        {user?.role || 'Instructor'}
-                    </p>
+                    <div className="img">
+                        <img
+                            src={avatarSrc}
+                            alt={user?.name || 'Instructor'}
+                            className="img-fluid w-100 h-100 rounded-circle"
+                            style={{ objectFit: 'cover' }}
+                            onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = '/frontend/assets/images/dashboard_profile_img.png';
+                            }}
+                        />
+                    </div>
+                    <h4>{user?.name || 'Instructor'}</h4>
+                    <p>{user?.role || 'Instructor'}</p>
                 </div>
 
-                <ul className="wsus__dashboard_sidebar_menu list-unstyled m-0 p-3">
+                {/* SIDEBAR NAVIGATION MENU */}
+                <ul className="wsus__dashboard_sidebar_menu list-unstyled">
                     {navItems.map((item, idx) => (
-                        <li key={idx} className="mb-2">
+                        <li key={idx}>
                             <Link
                                 href={item.url}
-                                className={`d-flex align-items-center gap-3 p-3 rounded text-decoration-none fw-medium transition-all ${
-                                    item.active
-                                        ? 'bg-primary text-white shadow-sm'
-                                        : 'text-dark hover-bg-light'
-                                }`}
+                                className={item.active ? 'active' : ''}
                             >
-                                <i className={`${item.icon} fs-5 ${item.active ? 'text-white' : 'text-primary'}`}></i>
-                                <span>{item.label}</span>
+                                <div className="img">
+                                    <img
+                                        src={item.icon}
+                                        alt={item.label}
+                                        className="img-fluid w-100"
+                                    />
+                                </div>
+                                {item.label}
                             </Link>
                         </li>
                     ))}
 
-                    <li className="pt-2 border-top mt-2">
+                    <li>
                         <button
                             onClick={handleLogout}
                             type="button"
-                            className="w-100 btn btn-link d-flex align-items-center gap-3 p-3 rounded text-decoration-none fw-medium text-danger hover-bg-danger-subtle border-0 text-start"
+                            className="w-100 text-start d-flex align-items-center border-0"
+                            style={{
+                                background: '#ffffff',
+                                cursor: 'pointer',
+                            }}
                         >
-                            <i className="fas fa-sign-out-alt fs-5 text-danger"></i>
-                            <span>Sign Out</span>
+                            <div className="img">
+                                <img
+                                    src="/frontend/assets/images/dash_icon_16.png"
+                                    alt="Sign Out"
+                                    className="img-fluid w-100"
+                                />
+                            </div>
+                            Sign Out
                         </button>
                     </li>
                 </ul>
+
+                {/* OVERRIDE HOVER AND ACTIVE STYLES SPECIFICALLY FOR ACCURACY */}
+                <style>{`
+                    .wsus__dashboard_sidebar_menu li button {
+                        display: flex;
+                        flex-wrap: wrap;
+                        align-items: center;
+                        font-size: 15px;
+                        font-weight: 500;
+                        padding: 13px 20px;
+                        color: var(--paraColor);
+                        text-transform: capitalize;
+                        background: var(--colorWhite);
+                        border-bottom: 1px solid var(--borderColor);
+                        transition: all linear .3s;
+                    }
+                    .wsus__dashboard_sidebar_menu li:last-child button {
+                        border-bottom: none;
+                    }
+                    .wsus__dashboard_sidebar_menu li button .img {
+                        width: 15px;
+                        height: 15px;
+                        margin-right: 10px;
+                        position: relative;
+                        top: -2px;
+                        left: 0;
+                        transition: all linear .3s;
+                    }
+                    .wsus__dashboard_sidebar_menu li a:hover,
+                    .wsus__dashboard_sidebar_menu li a.active,
+                    .wsus__dashboard_sidebar_menu li button:hover {
+                        color: #ffffff !important;
+                        background: var(--colorPrimary) !important;
+                        border-color: #a6bef8 !important;
+                    }
+                    .wsus__dashboard_sidebar_menu li a:hover .img img,
+                    .wsus__dashboard_sidebar_menu li a.active .img img,
+                    .wsus__dashboard_sidebar_menu li button:hover .img img {
+                        filter: brightness(0) invert(1) !important;
+                    }
+                `}</style>
             </div>
         </div>
     );

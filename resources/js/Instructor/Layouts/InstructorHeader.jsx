@@ -7,7 +7,10 @@ export default function InstructorHeader() {
     const user = auth?.user;
 
     return (
-        <nav className="navbar navbar-expand-lg main_menu main_menu_3 bg-white shadow-sm py-2">
+        <nav
+            className="navbar navbar-expand-lg bg-white shadow-sm py-3 sticky-top"
+            style={{ zIndex: 1020 }}
+        >
             <div className="container">
                 <Link className="navbar-brand" href={route('instructor.dashboard')}>
                     {settings?.site_logo ? (
@@ -55,19 +58,31 @@ export default function InstructorHeader() {
 
                     <div className="d-flex align-items-center gap-3">
                         {user && (
-                            <div className="d-flex align-items-center gap-2">
-                                <img
-                                    src={user.image ? `/${user.image}` : '/frontend/assets/images/dash_icon_8.png'}
-                                    alt={user.name}
-                                    className="rounded-circle"
-                                    style={{ width: '38px', height: '38px', objectFit: 'cover' }}
-                                />
-                                <div>
-                                    <div className="fw-bold small text-dark">{user.name}</div>
-                                    <div className="badge bg-primary-subtle text-primary" style={{ fontSize: '0.7rem' }}>
-                                        Instructor
+                            <div className="d-flex align-items-center gap-3">
+                                <div className="d-flex align-items-center gap-2">
+                                    <img
+                                        src={user.image ? `/${user.image}` : '/frontend/assets/images/dash_icon_8.png'}
+                                        alt={user.name}
+                                        className="rounded-circle"
+                                        style={{ width: '38px', height: '38px', objectFit: 'cover' }}
+                                    />
+                                    <div>
+                                        <div className="fw-bold small text-dark">{user.name}</div>
+                                        <div className="badge bg-primary-subtle text-primary" style={{ fontSize: '0.7rem' }}>
+                                            Instructor
+                                        </div>
                                     </div>
                                 </div>
+                                <Link
+                                    href={route('logout')}
+                                    method="post"
+                                    as="button"
+                                    className="btn btn-outline-danger btn-sm d-flex align-items-center gap-1"
+                                    title="Logout"
+                                >
+                                    <i className="fas fa-sign-out-alt"></i>
+                                    <span className="d-none d-md-inline">Logout</span>
+                                </Link>
                             </div>
                         )}
                     </div>

@@ -2,77 +2,77 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Contracts\Services\CourseLanguageServiceInterface;
 use App\Http\Controllers\Controller;
 use App\Models\CourseLanguage;
-use Exception;
-use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Str;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class CourseLanguageController extends Controller
 {
+    public function __construct(
+        protected CourseLanguageServiceInterface $languageService
+    ) {}
+
     /**
      * Display a listing of the resource.
      */
-    public function index() : View
+    public function index(): Response
     {
-        $languages = CourseLanguage::paginate(15);
-        return view('admin.course.course-language.index', compact('languages'));
+        $languages = $this->languageService->getPaginated(15);
+        return Inertia::render('Admin/CourseLanguage/Index', [
+            'languages' => $languages,
+        ]);
     }
 
     /**
      * Show the form for creating a new resource.
      */
-    public function create() : View
+    public function create(): Response
     {
-        return view('admin.course.course-language.create');
+        return Inertia::render('Admin/CourseLanguage/Create');
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request) : RedirectResponse
+    public function store(Request $request): RedirectResponse
     {
-        $request->validate(['name' => ['required', 'max:255', 'unique:course_languages']]);
+        $validated = $request->validate([
+            'name' => ['required', 'max:255', 'unique:course_languages,name'],
+        ]);
 
-        $language = new CourseLanguage();
-        $language->name = $request->name;
-        $language->slug = Str::slug($request->name);
-        $language->save();
+        $this->languageService->createLanguage($validated);
 
-        notyf()->success('Created Successfully!');
+        notyf()->success('Course language created successfully!');
 
         return to_route('admin.course-languages.index');
     }
 
     /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
      * Show the form for editing the specified resource.
      */
-    public function edit(CourseLanguage $course_language)
+    public function edit(CourseLanguage $course_language): Response
     {
-        return view('admin.course.course-language.edit', compact('course_language'));
+        return Inertia::render('Admin/CourseLanguage/Edit', [
+            'language' => $course_language,
+        ]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, CourseLanguage $course_language)
+    public function update(Request $request, CourseLanguage $course_language): RedirectResponse
     {
-        $request->validate(['name' => ['required', 'max:255', 'unique:course_languages,name,'.$course_language->id]]);
+        $validated = $request->validate([
+            'name' => ['required', 'max:255', 'unique:course_languages,name,' . $course_language->id],
+        ]);
 
-        $course_language->name = $request->name;
-        $course_language->save();
+        $this->languageService->updateLanguage($course_language, $validated);
 
-        notyf()->success('Created Successfully!');
+        notyf()->success('Course language updated successfully!');
 
         return to_route('admin.course-languages.index');
     }
@@ -80,15 +80,13 @@ class CourseLanguageController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(CourseLanguage $course_language)
+    public function destroy(CourseLanguage $course_language): RedirectResponse
     {
-        try {
-            $course_language->delete();
-            notyf()->success('Deleted Successfully!');
-            return response(['message' => 'Deleted Successfully!'], 200);
-        }catch(Exception $e) {
-            logger("Course Language Error >> ".$e);
-            return response(['message' => 'Something went wrong!'], 500);
-        }
+        $this->languageService->deleteLanguage($course_language);
+
+        notyf()->success('Course language deleted successfully!');
+
+        return to_route('admin.course-languages.index');
     }
 }
+

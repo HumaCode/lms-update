@@ -15,10 +15,12 @@ class ProfileUpdateController extends Controller
 
     use FileUpload;
 
-    function index(): View
+    function index()
     {
         $admin = Auth::guard('admin')->user();
-        return view('admin.profile.index', compact('admin'));
+        return \Inertia\Inertia::render('Admin/Profile/Index', [
+            'admin' => $admin,
+        ]);
     }
 
     function profileUpdate(Request $request): RedirectResponse

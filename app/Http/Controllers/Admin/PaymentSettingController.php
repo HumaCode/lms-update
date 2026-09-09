@@ -12,9 +12,14 @@ use Illuminate\Support\Facades\Cache;
 class PaymentSettingController extends Controller
 {
     //
-    function index() : View
+    function index()
     {
-        return view('admin.payment-setting.index');     
+        return \Inertia\Inertia::render('Admin/PaymentSetting/Index', [
+            'gatewaySettings' => config('gateway_settings') ?? [],
+            'paypalCurrencies' => config('gateway_currencies.paypal_currencies') ?? [],
+            'stripeCurrencies' => config('gateway_currencies.stripe_currencies') ?? [],
+            'razorpayCurrencies' => config('gateway_currencies.razorpay_currencies') ?? [],
+        ]);     
     }
 
     function paypalSetting(Request $request) : RedirectResponse 

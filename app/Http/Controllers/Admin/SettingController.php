@@ -14,9 +14,12 @@ class SettingController extends Controller
 {
     use FileUpload;
 
-    function index(): View
+    function index()
     {
-        return view('admin.setting.general-settings');
+        return \Inertia\Inertia::render('Admin/Setting/General', [
+            'settings' => config('settings') ?? [],
+            'currencies' => config('gateway_currencies.all_currencies') ?? [],
+        ]);
     }
 
     function updateGeneralSettings(Request $request): RedirectResponse
@@ -39,14 +42,16 @@ class SettingController extends Controller
 
         Cache::forget('settings');
 
-        notyf()->success('Update Successfully!');
+        notyf()->success('General settings updated successfully!');
         return redirect()->back();
     }
 
 
-    function commissionSettingIndex(): View
+    function commissionSettingIndex()
     {
-        return view('admin.setting.commission-settings');
+        return \Inertia\Inertia::render('Admin/Setting/Commission', [
+            'commission_rate' => config('settings.commission_rate', 0),
+        ]);
     }
 
     function updateCommissionSetting(Request $request): RedirectResponse
@@ -65,13 +70,15 @@ class SettingController extends Controller
 
         Cache::forget('settings');
 
-        notyf()->success('Update Successfully!');
+        notyf()->success('Commission settings updated successfully!');
         return redirect()->back();
     }
 
-    function smtpSetting(): View
+    function smtpSetting()
     {
-        return view('admin.setting.smtp-settings');
+        return \Inertia\Inertia::render('Admin/Setting/Smtp', [
+            'settings' => config('settings') ?? [],
+        ]);
     }
 
     function updateSmtpSetting(Request $request): RedirectResponse
@@ -83,7 +90,6 @@ class SettingController extends Controller
             'mail_mailer' => ['required', 'string', 'max:255'],
             'mail_host' => ['required', 'string', 'max:255'],
             'mail_port' => ['required', 'numeric'],
-            'mail_port' => ['required', 'string', 'max:255'],
             'mail_username' => ['required', 'string', 'max:255'],
             'mail_password' => ['required', 'string', 'max:255'],
             'mail_encryption' => ['required', 'string', 'max:255'],
@@ -101,14 +107,16 @@ class SettingController extends Controller
 
         Cache::forget('settings');
 
-        notyf()->success('Update Successfully!');
+        notyf()->success('SMTP settings updated successfully!');
         return redirect()->back();
     }
 
 
-    function logoSettingIndex() : View
+    function logoSettingIndex()
     {
-        return view('admin.setting.logo-settings');  
+        return \Inertia\Inertia::render('Admin/Setting/Logo', [
+            'settings' => config('settings') ?? [],
+        ]);  
     }
 
     function updateLogoSetting(Request $request) : RedirectResponse

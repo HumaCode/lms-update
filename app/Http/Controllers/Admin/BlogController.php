@@ -18,25 +18,29 @@ class BlogController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index() : View
+    public function index()
     {
-        $blogs = Blog::with('category')->paginate(20);
-        return view('admin.blog.index', compact('blogs'));
+        $blogs = Blog::with('category')->latest()->paginate(20);
+        return \Inertia\Inertia::render('Admin/Blog/Index', [
+            'blogs' => $blogs,
+        ]);
     }
 
     /**
      * Show the form for creating a new resource.
      */
-    public function create() : View
+    public function create()
     {
-        $categories = BlogCategory::all();
-        return view('admin.blog.create', compact('categories'));
+        $categories = BlogCategory::where('status', 1)->get();
+        return \Inertia\Inertia::render('Admin/Blog/Create', [
+            'categories' => $categories,
+        ]);
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request) : RedirectResponse
+    public function store(Request $request): RedirectResponse
     {
         $request->validate([
             'title' => ['required', 'string', 'max:255', 'unique:blogs,title'],
@@ -58,26 +62,28 @@ class BlogController extends Controller
         $blog->status = $request->status ?? 0;
         $blog->save();
 
-        notyf()->success('Created Successfully!');
+        notyf()->success('Blog post created successfully!');
 
         return to_route('admin.blogs.index');
-        
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id) : View
+    public function edit(string $id)
     {
         $blog = Blog::findOrFail($id);
-        $categories = BlogCategory::all();
-        return view('admin.blog.edit', compact('blog', 'categories'));
+        $categories = BlogCategory::where('status', 1)->get();
+        return \Inertia\Inertia::render('Admin/Blog/Edit', [
+            'blog' => $blog,
+            'categories' => $categories,
+        ]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id) : RedirectResponse
+    public function update(Request $request, string $id): RedirectResponse
     {
         $request->validate([
             'title' => ['required', 'string', 'max:255', 'unique:blogs,title,' . $id],
@@ -87,12 +93,11 @@ class BlogController extends Controller
             'status' => ['nullable', 'boolean'],
         ]);
 
-
         $blog = Blog::findOrFail($id);
 
-        if($request->hasFile('image')) {
+        if ($request->hasFile('image')) {
             $image = $this->uploadFile($request->file('image'));
-            $this->deleteFile($request->old_image);
+            $this->deleteFile($blog->image);
             $blog->image = $image;
         }
 
@@ -103,7 +108,7 @@ class BlogController extends Controller
         $blog->status = $request->status ?? 0;
         $blog->save();
 
-        notyf()->success('Updated Successfully!');
+        notyf()->success('Blog post updated successfully!');
 
         return to_route('admin.blogs.index');
     }
@@ -111,17 +116,18 @@ class BlogController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id) : Response
+    public function destroy(string $id): RedirectResponse
     {
         try {
             $blog = Blog::findOrFail($id);
             $this->deleteFile($blog->image);
             $blog->delete();
-            notyf()->success('Deleted Successfully!');
-            return response(['message' => 'Deleted Successfully!'], 200);
-        }catch(Exception $e) {
-            logger("Social Link Error >> ".$e);
-            return response(['message' => 'Something went wrong!'], 500);
+            notyf()->success('Blog post deleted successfully!');
+            return to_route('admin.blogs.index');
+        } catch (Exception $e) {
+            logger("Blog Error >> " . $e);
+            notyf()->error('Something went wrong!');
+            return back();
         }
     }
 }

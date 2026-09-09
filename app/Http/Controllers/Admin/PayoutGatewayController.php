@@ -5,33 +5,36 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\PayoutGateway;
 use Exception;
-use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Stripe\Payout;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class PayoutGatewayController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index() : View
+    public function index(): Response
     {
         $gateways = PayoutGateway::all();
-        return view('admin.payout-gateway.index', compact('gateways'));
+        return Inertia::render('Admin/PayoutGateway/Index', [
+            'gateways' => $gateways,
+        ]);
     }
 
     /**
      * Show the form for creating a new resource.
      */
-    public function create() : View
+    public function create(): Response
     {
-        return view('admin.payout-gateway.create');
+        return Inertia::render('Admin/PayoutGateway/Create');
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
         $request->validate([
             'name' => 'required|string|max:255',
@@ -44,7 +47,8 @@ class PayoutGatewayController extends Controller
         $gateway->description = $request->description;
         $gateway->status = $request->status;
         $gateway->save();
-        notyf()->success("Created Successfully!");
+
+        notyf()->success("Payout gateway created successfully!");
 
         return redirect()->route('admin.payout-gateway.index');
     }
@@ -52,16 +56,17 @@ class PayoutGatewayController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(PayoutGateway $payout_gateway)
+    public function edit(PayoutGateway $payout_gateway): Response
     {
-        return view('admin.payout-gateway.edit', compact('payout_gateway'));
-        
+        return Inertia::render('Admin/PayoutGateway/Edit', [
+            'gateway' => $payout_gateway,
+        ]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, PayoutGateway $payout_gateway)
+    public function update(Request $request, PayoutGateway $payout_gateway): RedirectResponse
     {
         $request->validate([
             'name' => 'required|string|max:255',
@@ -74,7 +79,7 @@ class PayoutGatewayController extends Controller
         $payout_gateway->status = $request->status;
         $payout_gateway->save();
 
-        notyf()->success("Updated Successfully!");
+        notyf()->success("Payout gateway updated successfully!");
 
         return redirect()->route('admin.payout-gateway.index');
     }
@@ -82,15 +87,17 @@ class PayoutGatewayController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(PayoutGateway $payout_gateway)
+    public function destroy(PayoutGateway $payout_gateway): RedirectResponse
     {
         try {
             $payout_gateway->delete();
-            notyf()->success('Deleted Successfully!');
-            return response(['message' => 'Deleted Successfully!'], 200);
-        }catch(Exception $e) {
-            logger("Course Level Error >> ".$e);
-            return response(['message' => 'Something went wrong!'], 500);
+            notyf()->success('Payout gateway deleted successfully!');
+            return redirect()->route('admin.payout-gateway.index');
+        } catch (Exception $e) {
+            logger("Payout Gateway Error >> " . $e);
+            notyf()->error('Something went wrong!');
+            return back();
         }
     }
 }
+

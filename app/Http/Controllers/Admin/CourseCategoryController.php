@@ -2,107 +2,81 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Contracts\Services\CourseCategoryServiceInterface;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\CourseCategoryStoreRequest;
 use App\Http\Requests\Admin\CourseCategoryUpdateRequest;
 use App\Models\CourseCategory;
-use App\Traits\FileUpload;
-use Exception;
-use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class CourseCategoryController extends Controller
 {
-    use FileUpload;
+    public function __construct(
+        protected CourseCategoryServiceInterface $categoryService
+    ) {}
+
     /**
      * Display a listing of the resource.
      */
-    public function index() : View
+    public function index(): Response
     {
-        $categories = CourseCategory::whereNull('parent_id')->paginate(15);
-        return view('admin.course.course-category.index', compact('categories'));
+        $categories = $this->categoryService->getPaginatedCategories(15);
+        return Inertia::render('Admin/CourseCategory/Index', [
+            'categories' => $categories,
+        ]);
     }
 
     /**
      * Show the form for creating a new resource.
      */
-    public function create() : View
+    public function create(): Response
     {
-        return view('admin.course.course-category.create');
+        return Inertia::render('Admin/CourseCategory/Create');
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(CourseCategoryStoreRequest $request) : RedirectResponse
+    public function store(CourseCategoryStoreRequest $request): RedirectResponse
     {
-        $imagePath = $this->uploadFile($request->file('image'));
-        
-        $category = new CourseCategory();
-        $category->image = $imagePath;
-        $category->icon = $request->icon;
-        $category->name = $request->name;
-        $category->slug = \Str::slug($request->name);
-        $category->show_at_trending = $request->show_at_treading ?? 0;
-        $category->status = $request->status ?? 0;
-        $category->save();
+        $this->categoryService->createCategory($request->validated(), $request->file('image'));
 
-        notyf()->success("Created Successfully!");
-
-        return to_route('admin.course-categories.index');
+        return redirect()->route('admin.course-categories.index')->with('success', 'Category created successfully!');
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(CourseCategory $course_category) : View
+    public function edit(CourseCategory $course_category): Response
     {
-        return view('admin.course.course-category.edit', compact('course_category'));
+        return Inertia::render('Admin/CourseCategory/Edit', [
+            'category' => $course_category,
+        ]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(CourseCategoryUpdateRequest $request, CourseCategory $course_category)
+    public function update(CourseCategoryUpdateRequest $request, CourseCategory $course_category): RedirectResponse
     {
-        // dd($request->all());
-        $category = $course_category;
+        $this->categoryService->updateCategory($course_category, $request->validated(), $request->file('image'));
 
-        if($request->hasFile('image')) {
-            $imagePath = $this->uploadFile($request->file('image'));
-            $this->deleteFile($category->image);
-            $category->image = $imagePath;
-        }
-        
-        $category->icon = $request->icon;
-        $category->name = $request->name;
-        $category->slug = \Str::slug($request->name);
-        $category->show_at_trending = $request->show_at_treading ?? 0;
-        $category->status = $request->status ?? 0;
-        $category->save();
-
-        notyf()->success("Updated Successfully!");
-
-        return to_route('admin.course-categories.index');
+        return redirect()->route('admin.course-categories.index')->with('success', 'Category updated successfully!');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(CourseCategory $course_category)
+    public function destroy(CourseCategory $course_category): RedirectResponse
     {
-        if(CourseCategory::where('parent_id', $course_category->id)->exists()) {
-            return response(['message' => 'Cannot delete a category with subcategory!'], 422);
+        if (CourseCategory::where('parent_id', $course_category->id)->exists()) {
+            return back()->with('error', 'Cannot delete a category that has subcategories!');
         }
-        try {
-            $this->deleteFile($course_category->image);
-            $course_category->delete();
-            notyf()->success('Deleted Successfully!');
-            return response(['message' => 'Deleted Successfully!'], 200);
-        }catch(Exception $e) {
-            logger("Course Language Error >> ".$e);
-            return response(['message' => 'Something went wrong!'], 500);
-        }
+
+        $this->categoryService->deleteCategory($course_category);
+
+        return redirect()->route('admin.course-categories.index')->with('success', 'Category deleted successfully!');
     }
 }

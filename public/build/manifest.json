@@ -3,8 +3,8 @@
     "file": "assets/_commonjsHelpers-BosuxZz1.js",
     "name": "_commonjsHelpers"
   },
-  "_bootstrap-CxeR16Iq.js": {
-    "file": "assets/bootstrap-CxeR16Iq.js",
+  "_bootstrap-DP082uzN.js": {
+    "file": "assets/bootstrap-DP082uzN.js",
     "name": "bootstrap"
   },
   "_jquery-JkAoMJ1f.js": {
@@ -60,22 +60,22 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-DM5bnWpa.js",
+    "file": "assets/app-DcnaTebH.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
     "imports": [
-      "_bootstrap-CxeR16Iq.js"
+      "_bootstrap-DP082uzN.js"
     ]
   },
   "resources/js/app.jsx": {
-    "file": "assets/app-B87Y-UeD.js",
+    "file": "assets/app-C5ax95WE.js",
     "name": "app",
     "src": "resources/js/app.jsx",
     "isEntry": true,
     "imports": [
-      "_bootstrap-CxeR16Iq.js",
-      "__commonjsHelpers-BosuxZz1.js"
+      "__commonjsHelpers-BosuxZz1.js",
+      "_bootstrap-DP082uzN.js"
     ]
   },
   "resources/js/frontend/course.js": {

@@ -16,11 +16,13 @@ class InstructorRequestController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(): View
+    public function index()
     {
         $instructorsRequests = User::where('approve_status', 'pending')
             ->orWhere('approve_status', 'rejected')->get();
-        return view('admin.instructor-request.index', compact('instructorsRequests'));
+        return \Inertia\Inertia::render('Admin/InstructorRequest/Index', [
+            'instructorsRequests' => $instructorsRequests,
+        ]);
     }
 
     function download(User $user)
@@ -40,6 +42,8 @@ class InstructorRequestController extends Controller
         $instructor_request->save();
 
         self::sendNotification($instructor_request);
+
+        notyf()->success('Instructor status updated successfully.');
 
         return redirect()->back();
     }

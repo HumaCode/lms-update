@@ -14,8 +14,10 @@ class ReviewController extends Controller
      */
     public function index()
     {
-        $reviews = Review::with(['user', 'course'])->latest()->paginate(20);
-        return view('admin.review.index', compact('reviews'));
+        $reviews = Review::with(['user', 'course.instructor'])->latest()->paginate(20);
+        return \Inertia\Inertia::render('Admin/Review/Index', [
+            'reviews' => $reviews,
+        ]);
     }
 
     /**
@@ -26,7 +28,7 @@ class ReviewController extends Controller
         $review->status = $request->status ? 1 : 0;
         $review->save();
 
-        notyf()->success('Updated Successfully!');
+        notyf()->success('Review status updated successfully!');
         return redirect()->back();
     }
 
@@ -37,13 +39,12 @@ class ReviewController extends Controller
     {
         try {
             $review->delete();
-            notyf()->success('Deleted Successfully!');
-            return response(['message' => 'Deleted Successfully!'], 200);
-        }catch(Exception $e) {
-            logger("Course Ratting Error >> ".$e);
-            return response(['message' => 'Something went wrong!'], 500);
+            notyf()->success('Review deleted successfully!');
+            return to_route('admin.reviews.index');
+        } catch (Exception $e) {
+            logger("Course Rating Error >> " . $e);
+            notyf()->error('Something went wrong!');
+            return back();
         }
-
-    
     }
 }

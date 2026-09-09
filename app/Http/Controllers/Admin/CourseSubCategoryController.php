@@ -20,7 +20,10 @@ class CourseSubCategoryController extends Controller
     public function index(CourseCategory $course_category)
     {
         $subCategories = CourseCategory::where('parent_id', $course_category->id)->get();
-        return view('admin.course.course-sub-category.index', compact('course_category', 'subCategories'));
+        return \Inertia\Inertia::render('Admin/CourseSubCategory/Index', [
+            'category' => $course_category,
+            'subCategories' => $subCategories,
+        ]);
     }
 
     /**
@@ -28,7 +31,9 @@ class CourseSubCategoryController extends Controller
      */
     public function create(CourseCategory $course_category)
     {
-        return view('admin.course.course-sub-category.create', compact('course_category'));
+        return \Inertia\Inertia::render('Admin/CourseSubCategory/Create', [
+            'category' => $course_category,
+        ]);
     }
 
     /**
@@ -36,7 +41,6 @@ class CourseSubCategoryController extends Controller
      */
     public function store(CourseSubCategoryStoreRequest $request, CourseCategory $course_category)
     {
-        
         $category = new CourseCategory();
         if ($request->hasFile('image')) {
             $imagePath = $this->uploadFile($request->file('image'));
@@ -46,11 +50,11 @@ class CourseSubCategoryController extends Controller
         $category->name = $request->name;
         $category->slug = \Str::slug($request->name);
         $category->parent_id = $course_category->id;
-        $category->show_at_trending = $request->show_at_treading ?? 0;
+        $category->show_at_trending = $request->show_at_trending ?? $request->show_at_treading ?? 0;
         $category->status = $request->status ?? 0;
         $category->save();
 
-        notyf()->success("Created Successfully!");
+        notyf()->success("Sub-category created successfully!");
 
         return to_route('admin.course-sub-categories.index', $course_category->id);
     }
@@ -60,7 +64,10 @@ class CourseSubCategoryController extends Controller
      */
     public function edit(CourseCategory $course_category, CourseCategory $course_sub_category)
     {
-        return view('admin.course.course-sub-category.edit', compact('course_category', 'course_sub_category'));
+        return \Inertia\Inertia::render('Admin/CourseSubCategory/Edit', [
+            'category' => $course_category,
+            'subCategory' => $course_sub_category,
+        ]);
     }
 
     /**
@@ -81,11 +88,11 @@ class CourseSubCategoryController extends Controller
         $category->name = $request->name;
         $category->slug = \Str::slug($request->name);
         $category->parent_id = $course_category->id;
-        $category->show_at_trending = $request->show_at_treading ?? 0;
+        $category->show_at_trending = $request->show_at_trending ?? $request->show_at_treading ?? 0;
         $category->status = $request->status ?? 0;
         $category->save();
 
-        notyf()->success("Updated Successfully!");
+        notyf()->success("Sub-category updated successfully!");
 
         return to_route('admin.course-sub-categories.index', $course_category->id);
     }
@@ -98,11 +105,12 @@ class CourseSubCategoryController extends Controller
         try {
             $this->deleteFile($course_sub_category->image);
             $course_sub_category->delete();
-            notyf()->success('Deleted Successfully!');
-            return response(['message' => 'Deleted Successfully!'], 200);
-        }catch(Exception $e) {
-            logger("Course Level Error >> ".$e);
-            return response(['message' => 'Something went wrong!'], 500);
+            notyf()->success('Sub-category deleted successfully!');
+            return to_route('admin.course-sub-categories.index', $course_category->id);
+        } catch (Exception $e) {
+            logger("Course SubCategory Error >> " . $e);
+            notyf()->error('Something went wrong!');
+            return back();
         }
     }
 }

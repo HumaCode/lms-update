@@ -4,18 +4,25 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
-use Illuminate\Contracts\View\View;
-use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class OrderController extends Controller
 {
-    function index() : View
+    public function index(): Response
     {
-        $orders = Order::with(['customer'])->paginate(25);
-        return view('admin.order.index', compact('orders'));    
+        $orders = Order::with(['customer'])->latest()->paginate(25);
+        return Inertia::render('Admin/Order/Index', [
+            'orders' => $orders,
+        ]);
     }
 
-    function show(Order $order) : View{
-       return view('admin.order.show', compact('order')); 
+    public function show(Order $order): Response
+    {
+        $order->load(['customer', 'orderItems.course.instructor']);
+        return Inertia::render('Admin/Order/Show', [
+            'order' => $order,
+        ]);
     }
 }
+

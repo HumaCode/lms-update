@@ -18,14 +18,19 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 
+use Inertia\Inertia;
+use Inertia\Response as InertiaResponse;
+
 class CourseController extends Controller
 {
     use FileUpload;
 
-    function index(): View
+    public function index(): InertiaResponse
     {
-        $courses = Course::with(['instructor'])->paginate(25);
-        return view('admin.course.course-module.index', compact('courses'));
+        $courses = Course::with(['instructor'])->orderBy('id', 'desc')->paginate(25);
+        return Inertia::render('Admin/Course/Index', [
+            'courses' => $courses,
+        ]);
     }
 
     /** change approve status */

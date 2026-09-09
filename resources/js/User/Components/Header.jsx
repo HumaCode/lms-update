@@ -106,35 +106,51 @@ export default function Header() {
                         </div>
                         Category
                         <ul>
-                            {categories.map((category) => (
-                                <li key={category.id}>
-                                    <Link href={route('courses.index', { main_category: category.slug })}>
-                                        <span>
-                                            <img
-                                                src={category.image ? `/${category.image}` : '/frontend/assets/images/grid_icon.png'}
-                                                alt="Category"
-                                                className="img-fluid"
-                                                onError={(e) => {
-                                                    e.target.onerror = null;
-                                                    e.target.style.display = 'none';
-                                                }}
-                                            />
-                                        </span>
-                                        {category.name}
-                                    </Link>
-                                    {category.sub_categories && category.sub_categories.length > 0 && (
-                                        <ul className="category_sub_menu">
-                                            {category.sub_categories.map((subCategory) => (
-                                                <li key={subCategory.id}>
-                                                    <Link href={route('courses.index', { category: subCategory.id })}>
-                                                        {subCategory.name}
-                                                    </Link>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    )}
+                            {categories && categories.length > 0 ? (
+                                categories.map((category) => (
+                                    <li key={category.id}>
+                                        <Link href={route('courses.index', { main_category: category.slug })}>
+                                            <span>
+                                                <img
+                                                    src={category.image ? `/${category.image}` : '/frontend/assets/images/grid_icon.png'}
+                                                    alt="Category"
+                                                    className="img-fluid"
+                                                    onError={(e) => {
+                                                        e.target.onerror = null;
+                                                        e.target.style.display = 'none';
+                                                    }}
+                                                />
+                                            </span>
+                                            {category.name}
+                                        </Link>
+                                        {category.sub_categories && category.sub_categories.length > 0 && (
+                                            <ul className="category_sub_menu">
+                                                {category.sub_categories.map((subCategory) => (
+                                                    <li key={subCategory.id}>
+                                                        <Link href={route('courses.index', { category: subCategory.id })}>
+                                                            {subCategory.name}
+                                                        </Link>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                    </li>
+                                ))
+                            ) : (
+                                <li>
+                                    <span
+                                        style={{
+                                            display: 'block',
+                                            padding: '16px 20px',
+                                            fontSize: '14px',
+                                            color: '#6c757d',
+                                            textAlign: 'center',
+                                        }}
+                                    >
+                                        Kategori belum tersedia
+                                    </span>
                                 </li>
-                            ))}
+                            )}
                         </ul>
                     </div>
                     <ul className="navbar-nav m-auto">
@@ -224,8 +240,8 @@ export default function Header() {
 
                             <li>
                                 {!user && (
-                                    <Link className="common_btn" href={route('register')}>
-                                        Sign Up
+                                    <Link className="common_btn" href={route('login')}>
+                                        Sign In
                                     </Link>
                                 )}
                                 {user?.role === 'student' && (
@@ -399,27 +415,43 @@ export default function Header() {
                                 {mobileActiveTab === 'categories' && (
                                     <div className="tab-pane fade show active">
                                         <ul className="main_mobile_menu">
-                                            {categories.map((category) => (
-                                                <li className="mobile_dropdown" key={category.id}>
-                                                    <Link
-                                                        href={route('courses.index', { main_category: category.slug })}
-                                                        onClick={() => setMobileMenuOpen(false)}
+                                            {categories && categories.length > 0 ? (
+                                                categories.map((category) => (
+                                                    <li className="mobile_dropdown" key={category.id}>
+                                                        <Link
+                                                            href={route('courses.index', { main_category: category.slug })}
+                                                            onClick={() => setMobileMenuOpen(false)}
+                                                        >
+                                                            <span>
+                                                                <img
+                                                                    src={category.image ? `/${category.image}` : '/frontend/assets/images/grid_icon.png'}
+                                                                    alt="Category"
+                                                                    className="img-fluid"
+                                                                    onError={(e) => {
+                                                                        e.target.onerror = null;
+                                                                        e.target.style.display = 'none';
+                                                                    }}
+                                                                />
+                                                            </span>
+                                                            {category.name}
+                                                        </Link>
+                                                    </li>
+                                                ))
+                                            ) : (
+                                                <li>
+                                                    <span
+                                                        style={{
+                                                            display: 'block',
+                                                            padding: '16px 20px',
+                                                            fontSize: '14px',
+                                                            color: '#6c757d',
+                                                            textAlign: 'center',
+                                                        }}
                                                     >
-                                                        <span>
-                                                            <img
-                                                                src={category.image ? `/${category.image}` : '/frontend/assets/images/grid_icon.png'}
-                                                                alt="Category"
-                                                                className="img-fluid"
-                                                                onError={(e) => {
-                                                                    e.target.onerror = null;
-                                                                    e.target.style.display = 'none';
-                                                                }}
-                                                            />
-                                                        </span>
-                                                        {category.name}
-                                                    </Link>
+                                                        Kategori belum tersedia
+                                                    </span>
                                                 </li>
-                                            ))}
+                                            )}
                                         </ul>
                                     </div>
                                 )}

@@ -7,9 +7,9 @@ use App\Http\Controllers\Frontend\CartController;
 use App\Http\Controllers\Frontend\CheckoutController;
 use App\Http\Controllers\Frontend\CourseContentController;
 use App\Http\Controllers\Frontend\CourseController;
+use App\Http\Controllers\Frontend\ContactController;
 use App\Http\Controllers\Frontend\CoursePageController;
 use App\Http\Controllers\Frontend\EnrolledCourseController;
-use App\Http\Controllers\Frontend\FrontendContactController;
 use App\Http\Controllers\Frontend\FrontendController;
 use App\Http\Controllers\Frontend\HeroController;
 use App\Http\Controllers\Frontend\InstructorDashboardController;
@@ -60,8 +60,8 @@ use Illuminate\Support\Facades\Route;
  Route::get('about', [AboutController::class, 'index'])->name('about.index');
 
  /** Contact route */
- Route::get('contact', [FrontendContactController::class, 'index'])->name('contact.index');
- Route::post('contact', [FrontendContactController::class, 'sendMail'])->name('send.contact');
+ Route::get('contact', [ContactController::class, 'index'])->name('contact.index');
+ Route::post('contact', [ContactController::class, 'sendMail'])->name('send.contact');
 
  /** Review Routes */
  Route::post('review', [CoursePageController::class, 'storeReview'])->name('review.store');

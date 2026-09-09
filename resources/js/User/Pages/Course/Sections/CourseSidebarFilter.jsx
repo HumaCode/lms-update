@@ -186,7 +186,8 @@ export default function CourseSidebarFilter({
                 </div>
 
                 <ul className="sidebar-category-list p-0 mb-0">
-                    {displayCategories.map((cat) => {
+                    {displayCategories.length > 0 ? (
+                        displayCategories.map((cat) => {
                         const isExpanded = expandedCategories.includes(cat.id);
                         const subCats = cat.sub_categories || [];
                         const hasSub = subCats.length > 0;
@@ -305,7 +306,14 @@ export default function CourseSidebarFilter({
                                 )}
                             </li>
                         );
-                    })}
+                    })
+                ) : (
+                    <li style={{ listStyle: 'none', padding: '8px 0' }}>
+                        <span style={{ fontSize: '13px', color: '#64748B' }}>
+                            Kategori belum tersedia
+                        </span>
+                    </li>
+                )}
                 </ul>
             </div>
 

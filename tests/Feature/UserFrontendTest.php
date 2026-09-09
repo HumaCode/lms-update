@@ -93,7 +93,31 @@ class UserFrontendTest extends TestCase
         $response->assertStatus(200);
         $response->assertInertia(fn (Assert $page) => $page
             ->component('User/Contact/Index')
+            ->has('contactCards')
+            ->has('contactSetting')
         );
+    }
+
+    public function test_contact_send_mail(): void
+    {
+        \Illuminate\Support\Facades\Mail::fake();
+
+        // Validation test
+        $resInvalid = $this->withoutMiddleware()->postJson('/contact', []);
+        $resInvalid->assertStatus(422);
+        $resInvalid->assertJsonValidationErrors(['name', 'email', 'message']);
+
+        // Success test
+        $resValid = $this->withoutMiddleware()
+            ->post('/contact', [
+                'name' => 'John Doe',
+                'email' => 'john@example.com',
+                'subject' => 'Inquiry about Web Dev Course',
+                'message' => 'Hello, I would like more information about your courses.',
+            ]);
+
+        $resValid->assertRedirect();
+        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\ContactMail::class);
     }
 
     public function test_blog_index_page(): void

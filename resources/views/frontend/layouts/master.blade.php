@@ -43,13 +43,15 @@
 <body class="home_3">
 
 
-    @include('frontend.layouts.header')
-
+    @if(!request()->routeIs('login', 'register', 'password.*', 'verification.*'))
+        @include('frontend.layouts.header')
+    @endif
 
     @yield('content')
 
-
-    @include('frontend.layouts.footer')
+    @if(!request()->routeIs('login', 'register', 'password.*', 'verification.*'))
+        @include('frontend.layouts.footer')
+    @endif
 
 
 

@@ -381,7 +381,9 @@ export default function QnaTab({ course, activeLesson, initialQuestions = [] }) 
                     </div>
 
                     <div className="d-flex align-items-center gap-2">
-                        <span className="fw-bold text-dark">{activeQuestion.upvotes}</span>
+                        {Boolean(activeQuestion.upvotes) && (
+                            <span className="fw-bold text-dark">{activeQuestion.upvotes}</span>
+                        )}
                         <button
                             type="button"
                             className="btn btn-light rounded-circle p-1 border-0"
@@ -486,9 +488,11 @@ export default function QnaTab({ course, activeLesson, initialQuestions = [] }) 
                                 </div>
 
                                 <div className="d-flex align-items-center gap-2">
-                                    <span className="fw-bold text-dark" style={{ fontSize: '14px' }}>
-                                        {reply.upvotes}
-                                    </span>
+                                    {Boolean(reply.upvotes) && (
+                                        <span className="fw-bold text-dark" style={{ fontSize: '14px' }}>
+                                            {reply.upvotes}
+                                        </span>
+                                    )}
                                     <button
                                         type="button"
                                         className="btn btn-light rounded-circle p-1 border-0"
@@ -887,7 +891,7 @@ export default function QnaTab({ course, activeLesson, initialQuestions = [] }) 
                                     onClick={(e) => handleUpvoteQuestion(q.id, e)}
                                     title="Upvote"
                                 >
-                                    <span className="fw-bold small">{q.upvotes || 0}</span>
+                                    {Boolean(q.upvotes) && <span className="fw-bold small">{q.upvotes}</span>}
                                     <i
                                         className="far fa-arrow-alt-circle-up"
                                         style={{

@@ -45,12 +45,19 @@ class EnrolledCourseController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
+        $announcements = \App\Models\CourseAnnouncement::with('user:id,name,email')
+            ->where('course_id', $course->id)
+            ->where('is_published', true)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
         return \Inertia\Inertia::render('User/Student/CoursePlayer/Index', [
             'course' => $course,
             'lastWatchHistory' => $lastWatchHistory,
             'watchedLessonIds' => $watchedLessonIds,
             'lessonCount' => $lessonCount,
             'initialQuestions' => $questions,
+            'initialAnnouncements' => $announcements,
         ]);
     }
 

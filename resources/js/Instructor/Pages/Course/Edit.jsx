@@ -4,7 +4,7 @@ import InstructorLayout from '@/Instructor/Layouts/InstructorLayout';
 import RichTextEditor from '@/Components/RichTextEditor';
 import Select2Input from '@/Components/Select2Input';
 import ConfirmModal from '@/Components/ConfirmModal';
-import { formatCurrency } from '@/Utils/formatters';
+import { formatCurrency, timeAgo } from '@/Utils/formatters';
 import { route } from '@/Utils/routes';
 import { notify } from '@/Utils/notifications';
 import { confirmDelete } from '@/Utils/confirmation';
@@ -299,9 +299,88 @@ export default function Edit({
     const steps = [
         { num: 1, label: 'Basic Information' },
         { num: 2, label: 'Course Details' },
-        { num: 3, label: 'Curriculum & Lessons' },
-        { num: 4, label: 'Review & Publish' },
+        { num: 3, label: 'Announcements' },
+        { num: 4, label: 'Curriculum & Lessons' },
+        { num: 5, label: 'Review & Publish' },
     ];
+
+    // Announcement state for Step 3
+    const [announcementsList, setAnnouncementsList] = useState([]);
+    const [loadingAnnouncements, setLoadingAnnouncements] = useState(false);
+    const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
+    const [newAnnouncement, setNewAnnouncement] = useState({ title: '', content: '' });
+    const [savingAnnouncement, setSavingAnnouncement] = useState(false);
+
+    useEffect(() => {
+        if (course?.id) {
+            fetchAnnouncements();
+        }
+    }, [course?.id]);
+
+    const fetchAnnouncements = async () => {
+        setLoadingAnnouncements(true);
+        try {
+            const res = await axios.get(route('instructor.courses.announcements', course.id));
+            if (res.data.status === 'success') {
+                setAnnouncementsList(res.data.announcements || []);
+            }
+        } catch (err) {
+            console.error('Failed to fetch announcements:', err);
+        } finally {
+            setLoadingAnnouncements(false);
+        }
+    };
+
+    const handleCreateAnnouncement = async (e) => {
+        e.preventDefault();
+        const hasImage = newAnnouncement.content.includes('<img');
+        const stripped = newAnnouncement.content.replace(/<[^>]*>/g, '').trim();
+        if (!newAnnouncement.title.trim() || (!stripped && !hasImage) || savingAnnouncement) return;
+
+        setSavingAnnouncement(true);
+        try {
+            const res = await axios.post(route('instructor.courses.announcements.store'), {
+                course_id: course.id,
+                title: newAnnouncement.title,
+                content: newAnnouncement.content,
+            });
+            if (res.data.status === 'success') {
+                notify.success('Berhasil', 'Pengumuman berhasil ditambahkan!');
+                setAnnouncementsList([res.data.data, ...announcementsList]);
+                setNewAnnouncement({ title: '', content: '' });
+                setShowAnnouncementModal(false);
+            }
+        } catch (err) {
+            notify.error('Gagal', 'Gagal menambahkan pengumuman.');
+        } finally {
+            setSavingAnnouncement(false);
+        }
+    };
+
+    const handleDeleteAnnouncement = (id) => {
+        confirmDelete({
+            title: 'Apakah Anda yakin?',
+            text: 'Data yang dihapus tidak dapat dikembalikan!',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal',
+            onConfirm: async (resolve, reject) => {
+                try {
+                    const res = await axios.delete(route('instructor.courses.announcements.delete', id));
+                    if (res.data.status === 'success') {
+                        notify.success('Berhasil', 'Pengumuman berhasil dihapus.');
+                        setAnnouncementsList((prev) => prev.filter((a) => a.id !== id));
+                        resolve();
+                    } else {
+                        notify.error('Gagal', 'Gagal menghapus pengumuman.');
+                        reject();
+                    }
+                } catch (err) {
+                    notify.error('Gagal', 'Gagal menghapus pengumuman.');
+                    reject();
+                }
+            },
+        });
+    };
 
     return (
         <InstructorLayout
@@ -316,9 +395,9 @@ export default function Edit({
             {/* STEP WIZARD NAV */}
             <div className="card border-0 shadow-sm rounded-3 mb-4">
                 <div className="card-body p-2">
-                    <div className="row g-2 text-center">
+                    <div className="row g-2 text-center justify-content-center">
                         {steps.map((s) => (
-                            <div key={s.num} className="col-6 col-md-3">
+                            <div key={s.num} className="col-12 col-sm-6 col-md">
                                 <button
                                     type="button"
                                     onClick={() => setActiveStep(s.num)}
@@ -805,7 +884,7 @@ export default function Edit({
                                         Sedang Menyimpan...
                                     </>
                                 ) : (
-                                    'Save & Proceed to Curriculum'
+                                    'Save & Proceed to Announcements'
                                 )}
                             </button>
                         </div>
@@ -813,12 +892,95 @@ export default function Edit({
                 </div>
             )}
 
-            {/* STEP 3: CURRICULUM & LESSON BUILDER */}
+            {/* STEP 3: ANNOUNCEMENTS */}
             {activeStep === 3 && (
                 <div className="card border-0 shadow-sm rounded-3">
                     <div className="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
                         <div>
-                            <h5 className="fw-bold mb-0 text-dark">Step 3: Curriculum Builder</h5>
+                            <h5 className="fw-bold mb-0 text-dark">Step 3: Course Announcements</h5>
+                            <p className="text-muted small mb-0">Buat dan kelola pengumuman untuk siswa yang terdaftar di kursus ini</p>
+                        </div>
+                        <button
+                            type="button"
+                            className="btn btn-primary btn-sm px-3"
+                            onClick={() => setShowAnnouncementModal(true)}
+                        >
+                            <i className="fas fa-plus me-1"></i> Buat Pengumuman Baru
+                        </button>
+                    </div>
+
+                    <div className="card-body p-4">
+                        {loadingAnnouncements ? (
+                            <div className="text-center py-5">
+                                <div className="spinner-border text-primary" role="status"></div>
+                                <p className="text-muted small mt-2">Memuat pengumuman...</p>
+                            </div>
+                        ) : announcementsList.length > 0 ? (
+                            <div className="vstack gap-3">
+                                {announcementsList.map((ann) => (
+                                    <div key={ann.id} className="card border p-3 rounded-3 shadow-xs">
+                                        <div className="d-flex justify-content-between align-items-start mb-2">
+                                            <div>
+                                                <h6 className="fw-bold text-dark mb-1">{ann.title}</h6>
+                                                <small className="text-muted">
+                                                    Oleh: <strong>{ann.user?.name || 'Instruktur'}</strong> · Diposting {timeAgo(ann.created_at)}
+                                                </small>
+                                            </div>
+                                            <button
+                                                className="btn btn-xs btn-sm btn-outline-danger"
+                                                onClick={() => handleDeleteAnnouncement(ann.id)}
+                                                title="Hapus Pengumuman"
+                                            >
+                                                <i className="far fa-trash-alt me-1"></i> Hapus
+                                            </button>
+                                        </div>
+                                        <div
+                                            className="text-secondary small"
+                                            dangerouslySetInnerHTML={{ __html: ann.content }}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-5 border rounded-3 bg-light">
+                                <i className="fas fa-bullhorn text-purple display-5 mb-3 d-block" style={{ color: '#6f42c1' }}></i>
+                                <h6 className="fw-bold text-dark fs-5 mb-1">Belum Ada Pengumuman</h6>
+                                <p className="text-muted small mb-3">Siswa belum menerima pengumuman apapun untuk kursus ini.</p>
+                                <button
+                                    className="btn btn-sm btn-primary"
+                                    onClick={() => setShowAnnouncementModal(true)}
+                                >
+                                    <i className="fas fa-plus me-1"></i> Tambah Pengumuman Pertama
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="card-footer bg-white border-top py-3 d-flex justify-content-between">
+                        <button
+                            type="button"
+                            onClick={() => setActiveStep(2)}
+                            className="btn btn-outline-secondary"
+                        >
+                            <i className="fas fa-arrow-left me-1"></i> Back
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setActiveStep(4)}
+                            className="btn btn-primary px-4"
+                        >
+                            Proceed to Curriculum & Lessons <i className="fas fa-arrow-right ms-1"></i>
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* STEP 4: CURRICULUM & LESSON BUILDER */}
+            {activeStep === 4 && (
+                <div className="card border-0 shadow-sm rounded-3">
+                    <div className="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 className="fw-bold mb-0 text-dark">Step 4: Curriculum Builder</h5>
                             <p className="text-muted small mb-0">Organize your course into chapters and video lessons</p>
                         </div>
                         <button
@@ -944,14 +1106,14 @@ export default function Edit({
                     <div className="card-footer bg-white border-top py-3 d-flex justify-content-between">
                         <button
                             type="button"
-                            onClick={() => setActiveStep(2)}
+                            onClick={() => setActiveStep(3)}
                             className="btn btn-outline-secondary"
                         >
                             <i className="fas fa-arrow-left me-1"></i> Back
                         </button>
                         <button
                             type="button"
-                            onClick={() => setActiveStep(4)}
+                            onClick={() => setActiveStep(5)}
                             className="btn btn-primary px-4"
                         >
                             Proceed to Review & Publish <i className="fas fa-arrow-right ms-1"></i>
@@ -960,11 +1122,11 @@ export default function Edit({
                 </div>
             )}
 
-            {/* STEP 4: REVIEW & PUBLISH */}
-            {activeStep === 4 && (
+            {/* STEP 5: REVIEW & PUBLISH */}
+            {activeStep === 5 && (
                 <div className="card border-0 shadow-sm rounded-3">
                     <div className="card-header bg-white border-bottom py-3">
-                        <h5 className="fw-bold mb-0 text-dark">Step 4: Review & Publish Course</h5>
+                        <h5 className="fw-bold mb-0 text-dark">Step 5: Review & Publish Course</h5>
                     </div>
                     <form onSubmit={handleStep4Submit}>
                         <div className="card-body p-4">
@@ -1045,7 +1207,7 @@ export default function Edit({
                         <div className="card-footer bg-white border-top py-3 d-flex justify-content-between">
                             <button
                                 type="button"
-                                onClick={() => setActiveStep(3)}
+                                onClick={() => setActiveStep(4)}
                                 className="btn btn-outline-secondary"
                             >
                                 <i className="fas fa-arrow-left me-1"></i> Back
@@ -1068,6 +1230,71 @@ export default function Edit({
                             </button>
                         </div>
                     </form>
+                </div>
+            )}
+
+            {/* ANNOUNCEMENT MODAL */}
+            {showAnnouncementModal && (
+                <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1055 }}>
+                    <div className="modal-dialog modal-dialog-centered modal-lg">
+                        <div className="modal-content border-0 shadow rounded-3">
+                            <div className="modal-header border-bottom">
+                                <h5 className="modal-title fw-bold">Buat Pengumuman Baru</h5>
+                                <button
+                                    type="button"
+                                    className="btn-close"
+                                    onClick={() => setShowAnnouncementModal(false)}
+                                ></button>
+                            </div>
+                            <form onSubmit={handleCreateAnnouncement}>
+                                <div className="modal-body">
+                                    <div className="mb-3">
+                                        <label className="form-label required fw-semibold">Judul Pengumuman</label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            placeholder="misal: Pembaruan Materi & Tugas Modul 3"
+                                            value={newAnnouncement.title}
+                                            onChange={(e) => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })}
+                                            required
+                                        />
+                                    </div>
+                                    <div className="mb-3">
+                                        <label className="form-label required fw-semibold">Isi Pengumuman</label>
+                                        <RichTextEditor
+                                            value={newAnnouncement.content}
+                                            onChange={(val) => setNewAnnouncement({ ...newAnnouncement, content: val })}
+                                            placeholder="Tuliskan pengumuman atau instruksi untuk siswa..."
+                                            height="180px"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="modal-footer border-top">
+                                    <button
+                                        type="button"
+                                        className="btn btn-light"
+                                        onClick={() => setShowAnnouncementModal(false)}
+                                    >
+                                        Batal
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="btn btn-primary px-4"
+                                        disabled={savingAnnouncement}
+                                    >
+                                        {savingAnnouncement ? (
+                                            <>
+                                                <i className="fas fa-spinner fa-spin me-2 text-white"></i>
+                                                Menyimpan...
+                                            </>
+                                        ) : (
+                                            'Kirim Pengumuman'
+                                        )}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                 </div>
             )}
 

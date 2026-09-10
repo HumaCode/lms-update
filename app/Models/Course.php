@@ -69,8 +69,13 @@ class Course extends Model implements HasMedia
         return $this->hasMany(Review::class, 'course_id', 'id');
     }
 
-    function enrollments() : HasMany
+    function enrollments(): HasMany
     {
         return $this->hasMany(Enrollment::class, 'course_id', 'id');
+    }
+
+    function announcements(): HasMany
+    {
+        return $this->hasMany(CourseAnnouncement::class, 'course_id', 'id')->orderBy('created_at', 'desc');
     }
 }

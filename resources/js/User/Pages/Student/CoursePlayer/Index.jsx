@@ -16,7 +16,8 @@ export default function CoursePlayer({
     lastWatchHistory,
     watchedLessonIds = [],
     lessonCount = 0,
-    initialQuestions = []
+    initialQuestions = [],
+    initialAnnouncements = [],
 }) {
     const notyf = new Notyf({ duration: 3000, position: { x: 'right', y: 'top' } });
 
@@ -166,7 +167,7 @@ export default function CoursePlayer({
 
                         {activeTab === 'announcements' && (
                             <div className="tab-pane fade show active">
-                                <AnnouncementsTab course={course} />
+                                <AnnouncementsTab course={course} initialAnnouncements={initialAnnouncements} />
                             </div>
                         )}
 

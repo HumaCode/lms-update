@@ -145,6 +145,9 @@ Route::group(['middleware' => ['auth:web', 'verified', 'check_role:instructor'],
     Route::post('courses/toggle-ban-qna', [CourseController::class, 'toggleBanQna'])->name('courses.toggle-ban-qna');
     Route::post('courses/reply-qna', [CourseController::class, 'replyQna'])->name('courses.reply-qna');
     Route::post('courses/delete-qna', [CourseController::class, 'deleteQna'])->name('courses.delete-qna');
+    Route::get('courses/{id}/announcements', [CourseController::class, 'getAnnouncements'])->name('courses.announcements');
+    Route::post('courses/announcements/store', [CourseController::class, 'storeAnnouncement'])->name('courses.announcements.store');
+    Route::delete('courses/announcements/{id}', [CourseController::class, 'deleteAnnouncement'])->name('courses.announcements.delete');
 
    Route::get('course-content/{course}/create-chapter', [CourseContentController::class, 'createChapterModal'])->name('course-content.create-chapter');
    Route::post('course-content/{course}/create-chapter', [CourseContentController::class, 'storeChapter'])->name('course-content.store-chapter');

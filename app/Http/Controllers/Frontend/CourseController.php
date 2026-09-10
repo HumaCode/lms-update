@@ -286,4 +286,88 @@ class CourseController extends Controller
             'message' => 'Konten berhasil dihapus.',
         ]);
     }
+
+    function getAnnouncements(string $id)
+    {
+        $course = Course::where('instructor_id', Auth::user()->id)->findOrFail($id);
+        $announcements = \App\Models\CourseAnnouncement::with('user:id,name,email')
+            ->where('course_id', $course->id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'status' => 'success',
+            'announcements' => $announcements,
+        ]);
+    }
+
+    function storeAnnouncement(Request $request)
+    {
+        $request->validate([
+            'course_id' => 'required|exists:courses,id',
+            'title' => 'required|string|max:255',
+            'content' => 'required|string',
+        ]);
+
+        $course = Course::where('id', $request->course_id)
+            ->where('instructor_id', Auth::user()->id)
+            ->firstOrFail();
+
+        $announcement = \App\Models\CourseAnnouncement::create([
+            'course_id' => $course->id,
+            'user_id' => Auth::user()->id,
+            'title' => $request->title,
+            'content' => $request->content,
+            'is_published' => true,
+        ]);
+
+        $announcement->load('user:id,name,email');
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Pengumuman berhasil ditambahkan.',
+            'data' => $announcement,
+        ]);
+    }
+
+    function deleteAnnouncement(string $id)
+    {
+        $announcement = \App\Models\CourseAnnouncement::findOrFail($id);
+        Course::where('id', $announcement->course_id)
+            ->where('instructor_id', Auth::user()->id)
+            ->firstOrFail();
+
+        // Extract any local image files stored in public directory or uploads from content HTML
+        if (!empty($announcement->content)) {
+            preg_match_all('/<img[^>]+src=["\']([^"\']+)["\']/i', $announcement->content, $matches);
+            if (!empty($matches[1])) {
+                foreach ($matches[1] as $src) {
+                    // Check if image is stored locally (not base64 and not external http domain)
+                    if (str_contains($src, 'data:image') || str_contains($src, 'http://') || str_contains($src, 'https://')) {
+                        // If it's a full local URL e.g. http://localhost:8000/uploads/..., convert to relative path
+                        $parsedUrl = parse_url($src, PHP_URL_PATH);
+                        if ($parsedUrl) {
+                            $filePath = public_path($parsedUrl);
+                            if (file_exists($filePath) && is_file($filePath)) {
+                                @unlink($filePath);
+                            }
+                        }
+                    } else {
+                        // Relative local path
+                        $filePath = public_path($src);
+                        if (file_exists($filePath) && is_file($filePath)) {
+                            @unlink($filePath);
+                        }
+                    }
+                }
+            }
+        }
+
+        $announcement->delete();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Pengumuman berhasil dihapus.',
+        ]);
+    }
 }

@@ -18,6 +18,8 @@ class CourseQuestion extends Model
         'title',
         'content',
         'upvotes',
+        'is_banned',
+        'is_reported',
     ];
 
     public function user(): BelongsTo

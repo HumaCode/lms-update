@@ -33,8 +33,15 @@ class EnrolledCourseController extends Controller
         $lastWatchHistory = WatchHistory::where(['user_id' => user()->id, 'course_id' => $course->id])->orderBy('updated_at', 'desc')->first();
         $watchedLessonIds = WatchHistory::where(['user_id' => user()->id, 'course_id' => $course->id, 'is_completed' => 1])->pluck('lesson_id')->toArray();
 
-        $questions = \App\Models\CourseQuestion::with(['user:id,name,email', 'lesson:id,title', 'replies.user:id,name,email'])
+        $questions = \App\Models\CourseQuestion::with([
+            'user:id,name,email',
+            'lesson:id,title',
+            'replies' => function ($q) {
+                $q->where('is_banned', false)->with('user:id,name,email')->orderBy('created_at', 'asc');
+            }
+        ])
             ->where('course_id', $course->id)
+            ->where('is_banned', false)
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -233,7 +240,18 @@ class EnrolledCourseController extends Controller
 
     function reportItem(Request $request)
     {
-        // Simple report handler
+        if ($request->type === 'question') {
+            $item = \App\Models\CourseQuestion::find($request->id);
+            if ($item) {
+                $item->update(['is_reported' => true]);
+            }
+        } elseif ($request->type === 'reply') {
+            $item = \App\Models\CourseQuestionReply::find($request->id);
+            if ($item) {
+                $item->update(['is_reported' => true]);
+            }
+        }
+
         return response()->json([
             'status' => 'success',
             'message' => 'Laporan berhasil dikirim. Tim kami akan meninjau postingan ini.',

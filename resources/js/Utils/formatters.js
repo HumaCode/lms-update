@@ -32,3 +32,43 @@ export function formatDate(dateString) {
         day: 'numeric',
     });
 }
+
+/**
+ * Formats a date string into human-readable relative time (Indonesian).
+ * @param {string|Date} date
+ */
+export function timeAgo(date) {
+    if (!date) return 'Baru saja';
+    const now = new Date();
+    const past = new Date(date);
+    const diffInSeconds = Math.floor((now - past) / 1000);
+
+    if (isNaN(diffInSeconds) || diffInSeconds < 30) {
+        return 'Baru saja';
+    }
+
+    const minutes = Math.floor(diffInSeconds / 60);
+    if (minutes < 60) {
+        return `${minutes} menit yang lalu`;
+    }
+
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) {
+        return `${hours} jam yang lalu`;
+    }
+
+    const days = Math.floor(hours / 24);
+    if (days < 30) {
+        return `${days} hari yang lalu`;
+    }
+
+    const months = Math.floor(days / 30);
+    if (months < 12) {
+        return `${months} bulan yang lalu`;
+    }
+
+    const years = Math.floor(days / 365);
+    return `${years} tahun yang lalu`;
+}
+
+

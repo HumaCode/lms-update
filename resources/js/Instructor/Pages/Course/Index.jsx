@@ -1,11 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import InstructorLayout from '@/Instructor/Layouts/InstructorLayout';
 import Pagination from '@/Components/UI/Pagination';
+import InstructorQnaModal from '@/Components/InstructorQnaModal';
 import { formatCurrency } from '@/Utils/formatters';
 import { route } from '@/Utils/routes';
 
 export default function Index({ courses }) {
+    const [selectedQnaCourse, setSelectedQnaCourse] = useState(null);
+    const [showQnaModal, setShowQnaModal] = useState(false);
+
     const courseList = Array.isArray(courses) ? courses : (courses?.data || []);
     const meta = courses?.meta;
 
@@ -141,12 +145,26 @@ export default function Index({ courses }) {
                                             </span>
                                         </td>
                                         <td className="text-end">
-                                            <Link
-                                                href={route('instructor.courses.edit', { id: course.id, step: 1 })}
-                                                className="btn btn-outline-primary btn-sm px-3"
-                                            >
-                                                <i className="fas fa-edit me-1"></i> Manage
-                                            </Link>
+                                            <div className="d-flex align-items-center justify-content-end gap-2">
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-outline-purple btn-sm px-3 d-inline-flex align-items-center"
+                                                    title="Lihat Q&A / Manajemen Diskusi"
+                                                    onClick={() => {
+                                                        setSelectedQnaCourse(course);
+                                                        setShowQnaModal(true);
+                                                    }}
+                                                    style={{ borderColor: '#6f42c1', color: '#6f42c1' }}
+                                                >
+                                                    <i className="far fa-comments me-1"></i> Q&A
+                                                </button>
+                                                <Link
+                                                    href={route('instructor.courses.edit', { id: course.id, step: 1 })}
+                                                    className="btn btn-outline-primary btn-sm px-3"
+                                                >
+                                                    <i className="fas fa-edit me-1"></i> Manage
+                                                </Link>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
@@ -173,6 +191,16 @@ export default function Index({ courses }) {
                     </div>
                 )}
             </div>
+
+            {/* Modal Manajemen Q&A Instruktur */}
+            <InstructorQnaModal
+                show={showQnaModal}
+                course={selectedQnaCourse}
+                onClose={() => {
+                    setShowQnaModal(false);
+                    setSelectedQnaCourse(null);
+                }}
+            />
         </InstructorLayout>
     );
 }

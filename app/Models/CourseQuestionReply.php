@@ -15,6 +15,8 @@ class CourseQuestionReply extends Model
         'user_id',
         'content',
         'upvotes',
+        'is_banned',
+        'is_reported',
     ];
 
     public function user(): BelongsTo

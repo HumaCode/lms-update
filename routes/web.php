@@ -136,11 +136,15 @@ Route::group(['middleware' => ['auth:web', 'verified', 'check_role:instructor'],
    Route::post('profile/update-gateway-info', [ProfileController::class, 'updateGatewayInfo'])->name('profile.update-gateway-info');
 
    /** Course Routes */
-   Route::get('courses', [CourseController::class, 'index'])->name('courses.index');
-   Route::get('courses/create', [CourseController::class, 'create'])->name('courses.create');
-   Route::post('courses/create', [CourseController::class, 'storeBasicInfo'])->name('courses.sore-basic-info');
-   Route::get('courses/{id}/edit', [CourseController::class, 'edit'])->name('courses.edit');
-   Route::post('courses/update', [CourseController::class, 'update'])->name('courses.update');
+    Route::get('courses', [CourseController::class, 'index'])->name('courses.index');
+    Route::get('courses/create', [CourseController::class, 'create'])->name('courses.create');
+    Route::post('courses/create', [CourseController::class, 'storeBasicInfo'])->name('courses.sore-basic-info');
+    Route::get('courses/{id}/edit', [CourseController::class, 'edit'])->name('courses.edit');
+    Route::post('courses/update', [CourseController::class, 'update'])->name('courses.update');
+    Route::get('courses/{id}/qna', [CourseController::class, 'getQna'])->name('courses.qna');
+    Route::post('courses/toggle-ban-qna', [CourseController::class, 'toggleBanQna'])->name('courses.toggle-ban-qna');
+    Route::post('courses/reply-qna', [CourseController::class, 'replyQna'])->name('courses.reply-qna');
+    Route::post('courses/delete-qna', [CourseController::class, 'deleteQna'])->name('courses.delete-qna');
 
    Route::get('course-content/{course}/create-chapter', [CourseContentController::class, 'createChapterModal'])->name('course-content.create-chapter');
    Route::post('course-content/{course}/create-chapter', [CourseContentController::class, 'storeChapter'])->name('course-content.store-chapter');

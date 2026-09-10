@@ -5,6 +5,7 @@ import RichTextEditor from '@/Components/RichTextEditor';
 import EmptyState from '@/Components/EmptyState';
 import ConfirmModal from '@/Components/ConfirmModal';
 import { notify } from '@/Utils/notifications';
+import { timeAgo } from '@/Utils/formatters';
 
 export default function QnaTab({ course, activeLesson, initialQuestions = [] }) {
     const { auth } = usePage().props;
@@ -229,7 +230,7 @@ export default function QnaTab({ course, activeLesson, initialQuestions = [] }) 
                 user_name: savedReply.user?.name || currentUser.name,
                 user_avatar: savedReply.user?.avatar || currentUser.avatar || null,
                 user_initials: getInitials(savedReply.user?.name || currentUser.name),
-                time_ago: 'Baru saja',
+                created_at: savedReply.created_at || new Date().toISOString(),
                 content: savedReply.content,
                 upvotes: savedReply.upvotes || 0,
                 user_upvoted: false,
@@ -270,7 +271,7 @@ export default function QnaTab({ course, activeLesson, initialQuestions = [] }) 
                 user_name: savedQ.user?.name || currentUser.name,
                 user_avatar: savedQ.user?.avatar || currentUser.avatar || null,
                 user_initials: getInitials(savedQ.user?.name || currentUser.name),
-                time_ago: 'Baru saja',
+                created_at: savedQ.created_at || new Date().toISOString(),
                 lesson_title: savedQ.lesson?.title || activeLesson?.title || 'Umum',
                 title: savedQ.title,
                 content: savedQ.content,
@@ -369,7 +370,7 @@ export default function QnaTab({ course, activeLesson, initialQuestions = [] }) 
                                 {activeQuestion.lesson_title && (
                                     <span style={{ color: '#6f42c1' }}>{activeQuestion.lesson_title} · </span>
                                 )}
-                                <span>{activeQuestion.time_ago}</span>
+                                <span>{timeAgo(activeQuestion.created_at || activeQuestion.time_ago)}</span>
                             </div>
                             <div
                                 className="text-secondary mb-0"
@@ -475,7 +476,7 @@ export default function QnaTab({ course, activeLesson, initialQuestions = [] }) 
                                         <h6 className="fw-bold mb-1" style={{ color: '#6f42c1', fontSize: '15px' }}>
                                             {reply.user?.name || reply.user_name || currentUser.name}
                                         </h6>
-                                        <div className="text-muted small mb-2">{reply.time_ago}</div>
+                                        <div className="text-muted small mb-2">{timeAgo(reply.created_at || reply.time_ago)}</div>
                                         <div
                                             className="text-secondary mb-0"
                                             style={{ fontSize: '14px', lineHeight: '1.5' }}
@@ -874,7 +875,7 @@ export default function QnaTab({ course, activeLesson, initialQuestions = [] }) 
                                         {(q.lesson?.title || q.lesson_title) && (
                                             <span style={{ color: '#6f42c1' }}> · {q.lesson?.title || q.lesson_title}</span>
                                         )}
-                                        <span> · {q.time_ago || 'Baru saja'}</span>
+                                        <span> · {timeAgo(q.created_at || q.time_ago)}</span>
                                     </div>
                                 </div>
                             </div>

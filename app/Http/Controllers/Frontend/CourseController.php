@@ -191,4 +191,99 @@ class CourseController extends Controller
                 return to_route('instructor.courses.index');
         }
     }
+
+    function getQna(Request $request, $courseId)
+    {
+        $course = Course::where('id', $courseId)->where('instructor_id', Auth::user()->id)->firstOrFail();
+
+        $questions = \App\Models\CourseQuestion::with([
+            'user:id,name,email',
+            'lesson:id,title',
+            'replies' => function ($q) {
+                $q->with('user:id,name,email')->orderBy('created_at', 'asc');
+            }
+        ])
+            ->where('course_id', $course->id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'status' => 'success',
+            'course' => $course,
+            'questions' => $questions,
+        ]);
+    }
+
+    function toggleBanQna(Request $request)
+    {
+        $request->validate([
+            'type' => 'required|in:question,reply',
+            'id' => 'required|integer',
+        ]);
+
+        if ($request->type === 'question') {
+            $item = \App\Models\CourseQuestion::findOrFail($request->id);
+            $item->update(['is_banned' => !$item->is_banned]);
+            $isBanned = $item->is_banned;
+        } else {
+            $item = \App\Models\CourseQuestionReply::findOrFail($request->id);
+            $item->update(['is_banned' => !$item->is_banned]);
+            $isBanned = $item->is_banned;
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => $isBanned ? 'Konten berhasil di-ban (disembunyikan dari siswa).' : 'Ban konten berhasil dibuka.',
+            'is_banned' => $isBanned,
+        ]);
+    }
+
+    function replyQna(Request $request)
+    {
+        $request->validate([
+            'question_id' => 'required|exists:course_questions,id',
+            'content' => 'required|string',
+        ]);
+
+        $reply = \App\Models\CourseQuestionReply::create([
+            'question_id' => $request->question_id,
+            'user_id' => Auth::user()->id,
+            'content' => $request->content,
+            'upvotes' => 0,
+        ]);
+
+        $reply->load('user:id,name,email');
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Balasan instruktur berhasil disimpan.',
+            'data' => $reply,
+        ]);
+    }
+
+    function deleteQna(Request $request)
+    {
+        $request->validate([
+            'type' => 'required|in:question,reply',
+            'id' => 'required|integer',
+        ]);
+
+        if ($request->type === 'question') {
+            $question = \App\Models\CourseQuestion::findOrFail($request->id);
+            // Verify instructor owns the course
+            $course = Course::where('id', $question->course_id)->where('instructor_id', Auth::user()->id)->firstOrFail();
+            $question->delete();
+        } else {
+            $reply = \App\Models\CourseQuestionReply::findOrFail($request->id);
+            $question = \App\Models\CourseQuestion::findOrFail($reply->question_id);
+            // Verify instructor owns the course or the reply
+            $course = Course::where('id', $question->course_id)->where('instructor_id', Auth::user()->id)->firstOrFail();
+            $reply->delete();
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Konten berhasil dihapus.',
+        ]);
+    }
 }

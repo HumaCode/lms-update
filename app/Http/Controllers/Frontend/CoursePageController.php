@@ -133,11 +133,16 @@ class CoursePageController extends Controller
             ->where('status', 'active')
             ->firstOrFail();
 
+        $isEnrolled = auth('web')->check() 
+            ? Enrollment::where('user_id', auth('web')->id())->where('course_id', $course->id)->exists() 
+            : false;
+
         $reviews = Review::with('user')->where('course_id', $course->id)->where('status', 1)->paginate(10);
 
         return \Inertia\Inertia::render('User/Course/Show', [
             'course' => $course,
             'reviews' => $reviews,
+            'isEnrolled' => $isEnrolled,
         ]);
     }
 

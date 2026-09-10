@@ -1,8 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Head, Link, useForm, router } from '@inertiajs/react';
 import InstructorLayout from '@/Instructor/Layouts/InstructorLayout';
+import RichTextEditor from '@/Components/RichTextEditor';
+import Select2Input from '@/Components/Select2Input';
+import ConfirmModal from '@/Components/ConfirmModal';
 import { formatCurrency } from '@/Utils/formatters';
 import { route } from '@/Utils/routes';
+import { notify } from '@/Utils/notifications';
+import { confirmDelete } from '@/Utils/confirmation';
 
 export default function Edit({
     course,
@@ -13,6 +18,23 @@ export default function Edit({
 }) {
     const [activeStep, setActiveStep] = useState(Number(currentStep) || 1);
 
+    const getImageUrl = (url, defaultImg = '/frontend/assets/images/courses_img_1.jpg') => {
+        if (!url) return defaultImg;
+        if (typeof url !== 'string') return defaultImg;
+        if (url.startsWith('http://') || url.startsWith('https://')) return url;
+        if (url.startsWith('/')) return url;
+        return `/${url}`;
+    };
+
+    const statusOptions = [
+        { value: 'draft', label: 'Draft (Private)' },
+        { value: 'active', label: 'Active (Submit for Admin Approval)' },
+        { value: 'inactive', label: 'Inactive' },
+    ];
+
+    const initialIsFree = Number(course.price) === 0 || course.price === '0' || course.price === 0;
+    const [isFree, setIsFree] = useState(initialIsFree);
+
     // STEP 1: Basic Info Form
     const [step1Data, setStep1Data] = useState({
         id: course.id,
@@ -22,28 +44,55 @@ export default function Edit({
         thumbnail: null,
         demo_video_storage: course.demo_video_storage || 'youtube',
         demo_video_source: course.demo_video_source || '',
-        price: course.price || '',
-        discount: course.discount || '',
+        price: course.price !== null && course.price !== undefined ? String(course.price) : '0',
+        discount: course.discount !== null && course.discount !== undefined ? String(course.discount) : '0',
         description: course.description || '',
+        features: course.features || '',
     });
     const [step1Preview, setStep1Preview] = useState(
-        course.thumbnail ? `/${course.thumbnail}` : null
+        course.thumbnail ? getImageUrl(course.thumbnail, null) : null
     );
     const [step1Processing, setStep1Processing] = useState(false);
     const [step1Errors, setStep1Errors] = useState({});
 
+    useEffect(() => {
+        if (course) {
+            const free = Number(course.price) === 0 || course.price === '0' || course.price === 0;
+            setIsFree(free);
+            setStep1Data((prev) => ({
+                ...prev,
+                id: course.id,
+                title: course.title || '',
+                seo_description: course.seo_description || '',
+                demo_video_storage: course.demo_video_storage || 'youtube',
+                demo_video_source: prev.demo_video_source || course.demo_video_source || '',
+                price: course.price !== null && course.price !== undefined ? String(course.price) : '0',
+                discount: course.discount !== null && course.discount !== undefined ? String(course.discount) : '0',
+                description: course.description || '',
+                features: course.features || '',
+            }));
+        }
+    }, [course]);
+
     const handleStep1Submit = (e) => {
         e.preventDefault();
         setStep1Processing(true);
-        router.post(route('instructor.courses.update'), step1Data, {
+        const payload = {
+            ...step1Data,
+            price: isFree ? '0' : (step1Data.price !== '' && step1Data.price !== null && step1Data.price !== undefined ? step1Data.price : '0'),
+            discount: isFree ? '0' : (step1Data.discount !== '' && step1Data.discount !== null && step1Data.discount !== undefined ? step1Data.discount : '0'),
+        };
+        router.post(route('instructor.courses.update'), payload, {
             forceFormData: true,
             onError: (errs) => {
                 setStep1Errors(errs);
                 setStep1Processing(false);
+                notify.error('Gagal Menyimpan', 'Silakan periksa kembali data yang dimasukkan.');
             },
             onSuccess: () => {
                 setStep1Errors({});
                 setStep1Processing(false);
+                notify.success('Berhasil Disimpan', 'Informasi dasar kursus berhasil diperbarui.');
                 setActiveStep(2);
             },
             onFinish: () => setStep1Processing(false),
@@ -59,14 +108,47 @@ export default function Edit({
         language: course.course_language_id || '',
         capacity: course.capacity || '',
         duration: course.duration || '',
+        features: course.features || '',
         qna: course.qna ? 1 : 0,
         certificate: course.certificate ? 1 : 0,
     });
 
+    const categorySelectOptions = (categories || []).map((cat) => {
+        if (cat.sub_categories && cat.sub_categories.length > 0) {
+            return {
+                label: cat.name,
+                options: [
+                    { value: cat.id, label: `${cat.name} (Main)` },
+                    ...cat.sub_categories.map((sub) => ({
+                        value: sub.id,
+                        label: `— ${sub.name}`,
+                    })),
+                ],
+            };
+        }
+        return { value: cat.id, label: cat.name };
+    });
+
+    const levelSelectOptions = (levels || []).map((lvl) => ({
+        value: lvl.id,
+        label: lvl.name,
+    }));
+
+    const languageSelectOptions = (languages || []).map((lng) => ({
+        value: lng.id,
+        label: lng.name,
+    }));
+
     const handleStep2Submit = (e) => {
         e.preventDefault();
         step2Form.post(route('instructor.courses.update'), {
-            onSuccess: () => setActiveStep(3),
+            onSuccess: () => {
+                notify.success('Berhasil Disimpan', 'Detail dan kategori kursus telah diperbarui.');
+                setActiveStep(3);
+            },
+            onError: () => {
+                notify.error('Gagal Menyimpan', 'Silakan periksa kolom yang wajib diisi.');
+            },
         });
     };
 
@@ -74,9 +156,11 @@ export default function Edit({
     const [showChapterModal, setShowChapterModal] = useState(false);
     const [chapterTitle, setChapterTitle] = useState('');
     const [editingChapter, setEditingChapter] = useState(null);
+    const [savingChapter, setSavingChapter] = useState(false);
 
     const [showLessonModal, setShowLessonModal] = useState(false);
     const [activeChapterId, setActiveChapterId] = useState(null);
+    const [savingLesson, setSavingLesson] = useState(false);
     const [lessonForm, setLessonForm] = useState({
         title: '',
         source: 'youtube',
@@ -90,6 +174,7 @@ export default function Edit({
 
     const handleSaveChapter = (e) => {
         e.preventDefault();
+        setSavingChapter(true);
         if (editingChapter) {
             router.post(route('instructor.course-content.update-chapter', editingChapter.id), {
                 title: chapterTitle,
@@ -98,7 +183,12 @@ export default function Edit({
                     setShowChapterModal(false);
                     setChapterTitle('');
                     setEditingChapter(null);
+                    notify.success('Berhasil Disimpan', 'Judul chapter telah berhasil diperbarui.');
                 },
+                onError: () => {
+                    notify.error('Gagal Perbarui Chapter', 'Gagal memperbarui data chapter.');
+                },
+                onFinish: () => setSavingChapter(false),
             });
         } else {
             router.post(route('instructor.course-content.store-chapter', course.id), {
@@ -107,19 +197,39 @@ export default function Edit({
                 onSuccess: () => {
                     setShowChapterModal(false);
                     setChapterTitle('');
+                    notify.success('Berhasil Ditambahkan', 'Chapter baru berhasil dibuat.');
                 },
+                onError: () => {
+                    notify.error('Gagal Membuat Chapter', 'Gagal menambahkan chapter baru.');
+                },
+                onFinish: () => setSavingChapter(false),
             });
         }
     };
 
     const handleDeleteChapter = (chapterId, title) => {
-        if (confirm(`Are you sure you want to delete chapter "${title}" and all its lessons?`)) {
-            router.delete(route('instructor.course-content.destory-chapter', chapterId));
-        }
+        confirmDelete({
+            title: 'Hapus Chapter?',
+            text: `Apakah Anda yakin ingin menghapus chapter "${title}" dan seluruh materi di dalamnya?`,
+            confirmButtonText: 'Ya, Hapus Chapter',
+            onConfirm: (resolve, reject) => {
+                router.delete(route('instructor.course-content.destory-chapter', chapterId), {
+                    onSuccess: () => {
+                        notify.success('Berhasil Dihapus', `Chapter "${title}" telah dihapus.`);
+                        resolve();
+                    },
+                    onError: () => {
+                        notify.error('Gagal Menghapus', 'Tidak dapat menghapus chapter.');
+                        reject();
+                    },
+                });
+            },
+        });
     };
 
     const handleSaveLesson = (e) => {
         e.preventDefault();
+        setSavingLesson(true);
         router.post(route('instructor.course-content.store-lesson'), {
             course_id: course.id,
             chapter_id: activeChapterId,
@@ -137,14 +247,33 @@ export default function Edit({
                     downloadable: 0,
                     description: '',
                 });
+                notify.success('Berhasil Disimpan', 'Lesson baru telah berhasil ditambahkan.');
             },
+            onError: () => {
+                notify.error('Gagal Menyimpan Lesson', 'Silakan periksa data inputan lesson.');
+            },
+            onFinish: () => setSavingLesson(false),
         });
     };
 
     const handleDeleteLesson = (lessonId, title) => {
-        if (confirm(`Are you sure you want to delete lesson "${title}"?`)) {
-            router.delete(route('instructor.course-content.destroy-lesson', lessonId));
-        }
+        confirmDelete({
+            title: 'Hapus Lesson?',
+            text: `Apakah Anda yakin ingin menghapus lesson "${title}"?`,
+            confirmButtonText: 'Ya, Hapus Lesson',
+            onConfirm: (resolve, reject) => {
+                router.delete(route('instructor.course-content.destroy-lesson', lessonId), {
+                    onSuccess: () => {
+                        notify.success('Berhasil Dihapus', `Lesson "${title}" telah dihapus.`);
+                        resolve();
+                    },
+                    onError: () => {
+                        notify.error('Gagal Menghapus', 'Tidak dapat menghapus lesson.');
+                        reject();
+                    },
+                });
+            },
+        });
     };
 
     // STEP 4: Review & Publish Form
@@ -157,7 +286,14 @@ export default function Edit({
 
     const handleStep4Submit = (e) => {
         e.preventDefault();
-        step4Form.post(route('instructor.courses.update'));
+        step4Form.post(route('instructor.courses.update'), {
+            onSuccess: () => {
+                notify.success('Berhasil Dikirim', 'Kursus telah berhasil dikirim untuk ditinjau.');
+            },
+            onError: () => {
+                notify.error('Gagal Mengirim', 'Gagal mengirimkan kursus.');
+            },
+        });
     };
 
     const steps = [
@@ -186,20 +322,24 @@ export default function Edit({
                                 <button
                                     type="button"
                                     onClick={() => setActiveStep(s.num)}
-                                    className={`w-100 btn py-2 fw-semibold d-flex align-items-center justify-content-center gap-2 rounded-2 ${
+                                    className={`w-100 btn py-2 fw-semibold d-flex align-items-center justify-content-center gap-2 rounded-2 border-0 ${
                                         activeStep === s.num
                                             ? 'btn-primary text-white shadow-sm'
                                             : 'btn-light text-secondary'
                                     }`}
+                                    style={{ color: activeStep === s.num ? '#ffffff' : undefined, outline: 'none', boxShadow: 'none' }}
                                 >
                                     <span
-                                        className={`badge rounded-circle ${
+                                        className={`badge rounded-circle d-inline-flex align-items-center justify-content-center ${
                                             activeStep === s.num ? 'bg-white text-primary' : 'bg-secondary text-white'
                                         }`}
+                                        style={{ width: '22px', height: '22px', fontSize: '12px', padding: 0 }}
                                     >
                                         {s.num}
                                     </span>
-                                    <span>{s.label}</span>
+                                    <span style={{ color: activeStep === s.num ? '#ffffff' : '#6c757d' }}>
+                                        {s.label}
+                                    </span>
                                 </button>
                             </div>
                         ))}
@@ -257,81 +397,218 @@ export default function Edit({
                                         <div className="invalid-feedback">{step1Errors.thumbnail}</div>
                                     )}
                                     {step1Preview && (
-                                        <div className="mt-2">
-                                            <img
-                                                src={step1Preview}
-                                                alt="Preview"
-                                                className="img-thumbnail rounded-3"
-                                                style={{ maxHeight: '130px' }}
-                                            />
+                                        <div className="mt-3">
+                                            <span className="form-label text-muted small fw-semibold d-block mb-1">
+                                                Thumbnail Preview:
+                                            </span>
+                                            <div
+                                                className="border rounded-3 p-2 bg-light d-inline-block text-center shadow-sm"
+                                                style={{ maxWidth: '320px', width: '100%' }}
+                                            >
+                                                <img
+                                                    src={step1Preview}
+                                                    alt="Course Thumbnail Preview"
+                                                    className="rounded-2 img-fluid"
+                                                    style={{
+                                                        maxHeight: '180px',
+                                                        width: '100%',
+                                                        objectFit: 'contain',
+                                                        backgroundColor: '#ffffff',
+                                                    }}
+                                                />
+                                            </div>
                                         </div>
                                     )}
                                 </div>
 
-                                <div className="col-md-3">
-                                    <label className="form-label required fw-semibold">Price ($)</label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        className={`form-control ${step1Errors.price ? 'is-invalid' : ''}`}
-                                        value={step1Data.price}
-                                        onChange={(e) => setStep1Data({ ...step1Data, price: e.target.value })}
-                                    />
-                                    {step1Errors.price && <div className="invalid-feedback">{step1Errors.price}</div>}
+                                <div className="col-12">
+                                    <div className="card bg-light border-0 p-3 rounded-3">
+                                        <div className="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                            <div>
+                                                <h6 className="fw-bold mb-1 text-dark">Course Pricing Option</h6>
+                                                <p className="text-muted small mb-0">
+                                                    {isFree
+                                                        ? 'This course is free for all students.'
+                                                        : 'This is a paid course. Set your regular and promo prices below.'}
+                                                </p>
+                                            </div>
+                                            <div className="form-check form-switch form-switch-md mb-0">
+                                                <input
+                                                    className="form-check-input"
+                                                    type="checkbox"
+                                                    role="switch"
+                                                    id="freeCourseSwitchEdit"
+                                                    checked={isFree}
+                                                    onChange={(e) => {
+                                                        const checked = e.target.checked;
+                                                        setIsFree(checked);
+                                                        if (checked) {
+                                                            setStep1Data((prev) => ({ ...prev, price: '0', discount: '0' }));
+                                                        } else {
+                                                            setStep1Data((prev) => ({
+                                                                ...prev,
+                                                                price: prev.price === '0' || prev.price === 0 ? '' : prev.price,
+                                                                discount: prev.discount === '0' || prev.discount === 0 ? '' : prev.discount,
+                                                            }));
+                                                        }
+                                                    }}
+                                                    style={{ cursor: 'pointer', width: '2.5em', height: '1.25em' }}
+                                                />
+                                                <label className="form-check-label fw-bold ms-2 cursor-pointer" htmlFor="freeCourseSwitchEdit">
+                                                    {isFree ? (
+                                                        <span className="badge bg-success px-2 py-1">Free Course</span>
+                                                    ) : (
+                                                        <span className="badge bg-primary px-2 py-1">Paid Course</span>
+                                                    )}
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <div className="col-md-3">
-                                    <label className="form-label fw-semibold">Discounted Price ($)</label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        className="form-control"
-                                        value={step1Data.discount}
-                                        onChange={(e) => setStep1Data({ ...step1Data, discount: e.target.value })}
-                                    />
-                                </div>
+                                {!isFree && (
+                                    <>
+                                        <div className="col-md-6">
+                                            <label className="form-label required fw-semibold">Price ($)</label>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                className={`form-control ${step1Errors.price ? 'is-invalid' : ''}`}
+                                                value={step1Data.price}
+                                                onChange={(e) => setStep1Data({ ...step1Data, price: e.target.value })}
+                                            />
+                                            {step1Errors.price && <div className="invalid-feedback">{step1Errors.price}</div>}
+                                        </div>
+
+                                        <div className="col-md-6">
+                                            <label className="form-label fw-semibold">Discounted Price ($)</label>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                className="form-control"
+                                                value={step1Data.discount}
+                                                onChange={(e) => setStep1Data({ ...step1Data, discount: e.target.value })}
+                                            />
+                                        </div>
+                                    </>
+                                )}
 
                                 <div className="col-md-4">
                                     <label className="form-label fw-semibold">Demo Video Provider</label>
                                     <select
                                         className="form-select"
-                                        value={step1Data.demo_video_storage}
-                                        onChange={(e) =>
-                                            setStep1Data({ ...step1Data, demo_video_storage: e.target.value })
-                                        }
+                                        value={step1Data.demo_video_storage || 'youtube'}
+                                        onChange={(e) => {
+                                            const storage = e.target.value;
+                                            setStep1Data((prev) => ({
+                                                ...prev,
+                                                demo_video_storage: storage,
+                                                demo_video_source: storage === 'upload' ? '' : (typeof prev.demo_video_source === 'string' ? prev.demo_video_source : ''),
+                                            }));
+                                        }}
                                     >
-                                        <option value="youtube">YouTube</option>
-                                        <option value="vimeo">Vimeo</option>
-                                        <option value="external_link">External URL</option>
+                                        <option value="youtube">YouTube (URL)</option>
+                                        <option value="vimeo">Vimeo (URL)</option>
+                                        <option value="external_link">External MP4 URL</option>
+                                        <option value="upload">Upload Video File</option>
                                     </select>
                                 </div>
 
                                 <div className="col-md-8">
-                                    <label className="form-label fw-semibold">Demo Video URL</label>
+                                    {step1Data.demo_video_storage === 'upload' ? (
+                                        <>
+                                            <label className="form-label fw-semibold">Upload Demo Video File</label>
+                                            <input
+                                                key="edit-video-file-input"
+                                                type="file"
+                                                className={`form-control ${step1Errors.demo_video_source ? 'is-invalid' : ''}`}
+                                                accept="video/mp4,video/webm,video/ogg,video/*"
+                                                onChange={(e) => {
+                                                    const file = e.target.files[0];
+                                                    if (file) {
+                                                        setStep1Data({ ...step1Data, demo_video_source: file });
+                                                    }
+                                                }}
+                                            />
+                                            {typeof course.demo_video_source === 'string' && course.demo_video_source && (
+                                                <div className="mt-1">
+                                                    <span className="text-muted small me-2">Current File:</span>
+                                                    <a
+                                                        href={course.demo_video_source.startsWith('/') ? course.demo_video_source : `/${course.demo_video_source}`}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="small fw-semibold text-primary"
+                                                    >
+                                                        <i className="fas fa-play-circle me-1"></i> Preview Uploaded Video
+                                                    </a>
+                                                </div>
+                                            )}
+                                            {step1Errors.demo_video_source && (
+                                                <div className="invalid-feedback">{step1Errors.demo_video_source}</div>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <>
+                                            <label className="form-label fw-semibold">
+                                                Demo Video URL (
+                                                {step1Data.demo_video_storage === 'vimeo'
+                                                    ? 'Vimeo'
+                                                    : step1Data.demo_video_storage === 'external_link'
+                                                    ? 'External MP4'
+                                                    : 'YouTube'}
+                                                )
+                                            </label>
+                                            <input
+                                                key="edit-video-url-input"
+                                                type="text"
+                                                className={`form-control ${step1Errors.demo_video_source ? 'is-invalid' : ''}`}
+                                                placeholder={
+                                                    step1Data.demo_video_storage === 'vimeo'
+                                                        ? 'https://vimeo.com/123456789'
+                                                        : step1Data.demo_video_storage === 'external_link'
+                                                        ? 'https://example.com/video.mp4'
+                                                        : 'https://www.youtube.com/watch?v=...'
+                                                }
+                                                value={typeof step1Data.demo_video_source === 'string' ? step1Data.demo_video_source : ''}
+                                                onChange={(e) =>
+                                                    setStep1Data({ ...step1Data, demo_video_source: e.target.value })
+                                                }
+                                            />
+                                            {step1Errors.demo_video_source && (
+                                                <div className="invalid-feedback">{step1Errors.demo_video_source}</div>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+
+                                <div className="col-12">
+                                    <label className="form-label fw-semibold">Course Features</label>
                                     <input
-                                        type="url"
-                                        className="form-control"
-                                        value={step1Data.demo_video_source}
-                                        onChange={(e) =>
-                                            setStep1Data({ ...step1Data, demo_video_source: e.target.value })
-                                        }
+                                        type="text"
+                                        className={`form-control ${step1Errors.features ? 'is-invalid' : ''}`}
+                                        placeholder="e.g. Available on iOS and Android, Lifetime Access, Certificate included"
+                                        value={step1Data.features}
+                                        onChange={(e) => setStep1Data({ ...step1Data, features: e.target.value })}
                                     />
+                                    <div className="form-text text-muted small">
+                                        Singkat dan padat. Fitur ini akan ditampilkan pada halaman detail kursus (misal: "Available on iOS and Android").
+                                    </div>
+                                    {step1Errors.features && <div className="invalid-feedback">{step1Errors.features}</div>}
                                 </div>
 
                                 <div className="col-12">
                                     <label className="form-label required fw-semibold">Course Description</label>
-                                    <textarea
-                                        className={`form-control ${step1Errors.description ? 'is-invalid' : ''}`}
-                                        rows="8"
+                                    <RichTextEditor
                                         value={step1Data.description}
-                                        onChange={(e) =>
-                                            setStep1Data({ ...step1Data, description: e.target.value })
+                                        onChange={(val) =>
+                                            setStep1Data({ ...step1Data, description: val })
                                         }
-                                    ></textarea>
+                                        placeholder="Describe learning goals, prerequisites, and syllabus highlights..."
+                                    />
                                     {step1Errors.description && (
-                                        <div className="invalid-feedback">{step1Errors.description}</div>
+                                        <div className="invalid-feedback d-block">{step1Errors.description}</div>
                                     )}
                                 </div>
                             </div>
@@ -343,7 +620,14 @@ export default function Edit({
                                 className="btn btn-primary px-4"
                                 disabled={step1Processing}
                             >
-                                {step1Processing ? 'Saving...' : 'Save & Proceed to Details'}
+                                {step1Processing ? (
+                                    <>
+                                        <i className="fas fa-spinner fa-spin me-2 text-white"></i>
+                                        Sedang Menyimpan...
+                                    </>
+                                ) : (
+                                    'Save & Proceed to Details'
+                                )}
                             </button>
                         </div>
                     </form>
@@ -361,65 +645,43 @@ export default function Edit({
                             <div className="row g-3">
                                 <div className="col-md-6">
                                     <label className="form-label required fw-semibold">Category</label>
-                                    <select
-                                        className={`form-select ${step2Form.errors.category ? 'is-invalid' : ''}`}
+                                    <Select2Input
+                                        options={categorySelectOptions}
                                         value={step2Form.data.category}
-                                        onChange={(e) => step2Form.setData('category', e.target.value)}
-                                    >
-                                        <option value="">-- Select Category --</option>
-                                        {categories.map((cat) => (
-                                            <React.Fragment key={cat.id}>
-                                                <option value={cat.id} className="fw-bold">
-                                                    {cat.name}
-                                                </option>
-                                                {cat.sub_categories?.map((sub) => (
-                                                    <option key={sub.id} value={sub.id}>
-                                                        &nbsp;&nbsp;— {sub.name}
-                                                    </option>
-                                                ))}
-                                            </React.Fragment>
-                                        ))}
-                                    </select>
+                                        onChange={(val) => step2Form.setData('category', val)}
+                                        placeholder="-- Select Category --"
+                                        error={Boolean(step2Form.errors.category)}
+                                    />
                                     {step2Form.errors.category && (
-                                        <div className="invalid-feedback">{step2Form.errors.category}</div>
+                                        <div className="invalid-feedback d-block">{step2Form.errors.category}</div>
                                     )}
                                 </div>
 
                                 <div className="col-md-3">
                                     <label className="form-label required fw-semibold">Difficulty Level</label>
-                                    <select
-                                        className={`form-select ${step2Form.errors.level ? 'is-invalid' : ''}`}
+                                    <Select2Input
+                                        options={levelSelectOptions}
                                         value={step2Form.data.level}
-                                        onChange={(e) => step2Form.setData('level', e.target.value)}
-                                    >
-                                        <option value="">-- Select Level --</option>
-                                        {levels.map((lvl) => (
-                                            <option key={lvl.id} value={lvl.id}>
-                                                {lvl.name}
-                                            </option>
-                                        ))}
-                                    </select>
+                                        onChange={(val) => step2Form.setData('level', val)}
+                                        placeholder="-- Select Level --"
+                                        error={Boolean(step2Form.errors.level)}
+                                    />
                                     {step2Form.errors.level && (
-                                        <div className="invalid-feedback">{step2Form.errors.level}</div>
+                                        <div className="invalid-feedback d-block">{step2Form.errors.level}</div>
                                     )}
                                 </div>
 
                                 <div className="col-md-3">
                                     <label className="form-label required fw-semibold">Language</label>
-                                    <select
-                                        className={`form-select ${step2Form.errors.language ? 'is-invalid' : ''}`}
+                                    <Select2Input
+                                        options={languageSelectOptions}
                                         value={step2Form.data.language}
-                                        onChange={(e) => step2Form.setData('language', e.target.value)}
-                                    >
-                                        <option value="">-- Select Language --</option>
-                                        {languages.map((lng) => (
-                                            <option key={lng.id} value={lng.id}>
-                                                {lng.name}
-                                            </option>
-                                        ))}
-                                    </select>
+                                        onChange={(val) => step2Form.setData('language', val)}
+                                        placeholder="-- Select Language --"
+                                        error={Boolean(step2Form.errors.language)}
+                                    />
                                     {step2Form.errors.language && (
-                                        <div className="invalid-feedback">{step2Form.errors.language}</div>
+                                        <div className="invalid-feedback d-block">{step2Form.errors.language}</div>
                                     )}
                                 </div>
 
@@ -449,35 +711,76 @@ export default function Edit({
                                     />
                                 </div>
 
+                                <div className="col-12">
+                                    <label className="form-label fw-semibold">Course Features</label>
+                                    <input
+                                        type="text"
+                                        className={`form-control ${step2Form.errors.features ? 'is-invalid' : ''}`}
+                                        placeholder="e.g. Available on iOS and Android, Certificate included, Lifetime Access"
+                                        value={step2Form.data.features}
+                                        onChange={(e) => step2Form.setData('features', e.target.value)}
+                                    />
+                                    <div className="form-text text-muted small">
+                                        Singkat dan padat. Fitur ini akan ditampilkan pada tab Overview / Features detail kursus (contoh: "Available on iOS and Android").
+                                    </div>
+                                    {step2Form.errors.features && (
+                                        <div className="invalid-feedback">{step2Form.errors.features}</div>
+                                    )}
+                                </div>
+
                                 <div className="col-md-6">
-                                    <div className="form-check form-switch mt-2">
-                                        <input
-                                            className="form-check-input"
-                                            type="checkbox"
-                                            checked={step2Form.data.qna === 1}
-                                            onChange={(e) =>
-                                                step2Form.setData('qna', e.target.checked ? 1 : 0)
-                                            }
-                                        />
-                                        <label className="form-check-label fw-semibold">
-                                            Enable Student Q&A Discussion Forum
-                                        </label>
+                                    <div className="card p-3 border rounded-3 bg-light-subtle h-100 shadow-none">
+                                        <div className="d-flex align-items-center justify-content-between">
+                                            <div className="me-3">
+                                                <label htmlFor="qna-switch" className="fw-semibold d-block mb-1 cursor-pointer text-dark">
+                                                    Enable Student Q&A Forum
+                                                </label>
+                                                <small className="text-muted d-block" style={{ fontSize: '0.85rem' }}>
+                                                    Allow students to post questions and discuss lessons.
+                                                </small>
+                                            </div>
+                                            <div className="form-check form-switch p-0 m-0">
+                                                <input
+                                                    id="qna-switch"
+                                                    className="form-check-input cursor-pointer m-0 ms-2"
+                                                    style={{ width: '2.5rem', height: '1.35rem' }}
+                                                    type="checkbox"
+                                                    role="switch"
+                                                    checked={step2Form.data.qna === 1}
+                                                    onChange={(e) =>
+                                                        step2Form.setData('qna', e.target.checked ? 1 : 0)
+                                                    }
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
                                 <div className="col-md-6">
-                                    <div className="form-check form-switch mt-2">
-                                        <input
-                                            className="form-check-input"
-                                            type="checkbox"
-                                            checked={step2Form.data.certificate === 1}
-                                            onChange={(e) =>
-                                                step2Form.setData('certificate', e.target.checked ? 1 : 0)
-                                            }
-                                        />
-                                        <label className="form-check-label fw-semibold">
-                                            Offer Completion Certificate
-                                        </label>
+                                    <div className="card p-3 border rounded-3 bg-light-subtle h-100 shadow-none">
+                                        <div className="d-flex align-items-center justify-content-between">
+                                            <div className="me-3">
+                                                <label htmlFor="cert-switch" className="fw-semibold d-block mb-1 cursor-pointer text-dark">
+                                                    Offer Completion Certificate
+                                                </label>
+                                                <small className="text-muted d-block" style={{ fontSize: '0.85rem' }}>
+                                                    Generate verified certificates upon course completion.
+                                                </small>
+                                            </div>
+                                            <div className="form-check form-switch p-0 m-0">
+                                                <input
+                                                    id="cert-switch"
+                                                    className="form-check-input cursor-pointer m-0 ms-2"
+                                                    style={{ width: '2.5rem', height: '1.35rem' }}
+                                                    type="checkbox"
+                                                    role="switch"
+                                                    checked={step2Form.data.certificate === 1}
+                                                    onChange={(e) =>
+                                                        step2Form.setData('certificate', e.target.checked ? 1 : 0)
+                                                    }
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -496,7 +799,14 @@ export default function Edit({
                                 className="btn btn-primary px-4"
                                 disabled={step2Form.processing}
                             >
-                                {step2Form.processing ? 'Saving...' : 'Save & Proceed to Curriculum'}
+                                {step2Form.processing ? (
+                                    <>
+                                        <i className="fas fa-spinner fa-spin me-2 text-white"></i>
+                                        Sedang Menyimpan...
+                                    </>
+                                ) : (
+                                    'Save & Proceed to Curriculum'
+                                )}
                             </button>
                         </div>
                     </form>
@@ -658,36 +968,53 @@ export default function Edit({
                     </div>
                     <form onSubmit={handleStep4Submit}>
                         <div className="card-body p-4">
-                            <div className="row g-4 mb-4">
+                            <div className="row g-4 mb-4 align-items-center">
                                 <div className="col-md-4">
                                     <img
-                                        src={course.thumbnail ? `/${course.thumbnail}` : '/frontend/assets/images/courses_img_1.jpg'}
-                                        alt="Course"
-                                        className="img-fluid rounded-3 shadow-sm"
+                                        src={getImageUrl(course.thumbnail)}
+                                        alt={course.title || 'Course Thumbnail'}
+                                        className="img-fluid rounded-3 shadow-sm border"
                                         style={{ width: '100%', height: '180px', objectFit: 'cover' }}
+                                        onError={(e) => {
+                                            e.target.onerror = null;
+                                            e.target.src = '/frontend/assets/images/courses_img_1.jpg';
+                                        }}
                                     />
                                 </div>
                                 <div className="col-md-8">
                                     <h4 className="fw-bold text-dark mb-2">{course.title}</h4>
-                                    <p className="text-muted small mb-3">{course.seo_description || course.description?.substring(0, 150)}...</p>
+                                    <p className="text-muted small mb-3">
+                                        {course.seo_description || (course.description ? course.description.replace(/<[^>]*>?/gm, '').substring(0, 160) : '')}...
+                                    </p>
 
                                     <div className="d-flex flex-wrap gap-2 mb-3">
-                                        <span className="badge bg-primary-subtle text-primary">
+                                        <span className="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2">
+                                            <i className="fas fa-folder me-1"></i>
                                             {course.category?.name || 'Uncategorized'}
                                         </span>
-                                        <span className="badge bg-secondary-subtle text-secondary">
-                                            {course.course_level?.name || 'All Levels'}
+                                        <span className="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-3 py-2">
+                                            <i className="fas fa-layer-group me-1"></i>
+                                            {course.level?.name || course.course_level?.name || 'All Levels'}
                                         </span>
-                                        <span className="badge bg-secondary-subtle text-secondary">
-                                            {course.course_language?.name || 'English'}
+                                        <span className="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-3 py-2">
+                                            <i className="fas fa-globe me-1"></i>
+                                            {course.language?.name || course.course_language?.name || 'English'}
                                         </span>
-                                        <span className="badge bg-success-subtle text-success fw-bold">
-                                            {formatCurrency(course.discount ? course.discount : course.price)}
+                                        <span className="badge bg-success-subtle text-success fw-bold border border-success-subtle px-3 py-2">
+                                            <i className="fas fa-tag me-1"></i>
+                                            {Number(course.price) === 0 ? 'Free' : formatCurrency(course.discount ? course.discount : course.price)}
                                         </span>
                                     </div>
 
-                                    <div className="small text-muted">
-                                        <strong>Chapters:</strong> {course.chapters?.length || 0} chapters
+                                    <div className="d-flex gap-4 text-muted small">
+                                        <div>
+                                            <i className="fas fa-list me-1 text-primary"></i>
+                                            <strong>Chapters:</strong> {course.chapters?.length || 0}
+                                        </div>
+                                        <div>
+                                            <i className="fas fa-play-circle me-1 text-info"></i>
+                                            <strong>Lessons:</strong> {course.chapters?.reduce((acc, ch) => acc + (ch.lessons?.length || 0), 0) || 0}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -695,15 +1022,11 @@ export default function Edit({
                             <div className="row g-3">
                                 <div className="col-md-6">
                                     <label className="form-label required fw-semibold">Publish Status</label>
-                                    <select
-                                        className="form-select"
+                                    <Select2Input
+                                        options={statusOptions}
                                         value={step4Form.data.status}
-                                        onChange={(e) => step4Form.setData('status', e.target.value)}
-                                    >
-                                        <option value="draft">Draft (Private)</option>
-                                        <option value="active">Active (Submit for Admin Approval)</option>
-                                        <option value="inactive">Inactive</option>
-                                    </select>
+                                        onChange={(val) => step4Form.setData('status', val)}
+                                    />
                                 </div>
 
                                 <div className="col-12">
@@ -732,7 +1055,16 @@ export default function Edit({
                                 className="btn btn-success px-4 fw-bold"
                                 disabled={step4Form.processing}
                             >
-                                <i className="fas fa-paper-plane me-1"></i> Submit Course for Review
+                                {step4Form.processing ? (
+                                    <>
+                                        <i className="fas fa-spinner fa-spin me-2 text-white"></i>
+                                        Sedang Proses...
+                                    </>
+                                ) : (
+                                    <>
+                                        <i className="fas fa-paper-plane me-1"></i> Submit Course for Review
+                                    </>
+                                )}
                             </button>
                         </div>
                     </form>
@@ -775,8 +1107,15 @@ export default function Edit({
                                     >
                                         Cancel
                                     </button>
-                                    <button type="submit" className="btn btn-primary px-3">
-                                        Save Chapter
+                                    <button type="submit" className="btn btn-primary px-4" disabled={savingChapter}>
+                                        {savingChapter ? (
+                                            <>
+                                                <i className="fas fa-spinner fa-spin me-2 text-white"></i>
+                                                Sedang Menyimpan...
+                                            </>
+                                        ) : (
+                                            'Save Chapter'
+                                        )}
                                     </button>
                                 </div>
                             </form>
@@ -859,22 +1198,34 @@ export default function Edit({
                                             />
                                         </div>
 
-                                        <div className="col-md-6">
-                                            <div className="form-check form-switch mt-4">
-                                                <input
-                                                    className="form-check-input"
-                                                    type="checkbox"
-                                                    checked={lessonForm.is_preview === 1}
-                                                    onChange={(e) =>
-                                                        setLessonForm({
-                                                            ...lessonForm,
-                                                            is_preview: e.target.checked ? 1 : 0,
-                                                        })
-                                                    }
-                                                />
-                                                <label className="form-check-label fw-semibold">
-                                                    Allow Free Preview (Sample)
-                                                </label>
+                                        <div className="col-12">
+                                            <div className="card p-3 border rounded-3 bg-light-subtle shadow-none">
+                                                <div className="d-flex align-items-center justify-content-between">
+                                                    <div className="me-3">
+                                                        <label htmlFor="modal-is-preview" className="fw-semibold d-block mb-1 cursor-pointer text-dark">
+                                                            Allow Free Preview (Sample Lesson)
+                                                        </label>
+                                                        <small className="text-muted d-block" style={{ fontSize: '0.85rem' }}>
+                                                            Non-enrolled students can watch this lesson preview for free.
+                                                        </small>
+                                                    </div>
+                                                    <div className="form-check form-switch p-0 m-0">
+                                                        <input
+                                                            id="modal-is-preview"
+                                                            className="form-check-input cursor-pointer m-0 ms-2"
+                                                            style={{ width: '2.5rem', height: '1.35rem' }}
+                                                            type="checkbox"
+                                                            role="switch"
+                                                            checked={lessonForm.is_preview === 1}
+                                                            onChange={(e) =>
+                                                                setLessonForm({
+                                                                    ...lessonForm,
+                                                                    is_preview: e.target.checked ? 1 : 0,
+                                                                })
+                                                            }
+                                                        />
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
 
@@ -901,8 +1252,15 @@ export default function Edit({
                                     >
                                         Cancel
                                     </button>
-                                    <button type="submit" className="btn btn-primary px-3">
-                                        Save Lesson
+                                    <button type="submit" className="btn btn-primary px-4" disabled={savingLesson}>
+                                        {savingLesson ? (
+                                            <>
+                                                <i className="fas fa-circle-notch fa-spin me-2 text-white"></i>
+                                                Sedang Menyimpan...
+                                            </>
+                                        ) : (
+                                            'Save Lesson'
+                                        )}
                                     </button>
                                 </div>
                             </form>

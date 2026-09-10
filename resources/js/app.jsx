@@ -36,16 +36,7 @@ if (typeof window !== 'undefined') {
     });
 }
 
-// Trigger preloader on Inertia navigation
-router.on('start', () => {
-    showPreloader();
-});
 
-router.on('finish', () => {
-    setTimeout(() => {
-        hidePreloader();
-    }, 200);
-});
 
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),

@@ -5,7 +5,9 @@ export default function CourseSidebar({
     course,
     onPlayVideo,
     handleAddToCart,
+    handleEnrollFree,
     addingToCart,
+    isEnrolled = false,
 }) {
     const hasDiscount = course.discount && Number(course.discount) > 0;
     const finalPrice = hasDiscount ? Number(course.discount) : Number(course.price || 0);
@@ -188,37 +190,65 @@ export default function CourseSidebar({
                     </li>
                 </ul>
 
-                <button
-                    type="button"
-                    className="common_btn w-100"
-                    style={{ border: 'none', cursor: 'pointer' }}
-                    onClick={handleAddToCart}
-                    disabled={addingToCart}
-                >
-                    {addingToCart ? (
-                        'Adding to Cart...'
-                    ) : (
-                        <>
-                            Enroll The Course <i className="fas fa-arrow-right ms-2"></i>
-                        </>
-                    )}
-                </button>
+                {isEnrolled ? (
+                    <Link
+                        href={route('student.course-player.index', course.slug)}
+                        className="common_btn w-100 text-center text-white text-decoration-none d-block py-3 fw-bold"
+                        style={{ background: '#10B981', borderRadius: '8px' }}
+                    >
+                        <i className="fas fa-play-circle me-2"></i> Go to Course
+                    </Link>
+                ) : isFree ? (
+                    <button
+                        type="button"
+                        className="common_btn w-100"
+                        style={{ border: 'none', cursor: 'pointer', background: '#10B981', color: '#fff' }}
+                        onClick={handleEnrollFree}
+                        disabled={addingToCart}
+                    >
+                        {addingToCart ? (
+                            'Enrolling...'
+                        ) : (
+                            <>
+                                Enroll Course (Free) <i className="fas fa-arrow-right ms-2"></i>
+                            </>
+                        )}
+                    </button>
+                ) : (
+                    <button
+                        type="button"
+                        className="common_btn w-100"
+                        style={{ border: 'none', cursor: 'pointer' }}
+                        onClick={handleAddToCart}
+                        disabled={addingToCart}
+                    >
+                        {addingToCart ? (
+                            'Adding to Cart...'
+                        ) : (
+                            <>
+                                Enroll The Course <i className="fas fa-arrow-right ms-2"></i>
+                            </>
+                        )}
+                    </button>
+                )}
             </div>
 
-            {/* Buy Now / Checkout shortcut */}
-            <div className="wsus__courses_sidebar_share_btn d-flex flex-wrap justify-content-between">
-                <Link
-                    href={route('checkout.index')}
-                    className="common_btn w-100"
-                    style={{
-                        background: '#1F2937',
-                        color: '#fff',
-                        textAlign: 'center',
-                    }}
-                >
-                    <i className="fas fa-shopping-bag me-2"></i> Buy Now Directly
-                </Link>
-            </div>
+            {/* Buy Now / Checkout shortcut (Only for paid courses and when not enrolled) */}
+            {!isFree && !isEnrolled && (
+                <div className="wsus__courses_sidebar_share_btn d-flex flex-wrap justify-content-between mt-3">
+                    <Link
+                        href={route('checkout.index')}
+                        className="common_btn w-100"
+                        style={{
+                            background: '#1F2937',
+                            color: '#fff',
+                            textAlign: 'center',
+                        }}
+                    >
+                        <i className="fas fa-shopping-bag me-2"></i> Buy Now Directly
+                    </Link>
+                </div>
+            )}
 
             {/* Social Share Area */}
             <div className="wsus__courses_sidebar_share_area">

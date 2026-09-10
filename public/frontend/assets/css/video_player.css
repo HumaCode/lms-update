@@ -701,7 +701,7 @@ body.vjs-pip-window .video-js {
 }
 
 .video-js.vjs-fullscreen.vjs-user-inactive {
-  cursor: none;
+  cursor: default;
 }
 
 .vjs-pip-container .vjs-pip-text {

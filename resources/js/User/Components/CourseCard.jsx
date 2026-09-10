@@ -34,11 +34,19 @@ export default function CourseCard({ course }) {
 
     const avgRating = course.reviews_avg_rating ? Math.round(course.reviews_avg_rating) : 5;
 
+    const getImageUrl = (url, defaultImg = '/frontend/assets/images/courses_img_1.jpg') => {
+        if (!url) return defaultImg;
+        if (typeof url !== 'string') return defaultImg;
+        if (url.startsWith('http://') || url.startsWith('https://')) return url;
+        if (url.startsWith('/')) return url;
+        return `/${url}`;
+    };
+
     return (
         <div className="wsus__single_courses_3">
             <div className="wsus__single_courses_3_img">
                 <img
-                    src={course.thumbnail ? `/${course.thumbnail}` : '/frontend/assets/images/courses_img_1.jpg'}
+                    src={getImageUrl(course.thumbnail)}
                     alt={course.title}
                     className="img-fluid"
                     onError={(e) => {

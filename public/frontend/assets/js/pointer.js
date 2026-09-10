@@ -1,76 +1,78 @@
-/* 
-    pointer.js was created by OwL for use on websites, 
-     and can be found at https://seattleowl.com/pointer.
-*/
+(function () {
+    if (typeof window === 'undefined') return;
 
-const pointer = document.createElement("div")
-pointer.id = "pointer-dot"
-const ring = document.createElement("div")
-ring.id = "pointer-ring"
-document.body.insertBefore(pointer, document.body.children[0])
-document.body.insertBefore(ring, document.body.children[0])
+    let dotEl = document.getElementById("pointer-dot");
+    let ringEl = document.getElementById("pointer-ring");
 
-let mouseX = -100
-let mouseY = -100
-let ringX = -100
-let ringY = -100
-let isHover = false
-let mouseDown = false
-const init_pointer = (options) => {
-
-    window.onmousemove = (mouse) => {
-        mouseX = mouse.clientX
-        mouseY = mouse.clientY
+    if (!dotEl) {
+        dotEl = document.createElement("div");
+        dotEl.id = "pointer-dot";
+        document.body.appendChild(dotEl);
+    }
+    if (!ringEl) {
+        ringEl = document.createElement("div");
+        ringEl.id = "pointer-ring";
+        document.body.appendChild(ringEl);
     }
 
-    window.onmousedown = (mouse) => {
-        mouseDown = true
-    }
+    let mouseX = -100;
+    let mouseY = -100;
+    let ringX = -100;
+    let ringY = -100;
+    let isMouseDown = false;
+    let isVisible = false;
 
-    window.onmouseup = (mouse) => {
-        mouseDown = false
-    }
+    const lerp = (a, b, n) => (1 - n) * a + n * b;
 
-    const trace = (a, b, n) => {
-        return (1 - n) * a + n * b;
-    }
-    window["trace"] = trace
-
-    const getOption = (option) => {
-        let defaultObj = {
-            pointerColor: "#750c7e",
-            ringSize: 15,
-            ringClickSize: (options["ringSize"] || 15) - 5,
+    window.addEventListener("mousemove", (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+        if (!isVisible) {
+            isVisible = true;
+            document.body.classList.add("has-custom-pointer");
         }
-        if (options[option] == undefined) {
-            return defaultObj[option]
+    });
+
+    window.addEventListener("mousedown", () => {
+        isMouseDown = true;
+    });
+
+    window.addEventListener("mouseup", () => {
+        isMouseDown = false;
+    });
+
+    document.addEventListener("mouseleave", () => {
+        isVisible = false;
+        document.body.classList.remove("has-custom-pointer");
+    });
+
+    function render() {
+        if (isVisible) {
+            ringX = lerp(ringX, mouseX, 0.25);
+            ringY = lerp(ringY, mouseY, 0.25);
+
+            if (dotEl) {
+                dotEl.style.transform = `translate3d(${mouseX - 3}px, ${mouseY - 3}px, 0)`;
+                dotEl.style.opacity = "1";
+            }
+            if (ringEl) {
+                const size = isMouseDown ? 24 : 32;
+                const offset = size / 2;
+                ringEl.style.width = `${size}px`;
+                ringEl.style.height = `${size}px`;
+                ringEl.style.transform = `translate3d(${ringX - offset}px, ${ringY - offset}px, 0)`;
+                ringEl.style.opacity = "1";
+            }
         } else {
-            return options[option]
+            if (dotEl) dotEl.style.opacity = "0";
+            if (ringEl) ringEl.style.opacity = "0";
         }
+        requestAnimationFrame(render);
     }
 
-    const render = () => {
-        ringX = trace(ringX, mouseX, 0.2)
-        ringY = trace(ringY, mouseY, 0.2)
+    window.init_pointer = function (options) {
+        // Compatibility wrapper for legacy calls
+    };
 
-        if (document.querySelector(".p-action-click:hover")) {
-            pointer.style.borderColor = getOption("pointerColor")
-            isHover = true
-        } else {
-            pointer.style.borderColor = "white"
-            isHover = false
-        }
-        ring.style.borderColor = getOption("pointerColor")
-        if (mouseDown) {
-            ring.style.padding = getOption("ringClickSize") + "px"
-        } else {
-            ring.style.padding = getOption("ringSize") + "px"
-        }
-
-        pointer.style.transform = `translate(${mouseX}px, ${mouseY}px)`
-        ring.style.transform = `translate(${ringX - (mouseDown ? getOption("ringClickSize") : getOption("ringSize"))}px, ${ringY - (mouseDown ? getOption("ringClickSize") : getOption("ringSize"))}px)`
-
-        requestAnimationFrame(render)
-    }
-    requestAnimationFrame(render)
-}
+    requestAnimationFrame(render);
+})();

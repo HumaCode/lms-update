@@ -11,6 +11,8 @@ class CourseCategory extends Model
 {
     use HasFactory;
 
+    protected $guarded = [];
+
     function subCategories() : HasMany{
         return $this->hasMany(CourseCategory::class, 'parent_id');
     }

@@ -27,18 +27,22 @@ class CourseController extends Controller
 
     public function index(): InertiaResponse
     {
-        $courses = Course::with(['instructor'])->orderBy('id', 'desc')->paginate(25);
+        $courses = Course::with(['instructor', 'category', 'level', 'language', 'chapters.lessons'])
+            ->orderBy('id', 'desc')
+            ->paginate(25);
+
         return Inertia::render('Admin/Course/Index', [
             'courses' => $courses,
         ]);
     }
 
     /** change approve status */
-    function updateApproval(Request $request, Course $course) : Response{
+    function updateApproval(Request $request, Course $course)
+    {
         $course->is_approved = $request->status;
         $course->save();
 
-        return response(['status' => 'success', 'message' => 'Updated successfully.']);
+        return response()->json(['status' => 'success', 'message' => 'Status persetujuan kursus berhasil diperbarui.']);
     }
 
 
@@ -52,12 +56,10 @@ class CourseController extends Controller
 
     function storeBasicInfo(CourseBasicInfoCreateRequest $request)
     {
-        $thumbnailPath = $this->uploadFile($request->file('thumbnail'));
         $course = new Course();
         $course->title = $request->title;
         $course->slug = \Str::slug($request->title);
         $course->seo_description = $request->seo_description;
-        $course->thumbnail = $thumbnailPath;
         $course->demo_video_storage = $request->demo_video_storage;
         $course->demo_video_source = $request->demo_video_source;
         $course->price = $request->price;
@@ -65,6 +67,11 @@ class CourseController extends Controller
         $course->description = $request->description;
         $course->instructor_id = $request->instructor;
         $course->save();
+
+        if ($request->hasFile('thumbnail')) {
+            $course->addMediaFromRequest('thumbnail')
+                ->toMediaCollection('thumbnail');
+        }
 
         // save course id on session
         Session::put('course_create_id', $course->id);
@@ -129,16 +136,26 @@ class CourseController extends Controller
                 $course = Course::findOrFail($request->id);
 
                 if ($request->hasFile('thumbnail')) {
-                    $thumbnailPath = $this->uploadFile($request->file('thumbnail'));
-                    $this->deleteFile($course->thumbnail);
-                    $course->thumbnail = $thumbnailPath;
+                    $course->addMediaFromRequest('thumbnail')
+                        ->toMediaCollection('thumbnail');
                 }
 
                 $course->title = $request->title;
                 $course->slug = \Str::slug($request->title);
                 $course->seo_description = $request->seo_description;
                 $course->demo_video_storage = $request->demo_video_storage;
-                $course->demo_video_source = $request->filled('file') ? $request->file : $request->url;
+
+                if ($request->demo_video_storage === 'upload') {
+                    if ($request->hasFile('demo_video_source')) {
+                        $course->addMediaFromRequest('demo_video_source')
+                            ->toMediaCollection('demo_video');
+                        $course->demo_video_source = route('media.course-demo-video', $course->id);
+                    }
+                } else {
+                    $course->clearMediaCollection('demo_video');
+                    $course->demo_video_source = $request->demo_video_source;
+                }
+
                 $course->price = $request->price;
                 $course->discount = $request->discount;
                 $course->description = $request->description;

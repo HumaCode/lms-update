@@ -30,12 +30,15 @@ use Illuminate\Support\Facades\Route;
  Route::get('/', [FrontendController::class, 'index'])->name('home');
  Route::get('/courses', [CoursePageController::class, 'index'])->name('courses.index');
  Route::get('/courses/{slug}', [CoursePageController::class, 'show'])->name('courses.show');
+ Route::get('/media/course-thumbnail/{course}', [\App\Http\Controllers\MediaController::class, 'courseThumbnail'])->name('media.course-thumbnail');
+ Route::get('/media/course-demo-video/{course}', [\App\Http\Controllers\MediaController::class, 'courseDemoVideo'])->name('media.course-demo-video');
 
 
  /** Cart routes */
  Route::get('cart', [CartController::class, 'index'])->name('cart.index')->middleware('auth');
  Route::post('add-to-cart/{course}', [CartController::class, 'addToCart'])->name('add-to-cart')->middleware('auth');
  Route::get('remove-from-cart/{id}', [CartController::class, 'removeFromCart'])->name('remove-from-cart')->middleware('auth');
+ Route::post('courses/{course}/enroll-free', [CartController::class, 'enrollFree'])->name('courses.enroll-free')->middleware('auth');
 
  /** Payment Routes */
  Route::get('checkout', CheckoutController::class)->name('checkout.index');
@@ -95,6 +98,13 @@ Route::group(['middleware' => ['auth:web', 'verified', 'check_role:student'], 'p
    Route::get('course-player/{slug}', [EnrolledCourseController::class, 'payerIndex'])->name('course-player.index');
    Route::get('get-lesson-content', [EnrolledCourseController::class, 'getLessonContent'])->name('get-lesson-content');
    Route::post('update-watch-history', [EnrolledCourseController::class, 'updateWatchHistory'])->name('update-watch-history');
+   Route::post('course-player/questions', [EnrolledCourseController::class, 'storeQuestion'])->name('course-player.questions.store');
+   Route::post('course-player/replies', [EnrolledCourseController::class, 'storeReply'])->name('course-player.replies.store');
+   Route::post('course-player/questions/upvote', [EnrolledCourseController::class, 'toggleQuestionUpvote'])->name('course-player.questions.upvote');
+   Route::post('course-player/replies/upvote', [EnrolledCourseController::class, 'toggleReplyUpvote'])->name('course-player.replies.upvote');
+   Route::delete('course-player/questions/{id}', [EnrolledCourseController::class, 'deleteQuestion'])->name('course-player.questions.delete');
+   Route::delete('course-player/replies/{id}', [EnrolledCourseController::class, 'deleteReply'])->name('course-player.replies.delete');
+   Route::post('course-player/report', [EnrolledCourseController::class, 'reportItem'])->name('course-player.report');
    Route::post('update-lesson-completion', [EnrolledCourseController::class, 'updateLessonCompletion'])->name('update-lesson-completion');
    Route::get('file-download/{id}', [EnrolledCourseController::class, 'fileDownload'])->name('file-download');
 

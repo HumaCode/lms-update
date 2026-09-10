@@ -24,6 +24,14 @@ export default function Index({ courses }) {
         return <div className="d-flex gap-1 align-items-center">{stars}</div>;
     };
 
+    const getImageUrl = (url, defaultImg = '/frontend/assets/images/courses_img_1.jpg') => {
+        if (!url) return defaultImg;
+        if (typeof url !== 'string') return defaultImg;
+        if (url.startsWith('http://') || url.startsWith('https://')) return url;
+        if (url.startsWith('/')) return url;
+        return `/${url}`;
+    };
+
     return (
         <InstructorLayout
             title="My Courses"
@@ -71,10 +79,14 @@ export default function Index({ courses }) {
                                     <tr key={course.id}>
                                         <td style={{ width: '90px' }}>
                                             <img
-                                                src={course.thumbnail ? `/${course.thumbnail}` : '/frontend/assets/images/courses_img_1.jpg'}
+                                                src={getImageUrl(course.thumbnail)}
                                                 alt={course.title}
-                                                className="rounded-2 shadow-sm"
+                                                className="rounded-2 shadow-sm border"
                                                 style={{ width: '80px', height: '52px', objectFit: 'cover' }}
+                                                onError={(e) => {
+                                                    e.target.onerror = null;
+                                                    e.target.src = '/frontend/assets/images/courses_img_1.jpg';
+                                                }}
                                             />
                                         </td>
                                         <td>
@@ -88,13 +100,23 @@ export default function Index({ courses }) {
                                             </div>
                                         </td>
                                         <td>
-                                            <div className="fw-bold text-dark">
-                                                {formatCurrency(course.discount ? course.discount : course.price)}
-                                            </div>
-                                            {course.discount && (
-                                                <small className="text-decoration-line-through text-muted d-block">
-                                                    {formatCurrency(course.price)}
-                                                </small>
+                                            {Number(course.price) === 0 || course.price === '0' || course.price === 0 ? (
+                                                <span className="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 fw-bold">
+                                                    Free
+                                                </span>
+                                            ) : (
+                                                <>
+                                                    <div className="fw-bold text-dark">
+                                                        {formatCurrency(
+                                                            Number(course.discount) > 0 ? course.discount : course.price
+                                                        )}
+                                                    </div>
+                                                    {Number(course.discount) > 0 && Number(course.discount) < Number(course.price) && (
+                                                        <small className="text-decoration-line-through text-muted d-block">
+                                                            {formatCurrency(course.price)}
+                                                        </small>
+                                                    )}
+                                                </>
                                             )}
                                         </td>
                                         <td>

@@ -35,6 +35,20 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        // Clear PHP Flasher session queue on Inertia requests so old backend notifications never linger on page reload
+        if (function_exists('flasher')) {
+            try {
+                flasher()->clear();
+            } catch (\Throwable $e) {
+                // ignore if flasher is not initialized
+            }
+        }
+        $request->session()->forget([
+            'flasher::envelopes',
+            'flasher',
+            '_flasher',
+        ]);
+
         return [
             ...parent::share($request),
             'auth' => [
@@ -42,10 +56,26 @@ class HandleInertiaRequests extends Middleware
                 'admin' => auth('admin')->user(),
             ],
             'flash' => [
-                'success' => fn () => $request->session()->get('success'),
-                'error' => fn () => $request->session()->get('error'),
-                'info' => fn () => $request->session()->get('info'),
-                'warning' => fn () => $request->session()->get('warning'),
+                'success' => function () use ($request) {
+                    $val = $request->session()->get('success');
+                    $request->session()->forget('success');
+                    return $val;
+                },
+                'error' => function () use ($request) {
+                    $val = $request->session()->get('error');
+                    $request->session()->forget('error');
+                    return $val;
+                },
+                'info' => function () use ($request) {
+                    $val = $request->session()->get('info');
+                    $request->session()->forget('info');
+                    return $val;
+                },
+                'warning' => function () use ($request) {
+                    $val = $request->session()->get('warning');
+                    $request->session()->forget('warning');
+                    return $val;
+                },
             ],
             'settings' => fn () => config('settings'),
             'cart_count' => fn () => auth()->guard('web')->check() ? cartCount() : 0,

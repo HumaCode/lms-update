@@ -63,4 +63,45 @@ class CartController extends Controller
         notyf()->success('Removed Successfully!');
         return redirect()->back();
     }
+
+    function enrollFree(Course $course)
+    {
+        if (!Auth::guard('web')->check()) {
+            return response(['message' => 'Please login first!'], 401);
+        }
+
+        $user = Auth::guard('web')->user();
+
+        if ($user->role === 'instructor') {
+            return response(['message' => 'Instructors cannot enroll in courses!'], 401);
+        }
+
+        if ((float)$course->price > 0) {
+            return response(['message' => 'This course is not free!'], 400);
+        }
+
+        $alreadyEnrolled = \App\Models\Enrollment::where('user_id', $user->id)
+            ->where('course_id', $course->id)
+            ->exists();
+
+        if ($alreadyEnrolled) {
+            return response([
+                'message' => 'You are already enrolled in this course!',
+                'redirect' => route('student.course-player.index', $course->slug)
+            ], 200);
+        }
+
+        $enrollment = new \App\Models\Enrollment();
+        $enrollment->user_id = $user->id;
+        $enrollment->course_id = $course->id;
+        $enrollment->instructor_id = $course->instructor_id;
+        $enrollment->save();
+
+        Cart::where('user_id', $user->id)->where('course_id', $course->id)->delete();
+
+        return response([
+            'message' => 'Enrolled successfully!',
+            'redirect' => route('student.course-player.index', $course->slug)
+        ], 200);
+    }
 }

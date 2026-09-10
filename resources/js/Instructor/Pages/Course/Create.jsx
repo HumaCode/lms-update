@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
 import InstructorLayout from '@/Instructor/Layouts/InstructorLayout';
+import RichTextEditor from '@/Components/RichTextEditor';
 import { route } from '@/Utils/routes';
+import { notify } from '@/Utils/notifications';
 
 export default function Create() {
     const { data, setData, post, processing, errors } = useForm({
@@ -12,10 +14,12 @@ export default function Create() {
         demo_video_source: '',
         price: '',
         discount: '',
+        features: '',
         description: '',
     });
 
     const [thumbnailPreview, setThumbnailPreview] = useState(null);
+    const [isFree, setIsFree] = useState(false);
 
     const handleThumbnailChange = (e) => {
         const file = e.target.files[0];
@@ -29,6 +33,12 @@ export default function Create() {
         e.preventDefault();
         post(route('instructor.courses.sore-basic-info'), {
             forceFormData: true,
+            onSuccess: () => {
+                notify.success('Course Created Successfully', 'Basic course information has been saved.');
+            },
+            onError: () => {
+                notify.error('Validation Error', 'Please check the form fields and try again.');
+            },
         });
     };
 
@@ -91,79 +101,204 @@ export default function Create() {
                                 />
                                 {errors.thumbnail && <div className="invalid-feedback">{errors.thumbnail}</div>}
                                 {thumbnailPreview && (
-                                    <div className="mt-2">
-                                        <img
-                                            src={thumbnailPreview}
-                                            alt="Preview"
-                                            className="img-thumbnail rounded-3"
-                                            style={{ maxHeight: '130px' }}
-                                        />
+                                    <div className="mt-3">
+                                        <span className="form-label text-muted small fw-semibold d-block mb-1">
+                                            Thumbnail Preview:
+                                        </span>
+                                        <div
+                                            className="border rounded-3 p-2 bg-light d-inline-block text-center shadow-sm"
+                                            style={{ maxWidth: '320px', width: '100%' }}
+                                        >
+                                            <img
+                                                src={thumbnailPreview}
+                                                alt="Course Thumbnail Preview"
+                                                className="rounded-2 img-fluid"
+                                                style={{
+                                                    maxHeight: '180px',
+                                                    width: '100%',
+                                                    objectFit: 'contain',
+                                                    backgroundColor: '#ffffff',
+                                                }}
+                                            />
+                                        </div>
                                     </div>
                                 )}
                             </div>
 
-                            <div className="col-md-3">
-                                <label className="form-label required fw-semibold">Course Price ($)</label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    className={`form-control ${errors.price ? 'is-invalid' : ''}`}
-                                    placeholder="e.g. 49.99 (0 for Free)"
-                                    value={data.price}
-                                    onChange={(e) => setData('price', e.target.value)}
-                                />
-                                {errors.price && <div className="invalid-feedback">{errors.price}</div>}
+                            <div className="col-12">
+                                <div className="card bg-light border-0 p-3 rounded-3">
+                                    <div className="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                        <div>
+                                            <h6 className="fw-bold mb-1 text-dark">Course Pricing Option</h6>
+                                            <p className="text-muted small mb-0">
+                                                {isFree
+                                                    ? 'This course will be free for all students.'
+                                                    : 'This is a paid course. Set your regular and promo prices below.'}
+                                            </p>
+                                        </div>
+                                        <div className="form-check form-switch form-switch-md mb-0">
+                                            <input
+                                                className="form-check-input"
+                                                type="checkbox"
+                                                role="switch"
+                                                id="freeCourseSwitch"
+                                                checked={isFree}
+                                                onChange={(e) => {
+                                                    const checked = e.target.checked;
+                                                    setIsFree(checked);
+                                                    if (checked) {
+                                                        setData((prev) => ({ ...prev, price: '0', discount: '0' }));
+                                                    } else {
+                                                        setData((prev) => ({
+                                                            ...prev,
+                                                            price: prev.price === '0' ? '' : prev.price,
+                                                            discount: prev.discount === '0' ? '' : prev.discount,
+                                                        }));
+                                                    }
+                                                }}
+                                                style={{ cursor: 'pointer', width: '2.5em', height: '1.25em' }}
+                                            />
+                                            <label className="form-check-label fw-bold ms-2 cursor-pointer" htmlFor="freeCourseSwitch">
+                                                {isFree ? (
+                                                    <span className="badge bg-success px-2 py-1">Free Course</span>
+                                                ) : (
+                                                    <span className="badge bg-primary px-2 py-1">Paid Course</span>
+                                                )}
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
-                            <div className="col-md-3">
-                                <label className="form-label fw-semibold">Discounted Price ($)</label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    className={`form-control ${errors.discount ? 'is-invalid' : ''}`}
-                                    placeholder="Optional promo price"
-                                    value={data.discount}
-                                    onChange={(e) => setData('discount', e.target.value)}
-                                />
-                                {errors.discount && <div className="invalid-feedback">{errors.discount}</div>}
-                            </div>
+                            {!isFree && (
+                                <>
+                                    <div className="col-md-6">
+                                        <label className="form-label required fw-semibold">Course Price ($)</label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            className={`form-control ${errors.price ? 'is-invalid' : ''}`}
+                                            placeholder="e.g. 49.99"
+                                            value={data.price}
+                                            onChange={(e) => setData('price', e.target.value)}
+                                        />
+                                        {errors.price && <div className="invalid-feedback">{errors.price}</div>}
+                                    </div>
+
+                                    <div className="col-md-6">
+                                        <label className="form-label fw-semibold">Discounted Price ($)</label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            className={`form-control ${errors.discount ? 'is-invalid' : ''}`}
+                                            placeholder="Optional promo price"
+                                            value={data.discount}
+                                            onChange={(e) => setData('discount', e.target.value)}
+                                        />
+                                        {errors.discount && <div className="invalid-feedback">{errors.discount}</div>}
+                                    </div>
+                                </>
+                            )}
 
                             <div className="col-md-4">
                                 <label className="form-label fw-semibold">Preview Video Provider</label>
                                 <select
                                     className="form-select"
-                                    value={data.demo_video_storage}
-                                    onChange={(e) => setData('demo_video_storage', e.target.value)}
+                                    value={data.demo_video_storage || 'youtube'}
+                                    onChange={(e) => {
+                                        const storage = e.target.value;
+                                        setData((prev) => ({
+                                            ...prev,
+                                            demo_video_storage: storage,
+                                            demo_video_source: '',
+                                        }));
+                                    }}
                                 >
-                                    <option value="youtube">YouTube</option>
-                                    <option value="vimeo">Vimeo</option>
+                                    <option value="youtube">YouTube (URL)</option>
+                                    <option value="vimeo">Vimeo (URL)</option>
                                     <option value="external_link">External MP4 URL</option>
+                                    <option value="upload">Upload Video File</option>
                                 </select>
                             </div>
 
                             <div className="col-md-8">
-                                <label className="form-label fw-semibold">Preview Video URL</label>
+                                {data.demo_video_storage === 'upload' ? (
+                                    <>
+                                        <label className="form-label fw-semibold">Upload Preview Video File</label>
+                                        <input
+                                            key="create-video-file-input"
+                                            type="file"
+                                            className={`form-control ${errors.demo_video_source ? 'is-invalid' : ''}`}
+                                            accept="video/mp4,video/webm,video/ogg,video/*"
+                                            onChange={(e) => {
+                                                const file = e.target.files[0];
+                                                if (file) {
+                                                    setData('demo_video_source', file);
+                                                }
+                                            }}
+                                        />
+                                        <span className="text-muted small">Select a video file (MP4, WEBM, MKV)</span>
+                                        {errors.demo_video_source && (
+                                            <div className="invalid-feedback">{errors.demo_video_source}</div>
+                                        )}
+                                    </>
+                                ) : (
+                                    <>
+                                        <label className="form-label fw-semibold">
+                                            Preview Video URL (
+                                            {data.demo_video_storage === 'vimeo'
+                                                ? 'Vimeo'
+                                                : data.demo_video_storage === 'external_link'
+                                                ? 'External MP4'
+                                                : 'YouTube'}
+                                            )
+                                        </label>
+                                        <input
+                                            key="create-video-url-input"
+                                            type="text"
+                                            className={`form-control ${errors.demo_video_source ? 'is-invalid' : ''}`}
+                                            placeholder={
+                                                data.demo_video_storage === 'vimeo'
+                                                    ? 'https://vimeo.com/123456789'
+                                                    : data.demo_video_storage === 'external_link'
+                                                    ? 'https://example.com/video.mp4'
+                                                    : 'https://www.youtube.com/watch?v=...'
+                                            }
+                                            value={typeof data.demo_video_source === 'string' ? data.demo_video_source : ''}
+                                            onChange={(e) => setData('demo_video_source', e.target.value)}
+                                        />
+                                        {errors.demo_video_source && (
+                                            <div className="invalid-feedback">{errors.demo_video_source}</div>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+
+                            <div className="col-12">
+                                <label className="form-label fw-semibold">Course Features</label>
                                 <input
-                                    type="url"
-                                    className="form-control"
-                                    placeholder="https://www.youtube.com/watch?v=..."
-                                    value={data.demo_video_source}
-                                    onChange={(e) => setData('demo_video_source', e.target.value)}
+                                    type="text"
+                                    className={`form-control ${errors.features ? 'is-invalid' : ''}`}
+                                    placeholder="e.g. Available on iOS and Android, Lifetime Access, Certificate included"
+                                    value={data.features}
+                                    onChange={(e) => setData('features', e.target.value)}
                                 />
+                                <div className="form-text text-muted small">
+                                    Singkat dan padat. Fitur ini akan ditampilkan pada halaman detail kursus (misal: "Available on iOS and Android").
+                                </div>
+                                {errors.features && <div className="invalid-feedback">{errors.features}</div>}
                             </div>
 
                             <div className="col-12">
                                 <label className="form-label required fw-semibold">Course Description</label>
-                                <textarea
-                                    className={`form-control ${errors.description ? 'is-invalid' : ''}`}
-                                    rows="8"
-                                    placeholder="Describe learning goals, prerequisites, and syllabus highlights..."
+                                <RichTextEditor
                                     value={data.description}
-                                    onChange={(e) => setData('description', e.target.value)}
-                                ></textarea>
-                                {errors.description && <div className="invalid-feedback">{errors.description}</div>}
+                                    onChange={(val) => setData('description', val)}
+                                    placeholder="Describe learning goals, prerequisites, and syllabus highlights..."
+                                />
+                                {errors.description && <div className="invalid-feedback d-block">{errors.description}</div>}
                             </div>
                         </div>
                     </div>
@@ -176,8 +311,8 @@ export default function Create() {
                         >
                             {processing ? (
                                 <>
-                                    <span className="spinner-border spinner-border-sm me-2"></span>
-                                    Saving Course...
+                                    <i className="fas fa-spinner fa-spin me-2 text-white"></i>
+                                    Sedang Menyimpan...
                                 </>
                             ) : (
                                 <>

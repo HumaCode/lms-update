@@ -147,7 +147,7 @@ class InstructorDashboardService extends BaseService implements InstructorDashbo
                 'id' => $course->id,
                 'title' => $course->title,
                 'slug' => $course->slug,
-                'thumbnail' => $course->thumbnail ? '/' . ltrim($course->thumbnail, '/') : '/frontend/assets/images/courses_3_img_1.jpg',
+                'thumbnail' => $course->thumbnail ?? '/frontend/assets/images/courses_3_img_1.jpg',
                 'category' => $mainCat,
                 'sub_category' => $subCat,
                 'rating' => $rating,
@@ -168,7 +168,7 @@ class InstructorDashboardService extends BaseService implements InstructorDashbo
         $progress = [];
 
         $topFour = array_slice($courses, 0, 4);
-        $maxSales = max(1, ...array_map(fn($c) => $c['sales_count'], $topFour ?: [1]));
+        $maxSales = !empty($topFour) ? max(1, ...array_map(fn($c) => $c['sales_count'], $topFour)) : 1;
 
         foreach ($topFour as $index => $course) {
             $pct = $maxSales > 0 ? min(100, max(20, round(($course['sales_count'] / $maxSales) * 100))) : 40;

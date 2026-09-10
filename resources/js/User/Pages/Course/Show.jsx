@@ -12,7 +12,7 @@ import CourseReviewTab from './Sections/CourseReviewTab';
 import CourseSidebar from './Sections/CourseSidebar';
 import VideoModal from './Sections/VideoModal';
 
-export default function CourseShow({ course, reviews }) {
+export default function CourseShow({ course, reviews, isEnrolled }) {
     const { auth } = usePage().props;
     const user = auth?.user;
 
@@ -41,6 +41,29 @@ export default function CourseShow({ course, reviews }) {
             router.reload({ only: ['cart_count'] });
         } catch (err) {
             const msg = err.response?.data?.message || 'Failed to add to cart';
+            notyf.error(msg);
+        } finally {
+            setAddingToCart(false);
+        }
+    };
+
+    const handleEnrollFree = async () => {
+        if (!user) {
+            router.get(route('login'));
+            return;
+        }
+        const notyf = new Notyf({ duration: 3000, position: { x: 'right', y: 'top' } });
+        setAddingToCart(true);
+        try {
+            const res = await axios.post(route('courses.enroll-free', course.id));
+            notyf.success(res.data?.message || 'Enrolled successfully!');
+            if (res.data?.redirect) {
+                router.visit(res.data.redirect);
+            } else {
+                router.reload();
+            }
+        } catch (err) {
+            const msg = err.response?.data?.message || 'Failed to enroll';
             notyf.error(msg);
         } finally {
             setAddingToCart(false);
@@ -195,7 +218,9 @@ export default function CourseShow({ course, reviews }) {
                                 course={course}
                                 onPlayVideo={(url) => setPreviewVideoUrl(url)}
                                 handleAddToCart={handleAddToCart}
+                                handleEnrollFree={handleEnrollFree}
                                 addingToCart={addingToCart}
+                                isEnrolled={isEnrolled}
                             />
                         </div>
                     </div>

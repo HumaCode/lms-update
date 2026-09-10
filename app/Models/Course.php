@@ -6,11 +6,37 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
-class Course extends Model
+class Course extends Model implements HasMedia
 {
-    use HasFactory;
+    use HasFactory, InteractsWithMedia;
 
+    protected $appends = ['thumbnail'];
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('thumbnail')
+            ->useDisk('private')
+            ->singleFile();
+
+        $this->addMediaCollection('demo_video')
+            ->useDisk('private')
+            ->singleFile();
+    }
+
+    public function getThumbnailAttribute(): ?string
+    {
+        $media = $this->getFirstMedia('thumbnail');
+        if ($media) {
+            return route('media.course-thumbnail', [
+                'course' => $this->id,
+                'v' => $media->updated_at?->timestamp ?? time(),
+            ]);
+        }
+        return null;
+    }
 
     function instructor() : HasOne{
         return $this->hasOne(User::class, 'id', 'instructor_id');
@@ -27,7 +53,6 @@ class Course extends Model
     function language() : HasOne{
         return $this->hasOne(CourseLanguage::class, 'id', 'course_language_id');
     }
-
 
     function chapters() : HasMany
     {

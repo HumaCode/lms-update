@@ -1,47 +1,45 @@
+/* Custom Blue Pointer Cursor Styling */
 #pointer-dot {
     left: 0;
     top: 0;
-    width: 0;
-    height: 0;
-    border: 2.5px solid var(--colorPrimary) !important;
-    position: fixed;
-    z-index: 9999;
-    pointer-events: none;
-    transition: border-color 0.5s;
-    -webkit-transition: border-color 0.5s;
-    -moz-transition: border-color 0.5s;
-    -ms-transition: border-color 0.5s;
-    -o-transition: border-color 0.5s;
+    width: 6px;
+    height: 6px;
+    background-color: #2F66EE;
     border-radius: 50%;
-    -webkit-border-radius: 50%;
-    -moz-border-radius: 50%;
-    -ms-border-radius: 50%;
-    -o-border-radius: 50%;
+    position: fixed;
+    z-index: 999999;
+    pointer-events: none;
+    transform: translate3d(-100px, -100px, 0);
+    transition: opacity 0.2s ease, background-color 0.2s ease;
+    opacity: 0;
 }
 
 #pointer-ring {
     left: 0;
     top: 0;
-    width: 0;
-    height: 0;
-    padding: 15px;
-    border: 1px solid var(--colorPrimary) !important;
+    width: 32px;
+    height: 32px;
+    border: 1.5px solid #2F66EE;
+    border-radius: 50%;
     position: fixed;
-    z-index: 9999;
+    z-index: 999998;
     pointer-events: none;
-    border-radius: 50% !important;
-    -webkit-border-radius: 50% !important;
-    -moz-border-radius: 50% !important;
-    -ms-border-radius: 50% !important;
-    -o-border-radius: 50% !important;
+    transform: translate3d(-100px, -100px, 0);
+    transition: opacity 0.2s ease, width 0.15s ease, height 0.15s ease, border-color 0.2s ease;
+    opacity: 0;
+    box-sizing: border-box;
 }
 
-html.has-custom-pointer,
-body.has-custom-pointer {
-    cursor: none !important;
-}
+@media (hover: hover) and (pointer: fine) {
+    body.has-custom-pointer,
+    body.has-custom-pointer * {
+        cursor: none !important;
+    }
 
-html:not(.has-custom-pointer),
-body:not(.has-custom-pointer) {
-    cursor: auto !important;
+    body.has-custom-pointer iframe,
+    body.has-custom-pointer video,
+    body.has-custom-pointer input[type="text"],
+    body.has-custom-pointer textarea {
+        cursor: auto !important;
+    }
 }

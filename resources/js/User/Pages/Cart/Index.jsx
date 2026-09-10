@@ -104,13 +104,19 @@ export default function CartPage({ cart }) {
 
                                                     <div className="d-flex align-items-center justify-content-between justify-content-sm-end gap-4">
                                                         <div className="text-sm-end">
-                                                            <div className="fw-bold text-primary fs-5">
-                                                                ${Number(price || 0).toFixed(2)}
-                                                            </div>
-                                                            {hasDiscount && (
-                                                                <span className="text-muted text-decoration-line-through small">
-                                                                    ${Number(course.price).toFixed(2)}
-                                                                </span>
+                                                            {!course.price || Number(course.price) === 0 ? (
+                                                                <span className="badge bg-success fs-6 px-3 py-2">Free</span>
+                                                            ) : (
+                                                                <>
+                                                                    <div className="fw-bold text-primary fs-5">
+                                                                        ${Number(price || 0).toFixed(2)}
+                                                                    </div>
+                                                                    {hasDiscount && (
+                                                                        <span className="text-muted text-decoration-line-through small">
+                                                                            ${Number(course.price).toFixed(2)}
+                                                                        </span>
+                                                                    )}
+                                                                </>
                                                             )}
                                                         </div>
                                                         <button

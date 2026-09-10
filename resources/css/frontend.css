@@ -57,10 +57,11 @@
     -webkit-transform: translate(-50%, -50%);
 }
 
-/* Custom Animated Pointer Support */
+/* Custom pointer helper styles */
 @media (hover: hover) and (pointer: fine) {
-    html, body, a, button, [role="button"], .btn, input[type="submit"], input[type="button"] {
-        cursor: none !important;
+    body.has-custom-pointer {
+        cursor: none;
     }
 }
+
 

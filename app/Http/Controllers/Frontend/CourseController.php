@@ -42,19 +42,30 @@ class CourseController extends Controller
 
     function storeBasicInfo(CourseBasicInfoCreateRequest $request)
     {
-        $thumbnailPath = $this->uploadFile($request->file('thumbnail'));
         $course = new Course();
         $course->title = $request->title;
         $course->slug = \Str::slug($request->title);
         $course->seo_description = $request->seo_description;
-        $course->thumbnail = $thumbnailPath;
         $course->demo_video_storage = $request->demo_video_storage;
         $course->demo_video_source = $request->demo_video_source;
         $course->price = $request->price;
         $course->discount = $request->discount;
         $course->description = $request->description;
+        $course->features = $request->features;
         $course->instructor_id = Auth::guard('web')->user()->id;
         $course->save();
+
+        if ($request->hasFile('thumbnail')) {
+            $course->addMediaFromRequest('thumbnail')
+                ->toMediaCollection('thumbnail');
+        }
+
+        if ($request->demo_video_storage === 'upload' && $request->hasFile('demo_video_source')) {
+            $course->addMediaFromRequest('demo_video_source')
+                ->toMediaCollection('demo_video');
+            $course->demo_video_source = route('media.course-demo-video', $course->id);
+            $course->save();
+        }
 
         Session::put('course_create_id', $course->id);
 
@@ -104,19 +115,30 @@ class CourseController extends Controller
                 $course = Course::where('instructor_id', Auth::user()->id)->findOrFail($request->id);
 
                 if ($request->hasFile('thumbnail')) {
-                    $thumbnailPath = $this->uploadFile($request->file('thumbnail'));
-                    $this->deleteFile($course->thumbnail);
-                    $course->thumbnail = $thumbnailPath;
+                    $course->addMediaFromRequest('thumbnail')
+                        ->toMediaCollection('thumbnail');
                 }
 
                 $course->title = $request->title;
                 $course->slug = \Str::slug($request->title);
                 $course->seo_description = $request->seo_description;
                 $course->demo_video_storage = $request->demo_video_storage;
-                $course->demo_video_source = $request->filled('file') ? $request->file : $request->demo_video_source;
+
+                if ($request->demo_video_storage === 'upload') {
+                    if ($request->hasFile('demo_video_source')) {
+                        $course->addMediaFromRequest('demo_video_source')
+                            ->toMediaCollection('demo_video');
+                        $course->demo_video_source = route('media.course-demo-video', $course->id);
+                    }
+                } else {
+                    $course->clearMediaCollection('demo_video');
+                    $course->demo_video_source = $request->demo_video_source;
+                }
+
                 $course->price = $request->price;
                 $course->discount = $request->discount;
                 $course->description = $request->description;
+                $course->features = $request->features;
                 $course->save();
 
                 notyf()->success('Basic information updated!');
@@ -127,6 +149,7 @@ class CourseController extends Controller
                 $request->validate([
                     'capacity' => ['nullable', 'numeric'],
                     'duration' => ['required', 'numeric'],
+                    'features' => ['nullable', 'string', 'max:500'],
                     'qna' => ['nullable', 'boolean'],
                     'certificate' => ['nullable', 'boolean'],
                     'category' => ['required', 'integer'],
@@ -137,6 +160,7 @@ class CourseController extends Controller
                 $course = Course::where('instructor_id', Auth::user()->id)->findOrFail($request->id);
                 $course->capacity = $request->capacity;
                 $course->duration = $request->duration;
+                $course->features = $request->features;
                 $course->qna = $request->qna ? 1 : 0;
                 $course->certificate = $request->certificate ? 1 : 0;
                 $course->category_id = $request->category;

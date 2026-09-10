@@ -110,6 +110,10 @@
     </div>
     <!--============ PRELOADER END ===========-->
 
+    @if(!request()->is('admin*'))
+        <script src="{{ asset('frontend/assets/js/pointer.js') }}"></script>
+    @endif
+
     @inertia
 </body>
 </html>

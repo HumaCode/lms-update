@@ -146,7 +146,7 @@ class CoursePageController extends Controller
         ]);
     }
 
-    function storeReview(Request $request) : RedirectResponse
+    function storeReview(Request $request)
     {
        $request->validate([
         'rating' => ['required', 'numeric'],
@@ -158,11 +158,17 @@ class CoursePageController extends Controller
        $alreadyReviewed = Review::where('user_id', user()->id)->where('course_id', $request->course)->where('status', 1)->exists();
 
        if(!$checkPurchase) {
+        if ($request->expectsJson()) {
+            return response()->json(['status' => 'error', 'message' => 'Silakan beli kursus terlebih dahulu!'], 403);
+        }
         notyf()->error('Please Purchase Course First!');
         return redirect()->back();
        }
 
        if($alreadyReviewed) {
+        if ($request->expectsJson()) {
+            return response()->json(['status' => 'error', 'message' => 'Anda sudah memberikan ulasan untuk kursus ini!'], 422);
+        }
         notyf()->error('You Already Reviewed This Course!');
         return redirect()->back();
        }
@@ -173,6 +179,16 @@ class CoursePageController extends Controller
        $review->rating = $request->rating;
        $review->review = $request->review;
        $review->save();
+
+       $review->load('user:id,name,image');
+
+       if ($request->expectsJson()) {
+           return response()->json([
+               'status' => 'success',
+               'message' => 'Review Submitted Successfully!',
+               'data' => $review
+           ]);
+       }
 
        notyf()->success('Review Submitted Successfully!');
        return redirect()->back();

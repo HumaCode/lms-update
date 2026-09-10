@@ -3,12 +3,16 @@ import { Head, Link } from '@inertiajs/react';
 import InstructorLayout from '@/Instructor/Layouts/InstructorLayout';
 import Pagination from '@/Components/UI/Pagination';
 import InstructorQnaModal from '@/Components/InstructorQnaModal';
+import InstructorReviewsModal from '@/Components/InstructorReviewsModal';
 import { formatCurrency } from '@/Utils/formatters';
 import { route } from '@/Utils/routes';
 
 export default function Index({ courses }) {
     const [selectedQnaCourse, setSelectedQnaCourse] = useState(null);
     const [showQnaModal, setShowQnaModal] = useState(false);
+
+    const [selectedReviewCourse, setSelectedReviewCourse] = useState(null);
+    const [showReviewModal, setShowReviewModal] = useState(false);
 
     const courseList = Array.isArray(courses) ? courses : (courses?.data || []);
     const meta = courses?.meta;
@@ -59,7 +63,7 @@ export default function Index({ courses }) {
                             href={route('instructor.courses.create')}
                             className="btn btn-primary px-3"
                         >
-                            <i className="fas fa-plus me-1"></i> Add New Course
+                            <i className="fas fa-plus me-1"></i> Create Course
                         </Link>
                     </div>
                 </div>
@@ -68,11 +72,11 @@ export default function Index({ courses }) {
                     <table className="table table-hover align-middle mb-0">
                         <thead className="table-light">
                             <tr>
-                                <th>Thumbnail</th>
+                                <th style={{ width: '90px' }}>Thumbnail</th>
                                 <th>Course Details</th>
+                                <th>Category</th>
                                 <th>Price</th>
-                                <th>Students</th>
-                                <th>Approval</th>
+                                <th>Rating</th>
                                 <th>Status</th>
                                 <th className="text-end">Actions</th>
                             </tr>
@@ -95,49 +99,31 @@ export default function Index({ courses }) {
                                         </td>
                                         <td>
                                             <div className="fw-bold text-dark">{course.title}</div>
-                                            <div className="d-flex align-items-center gap-2 small text-muted mt-1">
-                                                <span>{renderStars(course.reviews_avg_rating)}</span>
-                                                <span>•</span>
-                                                <span className="badge bg-light text-dark border">
-                                                    {course.category?.name || 'Uncategorized'}
-                                                </span>
+                                            <div className="text-muted small mt-1">
+                                                {course.lessons_count || 0} Lessons · {course.enrollments_count || 0} Students
                                             </div>
                                         </td>
                                         <td>
-                                            {Number(course.price) === 0 || course.price === '0' || course.price === 0 ? (
-                                                <span className="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 fw-bold">
-                                                    Free
-                                                </span>
-                                            ) : (
-                                                <>
-                                                    <div className="fw-bold text-dark">
-                                                        {formatCurrency(
-                                                            Number(course.discount) > 0 ? course.discount : course.price
-                                                        )}
-                                                    </div>
-                                                    {Number(course.discount) > 0 && Number(course.discount) < Number(course.price) && (
-                                                        <small className="text-decoration-line-through text-muted d-block">
-                                                            {formatCurrency(course.price)}
-                                                        </small>
-                                                    )}
-                                                </>
-                                            )}
-                                        </td>
-                                        <td>
-                                            <span className="badge bg-secondary-subtle text-secondary px-2 py-1">
-                                                {course.enrollments_count || 0} Students
+                                            <span className="badge bg-light text-dark border">
+                                                {course.category?.name || 'Uncategorized'}
                                             </span>
                                         </td>
                                         <td>
-                                            {course.is_approved === 'approved' && (
-                                                <span className="badge bg-success">Approved</span>
+                                            {course.price > 0 ? (
+                                                <span className="fw-semibold text-dark">
+                                                    {formatCurrency(course.discount_price || course.price)}
+                                                </span>
+                                            ) : (
+                                                <span className="badge bg-success">Free</span>
                                             )}
-                                            {course.is_approved === 'pending' && (
-                                                <span className="badge bg-warning text-dark">Pending</span>
-                                            )}
-                                            {course.is_approved === 'rejected' && (
-                                                <span className="badge bg-danger">Rejected</span>
-                                            )}
+                                        </td>
+                                        <td>
+                                            <div className="d-flex flex-column gap-1">
+                                                {renderStars(course.reviews_avg_rating)}
+                                                <span className="text-muted small">
+                                                    {course.reviews_avg_rating ? Number(course.reviews_avg_rating).toFixed(1) : '0.0'} ({course.reviews_count || 0})
+                                                </span>
+                                            </div>
                                         </td>
                                         <td>
                                             <span className={`badge ${course.status === 'active' ? 'bg-primary' : 'bg-secondary'}`}>
@@ -146,6 +132,18 @@ export default function Index({ courses }) {
                                         </td>
                                         <td className="text-end">
                                             <div className="d-flex align-items-center justify-content-end gap-2">
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-outline-warning btn-sm px-3 d-inline-flex align-items-center"
+                                                    title="Lihat Detail Review & Rating"
+                                                    onClick={() => {
+                                                        setSelectedReviewCourse(course);
+                                                        setShowReviewModal(true);
+                                                    }}
+                                                    style={{ borderColor: '#c25e00', color: '#c25e00' }}
+                                                >
+                                                    <i className="fas fa-star me-1"></i> Review
+                                                </button>
                                                 <button
                                                     type="button"
                                                     className="btn btn-outline-purple btn-sm px-3 d-inline-flex align-items-center"
@@ -192,13 +190,21 @@ export default function Index({ courses }) {
                 )}
             </div>
 
-            {/* Modal Manajemen Q&A Instruktur */}
             <InstructorQnaModal
                 show={showQnaModal}
                 course={selectedQnaCourse}
                 onClose={() => {
                     setShowQnaModal(false);
                     setSelectedQnaCourse(null);
+                }}
+            />
+
+            <InstructorReviewsModal
+                show={showReviewModal}
+                course={selectedReviewCourse}
+                onClose={() => {
+                    setShowReviewModal(false);
+                    setSelectedReviewCourse(null);
                 }}
             />
         </InstructorLayout>

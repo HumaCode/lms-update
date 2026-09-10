@@ -370,4 +370,25 @@ class CourseController extends Controller
             'message' => 'Pengumuman berhasil dihapus.',
         ]);
     }
+
+    function getReviews(Request $request, $courseId)
+    {
+        $course = Course::where('id', $courseId)->where('instructor_id', Auth::user()->id)->firstOrFail();
+
+        $reviews = \App\Models\Review::with(['user:id,name,email,image', 'votes'])
+            ->where('course_id', $course->id)
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($rev) {
+                $rev->likes_count = $rev->votes->where('vote_type', 'like')->count();
+                $rev->dislikes_count = $rev->votes->where('vote_type', 'dislike')->count();
+                return $rev;
+            });
+
+        return response()->json([
+            'status' => 'success',
+            'course' => $course,
+            'reviews' => $reviews,
+        ]);
+    }
 }

@@ -20,4 +20,9 @@ class Review extends Model
     {
         return $this->belongsTo(Course::class);
     }
+
+    public function votes(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ReviewVote::class);
+    }
 }

@@ -31,6 +31,7 @@ export default function QnaTab({ course, activeLesson, initialQuestions = [] }) 
     const [newQuestionTitle, setNewQuestionTitle] = useState('');
     const [showAskForm, setShowAskForm] = useState(false);
     const [replyInput, setReplyInput] = useState('');
+    const [visibleQuestionsCount, setVisibleQuestionsCount] = useState(10);
 
     const [questions, setQuestions] = useState(initialQuestions || []);
 
@@ -834,11 +835,10 @@ export default function QnaTab({ course, activeLesson, initialQuestions = [] }) 
                     </form>
                 </div>
             )}
-
             {/* Questions List */}
             {filteredQuestions.length > 0 ? (
                 <div className="vstack gap-4 mb-4">
-                    {filteredQuestions.map((q) => (
+                    {filteredQuestions.slice(0, visibleQuestionsCount).map((q) => (
                         <div
                             key={q.id}
                             className="d-flex align-items-start justify-content-between py-2 border-bottom cursor-pointer hover-bg-light transition-all"
@@ -921,24 +921,27 @@ export default function QnaTab({ course, activeLesson, initialQuestions = [] }) 
             {/* Load More & Bottom Actions (Only show when questions exist) */}
             {filteredQuestions.length > 0 && (
                 <>
-                    <div className="text-center my-4">
-                        <button
-                            type="button"
-                            className="btn w-100 fw-bold py-2 rounded-3"
-                            style={{
-                                borderColor: '#6f42c1',
-                                color: '#6f42c1',
-                                backgroundColor: '#ffffff',
-                                borderStyle: 'solid',
-                                borderWidth: '1px',
-                                borderRadius: '8px',
-                                fontSize: '14px',
-                                boxShadow: 'none',
-                            }}
-                        >
-                            Lihat lainnya
-                        </button>
-                    </div>
+                    {visibleQuestionsCount < filteredQuestions.length && (
+                        <div className="text-center my-4">
+                            <button
+                                type="button"
+                                className="btn w-100 fw-bold py-2 rounded-3"
+                                onClick={() => setVisibleQuestionsCount((prev) => prev + 10)}
+                                style={{
+                                    borderColor: '#6f42c1',
+                                    color: '#6f42c1',
+                                    backgroundColor: '#ffffff',
+                                    borderStyle: 'solid',
+                                    borderWidth: '1px',
+                                    borderRadius: '8px',
+                                    fontSize: '14px',
+                                    boxShadow: 'none',
+                                }}
+                            >
+                                Lihat lainnya ({filteredQuestions.length - visibleQuestionsCount} lagi)
+                            </button>
+                        </div>
+                    )}
 
                     <div className="d-flex align-items-center gap-3 mt-4">
                         <button

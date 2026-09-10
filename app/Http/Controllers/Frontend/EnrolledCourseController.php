@@ -51,6 +51,19 @@ class EnrolledCourseController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
+        $userId = user()->id;
+        $reviews = \App\Models\Review::with(['user:id,name,image', 'votes'])
+            ->where('course_id', $course->id)
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($rev) use ($userId) {
+                $userVote = $rev->votes->firstWhere('user_id', $userId);
+                $rev->user_vote = $userVote ? $userVote->vote_type : null;
+                $rev->likes_count = $rev->votes->where('vote_type', 'like')->count();
+                $rev->dislikes_count = $rev->votes->where('vote_type', 'dislike')->count();
+                return $rev;
+            });
+
         return \Inertia\Inertia::render('User/Student/CoursePlayer/Index', [
             'course' => $course,
             'lastWatchHistory' => $lastWatchHistory,
@@ -58,6 +71,7 @@ class EnrolledCourseController extends Controller
             'lessonCount' => $lessonCount,
             'initialQuestions' => $questions,
             'initialAnnouncements' => $announcements,
+            'initialReviews' => $reviews,
         ]);
     }
 
@@ -242,6 +256,51 @@ class EnrolledCourseController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Balasan berhasil dihapus.',
+        ]);
+    }
+
+    function voteReview(Request $request)
+    {
+        $request->validate([
+            'review_id' => 'required|exists:reviews,id',
+            'vote_type' => 'required|in:like,dislike',
+        ]);
+
+        $userId = user()->id;
+        $reviewId = $request->review_id;
+        $voteType = $request->vote_type;
+
+        $existingVote = \App\Models\ReviewVote::where('user_id', $userId)
+            ->where('review_id', $reviewId)
+            ->first();
+
+        if ($existingVote) {
+            if ($existingVote->vote_type === $voteType) {
+                // Remove vote if clicked same type
+                $existingVote->delete();
+                $currentVote = null;
+            } else {
+                // Switch vote
+                $existingVote->update(['vote_type' => $voteType]);
+                $currentVote = $voteType;
+            }
+        } else {
+            \App\Models\ReviewVote::create([
+                'user_id' => $userId,
+                'review_id' => $reviewId,
+                'vote_type' => $voteType,
+            ]);
+            $currentVote = $voteType;
+        }
+
+        $likesCount = \App\Models\ReviewVote::where('review_id', $reviewId)->where('vote_type', 'like')->count();
+        $dislikesCount = \App\Models\ReviewVote::where('review_id', $reviewId)->where('vote_type', 'dislike')->count();
+
+        return response()->json([
+            'status' => 'success',
+            'user_vote' => $currentVote,
+            'likes_count' => $likesCount,
+            'dislikes_count' => $dislikesCount,
         ]);
     }
 

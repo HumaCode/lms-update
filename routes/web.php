@@ -105,6 +105,7 @@ Route::group(['middleware' => ['auth:web', 'verified', 'check_role:student'], 'p
    Route::delete('course-player/questions/{id}', [EnrolledCourseController::class, 'deleteQuestion'])->name('course-player.questions.delete');
    Route::delete('course-player/replies/{id}', [EnrolledCourseController::class, 'deleteReply'])->name('course-player.replies.delete');
    Route::post('course-player/report', [EnrolledCourseController::class, 'reportItem'])->name('course-player.report');
+   Route::post('course-player/reviews/vote', [EnrolledCourseController::class, 'voteReview'])->name('course-player.reviews.vote');
    Route::post('update-lesson-completion', [EnrolledCourseController::class, 'updateLessonCompletion'])->name('update-lesson-completion');
    Route::get('file-download/{id}', [EnrolledCourseController::class, 'fileDownload'])->name('file-download');
 
@@ -148,6 +149,7 @@ Route::group(['middleware' => ['auth:web', 'verified', 'check_role:instructor'],
     Route::get('courses/{id}/announcements', [CourseController::class, 'getAnnouncements'])->name('courses.announcements');
     Route::post('courses/announcements/store', [CourseController::class, 'storeAnnouncement'])->name('courses.announcements.store');
     Route::delete('courses/announcements/{id}', [CourseController::class, 'deleteAnnouncement'])->name('courses.announcements.delete');
+    Route::get('courses/{id}/reviews', [CourseController::class, 'getReviews'])->name('courses.reviews');
 
    Route::get('course-content/{course}/create-chapter', [CourseContentController::class, 'createChapterModal'])->name('course-content.create-chapter');
    Route::post('course-content/{course}/create-chapter', [CourseContentController::class, 'storeChapter'])->name('course-content.store-chapter');

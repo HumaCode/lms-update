@@ -5,7 +5,9 @@ export default function CurriculumSidebar({
     activeLesson,
     setActiveLesson,
     completedIds,
-    toggleCompletion
+    toggleCompletion,
+    isTheaterMode = false,
+    isStatic = false,
 }) {
     // Find initial chapter ID containing activeLesson (or 1st chapter)
     const getInitialChapterId = () => {
@@ -39,8 +41,42 @@ export default function CurriculumSidebar({
     };
 
     return (
-        <div className="wsus__course_sidebar">
-            <h2 className="video_heading">Course Content</h2>
+        <div
+            className="wsus__course_sidebar"
+            style={
+                isStatic
+                    ? {
+                          position: 'static',
+                          width: '100%',
+                          height: 'auto',
+                          paddingTop: '0',
+                          background: '#ffffff',
+                          borderRadius: '12px',
+                          border: '1px solid #e2e8f0',
+                          overflow: 'hidden',
+                      }
+                    : {
+                          transform: isTheaterMode ? 'translateX(100%)' : 'translateX(0)',
+                          opacity: isTheaterMode ? 0 : 1,
+                          pointerEvents: isTheaterMode ? 'none' : 'auto',
+                          transition: 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease',
+                      }
+            }
+        >
+            <h2
+                className="video_heading"
+                style={
+                    isStatic
+                        ? {
+                              position: 'static',
+                              width: '100%',
+                              borderRadius: '12px 12px 0 0',
+                          }
+                        : {}
+                }
+            >
+                Course Content
+            </h2>
             <div className="accordion" id="playerCurriculumAccordion">
                 {course?.chapters?.map((chapter) => {
                     const chapterLessons = chapter.lessons || [];

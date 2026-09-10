@@ -37,6 +37,46 @@ export default function CoursePlayer({
     const [completedIds, setCompletedIds] = useState(watchedLessonIds || []);
     const [activeTab, setActiveTab] = useState('overview');
 
+    // Theater mode state (persisted to localStorage)
+    const [isTheaterMode, setIsTheaterMode] = useState(() => {
+        try {
+            return localStorage.getItem('player_theater_mode') === 'true';
+        } catch {
+            return false;
+        }
+    });
+
+    const toggleTheaterMode = () => {
+        setIsTheaterMode((prev) => {
+            const next = !prev;
+            try {
+                localStorage.setItem('player_theater_mode', String(next));
+            } catch {}
+            return next;
+        });
+    };
+
+    // Keyboard shortcut 't' / 'T' to toggle theater mode, 'Escape' to exit
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (['INPUT', 'TEXTAREA'].includes(e.target.tagName) || e.target.isContentEditable) {
+                return;
+            }
+            if (e.key === 't' || e.key === 'T') {
+                e.preventDefault();
+                toggleTheaterMode();
+            } else if (e.key === 'Escape' && isTheaterMode) {
+                setIsTheaterMode(false);
+                try {
+                    localStorage.setItem('player_theater_mode', 'false');
+                } catch {}
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isTheaterMode]);
+
     // Track watch history when active lesson changes
     useEffect(() => {
         if (activeLesson) {
@@ -74,6 +114,7 @@ export default function CoursePlayer({
     const progressPercentage = lessonCount > 0
         ? Math.round((completedCount / lessonCount) * 100)
         : 0;
+    const effectiveTab = (isTheaterMode && activeTab === 'curriculum') ? 'overview' : activeTab;
 
     return (
         <section className="wsus__course_video">
@@ -86,104 +127,215 @@ export default function CoursePlayer({
                 completedCount={completedCount}
                 totalCount={lessonCount}
                 progressPercentage={progressPercentage}
+                isTheaterMode={isTheaterMode}
+                toggleTheaterMode={toggleTheaterMode}
             />
 
-            {/* Left Main Video Area (75% Width) */}
-            <div className="wsus__course_video_player">
-                <VideoDisplay activeLesson={activeLesson} />
+            {/* Left Main Video Area (75% Width in Normal, 100% in Theater Mode) */}
+            <div
+                className="wsus__course_video_player"
+                style={{
+                    width: isTheaterMode ? '100%' : undefined,
+                    transition: 'width 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+                }}
+            >
+                <VideoDisplay
+                    activeLesson={activeLesson}
+                    isTheaterMode={isTheaterMode}
+                    toggleTheaterMode={toggleTheaterMode}
+                />
 
-                {/* Navigation Tabs */}
-                <div className="video_tabs_area">
-                    <ul className="nav nav-pills" id="pills-tab2" role="tablist">
-                        <li className="nav-item d-lg-none" role="presentation">
-                            <button
-                                className={`nav-link ${activeTab === 'curriculum' ? 'active' : ''}`}
-                                type="button"
-                                onClick={() => setActiveTab('curriculum')}
-                            >
-                                Course Content
-                            </button>
-                        </li>
-                        <li className="nav-item" role="presentation">
-                            <button
-                                className={`nav-link ${activeTab === 'overview' ? 'active' : ''}`}
-                                type="button"
-                                onClick={() => setActiveTab('overview')}
-                            >
-                                Overview
-                            </button>
-                        </li>
-                        <li className="nav-item" role="presentation">
-                            <button
-                                className={`nav-link ${activeTab === 'qna' ? 'active' : ''}`}
-                                type="button"
-                                onClick={() => setActiveTab('qna')}
-                            >
-                                Q&A
-                            </button>
-                        </li>
-                        <li className="nav-item" role="presentation">
-                            <button
-                                className={`nav-link ${activeTab === 'announcements' ? 'active' : ''}`}
-                                type="button"
-                                onClick={() => setActiveTab('announcements')}
-                            >
-                                Announcements
-                            </button>
-                        </li>
-                        <li className="nav-item" role="presentation">
-                            <button
-                                className={`nav-link ${activeTab === 'reviews' ? 'active' : ''}`}
-                                type="button"
-                                onClick={() => setActiveTab('reviews')}
-                            >
-                                Reviews
-                            </button>
-                        </li>
-                    </ul>
+                {/* Navigation Tabs & Content Area */}
+                {isTheaterMode ? (
+                    <div className="container-fluid px-3 px-lg-4 py-4">
+                        <div className="row g-4">
+                            {/* Kolom 1: Informasi Lain (Overview, Q&A, Announcements, Reviews) */}
+                            <div className="col-12 col-md-6">
+                                <div className="video_tabs_area bg-white rounded-3 border p-0 shadow-sm overflow-hidden">
+                                    <ul className="nav nav-pills justify-content-start px-3 pt-2 bg-light border-bottom" id="pills-tab2" role="tablist">
+                                        <li className="nav-item" role="presentation">
+                                            <button
+                                                className={`nav-link ${effectiveTab === 'overview' ? 'active' : ''}`}
+                                                type="button"
+                                                onClick={() => setActiveTab('overview')}
+                                            >
+                                                Overview
+                                            </button>
+                                        </li>
+                                        <li className="nav-item" role="presentation">
+                                            <button
+                                                className={`nav-link ${effectiveTab === 'qna' ? 'active' : ''}`}
+                                                type="button"
+                                                onClick={() => setActiveTab('qna')}
+                                            >
+                                                Q&A
+                                            </button>
+                                        </li>
+                                        <li className="nav-item" role="presentation">
+                                            <button
+                                                className={`nav-link ${effectiveTab === 'announcements' ? 'active' : ''}`}
+                                                type="button"
+                                                onClick={() => setActiveTab('announcements')}
+                                            >
+                                                Announcements
+                                            </button>
+                                        </li>
+                                        <li className="nav-item" role="presentation">
+                                            <button
+                                                className={`nav-link ${effectiveTab === 'reviews' ? 'active' : ''}`}
+                                                type="button"
+                                                onClick={() => setActiveTab('reviews')}
+                                            >
+                                                Reviews
+                                            </button>
+                                        </li>
+                                    </ul>
 
-                    {/* Tab Panes */}
-                    <div className="tab-content" id="pills-tabContent">
-                        {activeTab === 'curriculum' && (
-                            <div className="tab-pane fade show active d-lg-none">
-                                <CurriculumSidebar
-                                    course={course}
-                                    activeLesson={activeLesson}
-                                    setActiveLesson={setActiveLesson}
-                                    completedIds={completedIds}
-                                    toggleCompletion={toggleCompletion}
-                                />
+                                    <div className="tab-content" id="pills-tabContent">
+                                        {effectiveTab === 'overview' && (
+                                            <div className="tab-pane fade show active">
+                                                <OverviewTab course={course} activeLesson={activeLesson} lessonCount={lessonCount} />
+                                            </div>
+                                        )}
+                                        {effectiveTab === 'qna' && (
+                                            <div className="tab-pane fade show active">
+                                                <QnaTab course={course} activeLesson={activeLesson} initialQuestions={initialQuestions} />
+                                            </div>
+                                        )}
+                                        {effectiveTab === 'announcements' && (
+                                            <div className="tab-pane fade show active">
+                                                <AnnouncementsTab course={course} initialAnnouncements={initialAnnouncements} />
+                                            </div>
+                                        )}
+                                        {effectiveTab === 'reviews' && (
+                                            <div className="tab-pane fade show active">
+                                                <ReviewsTab course={course} initialReviews={initialReviews} />
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
-                        )}
 
-                        {activeTab === 'overview' && (
-                            <div className="tab-pane fade show active">
-                                <OverviewTab course={course} activeLesson={activeLesson} lessonCount={lessonCount} />
+                            {/* Kolom 2: Content Course */}
+                            <div className="col-12 col-md-6">
+                                <div
+                                    className="video_course_content shadow-sm rounded-3"
+                                    style={{
+                                        position: 'sticky',
+                                        top: '80px',
+                                        maxHeight: 'calc(100vh - 100px)',
+                                        overflowY: 'auto',
+                                    }}
+                                >
+                                    <CurriculumSidebar
+                                        course={course}
+                                        activeLesson={activeLesson}
+                                        setActiveLesson={setActiveLesson}
+                                        completedIds={completedIds}
+                                        toggleCompletion={toggleCompletion}
+                                        isStatic={true}
+                                    />
+                                </div>
                             </div>
-                        )}
-
-                        {activeTab === 'qna' && (
-                            <div className="tab-pane fade show active">
-                                <QnaTab course={course} activeLesson={activeLesson} initialQuestions={initialQuestions} />
-                            </div>
-                        )}
-
-                        {activeTab === 'announcements' && (
-                            <div className="tab-pane fade show active">
-                                <AnnouncementsTab course={course} initialAnnouncements={initialAnnouncements} />
-                            </div>
-                        )}
-
-                        {activeTab === 'reviews' && (
-                            <div className="tab-pane fade show active">
-                                <ReviewsTab course={course} initialReviews={initialReviews} />
-                            </div>
-                        )}
+                        </div>
                     </div>
-                </div>
+                ) : (
+                    /* Standard Mode: Original single-column tab layout */
+                    <div className="video_tabs_area">
+                        <ul className="nav nav-pills" id="pills-tab2" role="tablist">
+                            <li className="nav-item d-lg-none" role="presentation">
+                                <button
+                                    className={`nav-link ${activeTab === 'curriculum' ? 'active' : ''}`}
+                                    type="button"
+                                    onClick={() => setActiveTab('curriculum')}
+                                >
+                                    Course Content
+                                </button>
+                            </li>
+                            <li className="nav-item" role="presentation">
+                                <button
+                                    className={`nav-link ${activeTab === 'overview' ? 'active' : ''}`}
+                                    type="button"
+                                    onClick={() => setActiveTab('overview')}
+                                >
+                                    Overview
+                                </button>
+                            </li>
+                            <li className="nav-item" role="presentation">
+                                <button
+                                    className={`nav-link ${activeTab === 'qna' ? 'active' : ''}`}
+                                    type="button"
+                                    onClick={() => setActiveTab('qna')}
+                                >
+                                    Q&A
+                                </button>
+                            </li>
+                            <li className="nav-item" role="presentation">
+                                <button
+                                    className={`nav-link ${activeTab === 'announcements' ? 'active' : ''}`}
+                                    type="button"
+                                    onClick={() => setActiveTab('announcements')}
+                                >
+                                    Announcements
+                                </button>
+                            </li>
+                            <li className="nav-item" role="presentation">
+                                <button
+                                    className={`nav-link ${activeTab === 'reviews' ? 'active' : ''}`}
+                                    type="button"
+                                    onClick={() => setActiveTab('reviews')}
+                                >
+                                    Reviews
+                                </button>
+                            </li>
+                        </ul>
+
+                        {/* Tab Panes */}
+                        <div className="tab-content" id="pills-tabContent">
+                            {activeTab === 'curriculum' && (
+                                <div className="tab-pane fade show active d-lg-none">
+                                    <div className="video_course_content">
+                                        <CurriculumSidebar
+                                            course={course}
+                                            activeLesson={activeLesson}
+                                            setActiveLesson={setActiveLesson}
+                                            completedIds={completedIds}
+                                            toggleCompletion={toggleCompletion}
+                                            isStatic={true}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'overview' && (
+                                <div className="tab-pane fade show active">
+                                    <OverviewTab course={course} activeLesson={activeLesson} lessonCount={lessonCount} />
+                                </div>
+                            )}
+
+                            {activeTab === 'qna' && (
+                                <div className="tab-pane fade show active">
+                                    <QnaTab course={course} activeLesson={activeLesson} initialQuestions={initialQuestions} />
+                                </div>
+                            )}
+
+                            {activeTab === 'announcements' && (
+                                <div className="tab-pane fade show active">
+                                    <AnnouncementsTab course={course} initialAnnouncements={initialAnnouncements} />
+                                </div>
+                            )}
+
+                            {activeTab === 'reviews' && (
+                                <div className="tab-pane fade show active">
+                                    <ReviewsTab course={course} initialReviews={initialReviews} />
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
             </div>
 
-            {/* Fixed Right Curriculum Sidebar (25% Width on Desktop) */}
+            {/* Fixed Right Curriculum Sidebar (25% Width on Desktop, slides out in Theater Mode) */}
             <div className="d-none d-lg-block">
                 <CurriculumSidebar
                     course={course}
@@ -191,6 +343,7 @@ export default function CoursePlayer({
                     setActiveLesson={setActiveLesson}
                     completedIds={completedIds}
                     toggleCompletion={toggleCompletion}
+                    isTheaterMode={isTheaterMode}
                 />
             </div>
         </section>

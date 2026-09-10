@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from '@inertiajs/react';
+import { getImageUrl } from '@/Utils/formatters';
 
 export default function CourseSidebar({
     course,
@@ -13,13 +14,8 @@ export default function CourseSidebar({
     const finalPrice = hasDiscount ? Number(course.discount) : Number(course.price || 0);
     const isFree = !course.price || Number(course.price) === 0;
 
-    const thumbnail = course.thumbnail
-        ? (course.thumbnail.startsWith('/') ? course.thumbnail : `/${course.thumbnail}`)
-        : '/frontend/assets/images/courses_img_1.jpg';
-
-    const instructorImg = course.instructor?.image
-        ? (course.instructor.image.startsWith('/') ? course.instructor.image : `/${course.instructor.image}`)
-        : '/default-files/avatar.png';
+    const thumbnail = getImageUrl(course.thumbnail, '/frontend/assets/images/courses_img_1.jpg');
+    const instructorImg = getImageUrl(course.instructor?.image, '/default-files/avatar.png');
 
     const formatDuration = (mins) => {
         if (!mins) return 'Self-paced';

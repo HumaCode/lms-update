@@ -1,6 +1,7 @@
 import React from 'react';
 import { Head, Link } from '@inertiajs/react';
 import StudentDashboardLayout from '../../../Layouts/StudentDashboardLayout';
+import { getImageUrl } from '@/Utils/formatters';
 
 export default function EnrolledCourses({ enrollments = [] }) {
     return (
@@ -8,20 +9,17 @@ export default function EnrolledCourses({ enrollments = [] }) {
             <Head title="Enrolled Courses - Student Dashboard" />
 
             <div className="card border-0 shadow-sm rounded-3 bg-white p-4">
-                <div className="d-flex justify-content-between align-items-center mb-4">
-                    <h5 className="fw-bold text-dark mb-0">My Courses ({enrollments.length})</h5>
-                    <Link href={route('courses.index')} className="btn btn-outline-primary btn-sm">
-                        Browse More Courses
-                    </Link>
+                <div className="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+                    <h5 className="fw-bold text-dark mb-0">My Enrolled Courses ({enrollments.length})</h5>
                 </div>
 
                 {enrollments.length === 0 ? (
                     <div className="text-center py-5">
-                        <i className="fas fa-graduation-cap fs-1 text-muted mb-3 opacity-50"></i>
-                        <h5 className="fw-bold text-dark">No courses enrolled yet</h5>
-                        <p className="text-muted small mb-4">Start learning today by exploring our extensive course library.</p>
-                        <Link href={route('courses.index')} className="btn btn-primary px-4">
-                            Explore Catalog
+                        <i className="fas fa-book-reader fa-3x text-muted mb-3 opacity-50"></i>
+                        <h6 className="fw-semibold text-secondary">No courses enrolled yet</h6>
+                        <p className="text-muted small">Explore our course catalog and start learning today!</p>
+                        <Link href={route('courses.index')} className="btn btn-primary btn-sm px-4 rounded-pill mt-2">
+                            Browse Courses
                         </Link>
                     </div>
                 ) : (
@@ -35,7 +33,7 @@ export default function EnrolledCourses({ enrollments = [] }) {
                                     <div className="card h-100 border-0 shadow-sm rounded-3 overflow-hidden transition-all hover-lift">
                                         <div className="position-relative" style={{ height: '170px' }}>
                                             <img
-                                                src={course.thumbnail ? `/${course.thumbnail}` : '/frontend/assets/images/courses_img_1.jpg'}
+                                                src={getImageUrl(course.thumbnail, '/frontend/assets/images/courses_img_1.jpg')}
                                                 alt={course.title}
                                                 className="w-100 h-100 object-fit-cover"
                                                 onError={(e) => {

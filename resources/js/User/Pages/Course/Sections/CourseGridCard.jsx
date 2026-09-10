@@ -1,18 +1,14 @@
 import React from 'react';
 import { Link } from '@inertiajs/react';
+import { getImageUrl } from '@/Utils/formatters';
 
 export default function CourseGridCard({ course }) {
     const hasDiscount = course.discount && Number(course.discount) > 0;
     const finalPrice = hasDiscount ? Number(course.discount) : Number(course.price || 0);
     const isFree = !course.price || Number(course.price) === 0;
 
-    const thumbnail = course.thumbnail
-        ? (course.thumbnail.startsWith('/') ? course.thumbnail : `/${course.thumbnail}`)
-        : '/frontend/assets/images/courses_img_1.jpg';
-
-    const instructorImg = course.instructor?.image
-        ? (course.instructor.image.startsWith('/') ? course.instructor.image : `/${course.instructor.image}`)
-        : '/frontend/assets/images/course_instructor_img.jpg';
+    const thumbnail = getImageUrl(course.thumbnail, '/frontend/assets/images/courses_img_1.jpg');
+    const instructorImg = getImageUrl(course.instructor?.image, '/frontend/assets/images/course_instructor_img.jpg');
 
     const formatDuration = (val) => {
         if (!val) return '15 Hours';
@@ -24,12 +20,11 @@ export default function CourseGridCard({ course }) {
         return `${num} Mins`;
     };
 
-    const ratingVal = course.reviews_avg_rating && Number(course.reviews_avg_rating) > 0
-        ? Number(course.reviews_avg_rating)
-        : 4.8;
+    const hasRating = course.reviews_avg_rating !== null && course.reviews_avg_rating !== undefined && Number(course.reviews_avg_rating) > 0;
+    const ratingVal = hasRating ? Number(course.reviews_avg_rating) : 0;
 
-    const lessonsCount = course.lessons_count || (course.lessons ? course.lessons.length : 24);
-    const studentsCount = course.enrollments_count || 38;
+    const lessonsCount = course.lessons_count ?? (course.lessons ? course.lessons.length : 0);
+    const studentsCount = course.enrollments_count ?? (course.enrollments ? course.enrollments.length : 0);
 
     return (
         <div
@@ -105,9 +100,9 @@ export default function CourseGridCard({ course }) {
                         {[1, 2, 3, 4, 5].map((star) => (
                             <i
                                 key={star}
-                                className="fas fa-star"
+                                className={hasRating && star <= Math.round(ratingVal) ? 'fas fa-star' : 'far fa-star'}
                                 style={{
-                                    color: star <= Math.round(ratingVal) ? '#F59E0B' : '#E2E8F0',
+                                    color: hasRating && star <= Math.round(ratingVal) ? '#F59E0B' : '#CBD5E1',
                                     fontSize: '12px',
                                 }}
                             />

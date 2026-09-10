@@ -74,6 +74,7 @@ class CourseContentController extends Controller
         $lesson->instructor_id = Auth::user()->id;
         $lesson->course_id = $request->course_id;
         $lesson->chapter_id = $request->chapter_id;
+        $lesson->lesson_type = $request->input('lesson_type', 'lesson');
         $lesson->order = CourseChapterLession::where('chapter_id', $request->chapter_id)->count() + 1;
         $lesson->save();
 
@@ -169,6 +170,9 @@ class CourseContentController extends Controller
         $lesson->instructor_id = Auth::user()->id;
         $lesson->course_id = $request->course_id;
         $lesson->chapter_id = $request->chapter_id;
+        if (!$lesson->lesson_type) {
+            $lesson->lesson_type = $request->input('lesson_type', 'lesson');
+        }
         $lesson->save();
 
         notyf()->success('Lesson updated successfully!');

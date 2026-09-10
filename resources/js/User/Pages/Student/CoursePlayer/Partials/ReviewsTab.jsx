@@ -37,6 +37,8 @@ export default function ReviewsTab({ course, initialReviews = [] }) {
     // Check if current logged-in user has already submitted a review
     const hasUserReviewed = currentUser && reviews.some((rev) => (rev.user_id === currentUser.id || rev.user?.id === currentUser.id || rev.user?.name === currentUser.name || rev.user?.name === 'Anda'));
 
+    const hasReviews = reviews && reviews.length > 0;
+
     // Compute rating breakdown stats
     const stats = useMemo(() => {
         const total = reviews.length;
@@ -176,23 +178,23 @@ export default function ReviewsTab({ course, initialReviews = [] }) {
             <div className="row align-items-center mb-5 pb-3">
                 {/* Left side: Avg Rating score */}
                 <div className="col-md-3 text-center text-md-start mb-4 mb-md-0 pe-md-4">
-                    <div className="display-3 fw-bold" style={{ color: '#c25e00', lineHeight: 1 }}>
-                        {stats.avgRating || '4.6'}
+                    <div className="display-3 fw-bold" style={{ color: hasReviews ? '#c25e00' : '#64748b', lineHeight: 1 }}>
+                        {hasReviews ? stats.avgRating : '0.0'}
                     </div>
                     <div className="d-flex align-items-center justify-content-center justify-content-md-start gap-1 my-2">
                         {[1, 2, 3, 4, 5].map((star) => (
                             <i
                                 key={star}
-                                className="fas fa-star"
+                                className={hasReviews && star <= Math.round(Number(stats.avgRating)) ? 'fas fa-star' : 'far fa-star'}
                                 style={{
-                                    color: star <= Math.round(stats.avgRating || 4.6) ? '#c25e00' : '#cbd5e1',
+                                    color: hasReviews && star <= Math.round(Number(stats.avgRating)) ? '#c25e00' : '#cbd5e1',
                                     fontSize: '15px'
                                 }}
                             ></i>
                         ))}
                     </div>
-                    <div className="fw-semibold small" style={{ color: '#c25e00' }}>
-                        Peringkat Kursus
+                    <div className="fw-semibold small" style={{ color: hasReviews ? '#c25e00' : '#64748b' }}>
+                        {hasReviews ? 'Peringkat Kursus' : 'Belum Ada Peringkat'}
                     </div>
                 </div>
 
@@ -200,8 +202,7 @@ export default function ReviewsTab({ course, initialReviews = [] }) {
                 <div className="col-md-9 ps-md-2">
                     {[5, 4, 3, 2, 1].map((s) => {
                         const pctData = stats.stars[s] || { pct: 0 };
-                        // Default presentation values matching mockup if single review or early stats
-                        const displayPct = reviews.length === 0 ? (s === 5 ? 69 : s === 4 ? 21 : s === 3 ? 6 : 2) : pctData.pct;
+                        const displayPct = hasReviews ? pctData.pct : 0;
 
                         return (
                             <div key={s} className="d-flex align-items-center gap-3 mb-2">
@@ -219,7 +220,7 @@ export default function ReviewsTab({ course, initialReviews = [] }) {
                                     {[1, 2, 3, 4, 5].map((star) => (
                                         <i
                                             key={star}
-                                            className="fas fa-star"
+                                            className={star <= s ? 'fas fa-star' : 'far fa-star'}
                                             style={{
                                                 color: star <= s ? '#c25e00' : '#cbd5e1',
                                                 fontSize: '13px'

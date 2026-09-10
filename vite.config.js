@@ -29,4 +29,8 @@ export default defineConfig({
             '@': path.resolve(__dirname, './resources/js'),
         },
     },
+    server: {
+        port: 5180,
+        host: 'localhost',
+    },
 });

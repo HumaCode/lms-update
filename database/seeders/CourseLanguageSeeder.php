@@ -15,13 +15,15 @@ class CourseLanguageSeeder extends Seeder
     {
         $languages = [
             'English',
+            'Bangla',
+            'Hindi',
+            'Arabic',
             'Indonesian',
             'Spanish',
             'French',
             'German',
             'Japanese',
             'Mandarin',
-            'Arabic',
         ];
 
         foreach ($languages as $name) {

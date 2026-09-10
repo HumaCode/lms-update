@@ -8,4 +8,8 @@ use Illuminate\Database\Eloquent\Model;
 class CourseChapterLession extends Model
 {
     use HasFactory;
+
+    protected $attributes = [
+        'lesson_type' => 'lesson',
+    ];
 }

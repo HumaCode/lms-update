@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\CourseCategory;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
 
 class CategorySeeder extends Seeder
 {
@@ -13,86 +12,109 @@ class CategorySeeder extends Seeder
      */
     public function run(): void
     {
+        // Clean up any dummy categories previously created (id > 23)
+        CourseCategory::where('id', '>', 23)->delete();
+
         $categories = [
             [
-                'name' => 'Web Development',
-                'icon' => 'ti ti-code',
-                'show_at_trending' => 1,
-                'status' => 1,
+                'id' => 8,
+                'name' => 'Development',
+                'slug' => 'development',
+                'image' => '/uploads/educore_673570c8d2427.png',
+                'icon' => null,
+                'show_at_trending' => true,
+                'status' => true,
                 'subcategories' => [
-                    'Frontend Development',
-                    'Backend Development',
-                    'Full Stack Development',
-                    'API & Web Services',
+                    ['id' => 9, 'name' => 'HTML & CSS', 'slug' => 'html-css', 'image' => '/uploads/educore_673570de7ee17.png'],
+                    ['id' => 10, 'name' => 'JavaScript', 'slug' => 'javascript', 'image' => '/uploads/educore_673570ee3b1a4.png'],
+                    ['id' => 11, 'name' => 'PHP', 'slug' => 'php', 'image' => '/uploads/educore_673570fa406d3.png'],
+                    ['id' => 12, 'name' => 'Python', 'slug' => 'python', 'image' => '/uploads/educore_673571052ec2f.png'],
                 ],
             ],
             [
-                'name' => 'Mobile Development',
-                'icon' => 'ti ti-device-mobile',
-                'show_at_trending' => 1,
-                'status' => 1,
+                'id' => 13,
+                'name' => 'Data Analytics',
+                'slug' => 'data-analytics',
+                'image' => '/uploads/educore_6735712e8f743.png',
+                'icon' => null,
+                'show_at_trending' => true,
+                'status' => true,
                 'subcategories' => [
-                    'Android Development',
-                    'iOS Development',
-                    'Flutter & Dart',
-                    'React Native',
+                    ['id' => 14, 'name' => 'Data Analysis', 'slug' => 'data-analysis', 'image' => null],
+                    ['id' => 15, 'name' => 'Data Science', 'slug' => 'data-science', 'image' => '/uploads/educore_6735717fa8bc2.png'],
+                    ['id' => 16, 'name' => 'Machine Learning', 'slug' => 'machine-learning', 'image' => '/uploads/educore_6735718b8fccd.png'],
+                    ['id' => 17, 'name' => 'Big Data', 'slug' => 'big-data', 'image' => '/uploads/educore_6735719c611d2.png'],
                 ],
             ],
             [
-                'name' => 'Data Science & AI',
-                'icon' => 'ti ti-brain',
-                'show_at_trending' => 1,
-                'status' => 1,
-                'subcategories' => [
-                    'Machine Learning',
-                    'Data Analysis',
-                    'Artificial Intelligence',
-                    'Python Data Science',
-                ],
+                'id' => 18,
+                'name' => 'Business',
+                'slug' => 'business',
+                'image' => '/uploads/educore_673571b795143.png',
+                'icon' => null,
+                'show_at_trending' => true,
+                'status' => true,
+                'subcategories' => [],
             ],
             [
-                'name' => 'Design & UI/UX',
-                'icon' => 'ti ti-palette',
-                'show_at_trending' => 1,
-                'status' => 1,
-                'subcategories' => [
-                    'UI/UX Design',
-                    'Figma & Prototyping',
-                    'Graphic Design',
-                    '3D & Animation',
-                ],
+                'id' => 19,
+                'name' => 'Design & Creative Arts',
+                'slug' => 'design-creative-arts',
+                'image' => '/uploads/educore_673571c776daa.png',
+                'icon' => null,
+                'show_at_trending' => true,
+                'status' => true,
+                'subcategories' => [],
             ],
             [
-                'name' => 'Cybersecurity & IT',
-                'icon' => 'ti ti-shield-lock',
-                'show_at_trending' => 0,
-                'status' => 1,
-                'subcategories' => [
-                    'Ethical Hacking',
-                    'Network Security',
-                    'Cloud Security',
-                    'DevOps & System Admin',
-                ],
+                'id' => 20,
+                'name' => 'Health & Wellness',
+                'slug' => 'health-wellness',
+                'image' => '/uploads/educore_673571d845b90.png',
+                'icon' => null,
+                'show_at_trending' => true,
+                'status' => true,
+                'subcategories' => [],
             ],
             [
-                'name' => 'Business & Marketing',
-                'icon' => 'ti ti-chart-line',
-                'show_at_trending' => 0,
-                'status' => 1,
-                'subcategories' => [
-                    'Digital Marketing',
-                    'SEO & Content Strategy',
-                    'Financial Analysis',
-                    'Project Management',
-                ],
+                'id' => 21,
+                'name' => 'Personal Development',
+                'slug' => 'personal-development',
+                'image' => '/uploads/educore_6735720e75d4d.png',
+                'icon' => null,
+                'show_at_trending' => true,
+                'status' => true,
+                'subcategories' => [],
+            ],
+            [
+                'id' => 22,
+                'name' => 'Languages & Culture',
+                'slug' => 'languages-culture',
+                'image' => '/uploads/educore_673572348cdb9.png',
+                'icon' => null,
+                'show_at_trending' => true,
+                'status' => true,
+                'subcategories' => [],
+            ],
+            [
+                'id' => 23,
+                'name' => 'Finance & Investing',
+                'slug' => 'finance-investing',
+                'image' => '/uploads/educore_6735724f7af9f.png',
+                'icon' => null,
+                'show_at_trending' => true,
+                'status' => true,
+                'subcategories' => [],
             ],
         ];
 
         foreach ($categories as $catData) {
             $parent = CourseCategory::updateOrCreate(
-                ['slug' => Str::slug($catData['name'])],
+                ['id' => $catData['id']],
                 [
                     'name' => $catData['name'],
+                    'slug' => $catData['slug'],
+                    'image' => $catData['image'],
                     'icon' => $catData['icon'],
                     'parent_id' => null,
                     'show_at_trending' => $catData['show_at_trending'],
@@ -101,15 +123,17 @@ class CategorySeeder extends Seeder
             );
 
             if (!empty($catData['subcategories'])) {
-                foreach ($catData['subcategories'] as $subName) {
+                foreach ($catData['subcategories'] as $subData) {
                     CourseCategory::updateOrCreate(
-                        ['slug' => Str::slug($subName)],
+                        ['id' => $subData['id']],
                         [
-                            'name' => $subName,
+                            'name' => $subData['name'],
+                            'slug' => $subData['slug'],
+                            'image' => $subData['image'],
                             'icon' => null,
                             'parent_id' => $parent->id,
-                            'show_at_trending' => 0,
-                            'status' => 1,
+                            'show_at_trending' => false,
+                            'status' => true,
                         ]
                     );
                 }

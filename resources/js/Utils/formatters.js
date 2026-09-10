@@ -71,4 +71,14 @@ export function timeAgo(date) {
     return `${years} tahun yang lalu`;
 }
 
-
+/**
+ * Resolves an image URL handling absolute HTTP URLs, relative paths, and fallbacks.
+ * @param {string|null} url
+ * @param {string} defaultImg
+ */
+export function getImageUrl(url, defaultImg = '/frontend/assets/images/courses_img_1.jpg') {
+    if (!url || typeof url !== 'string') return defaultImg;
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    if (url.startsWith('/')) return url;
+    return `/${url}`;
+}

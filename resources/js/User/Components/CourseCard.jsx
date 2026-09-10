@@ -32,7 +32,8 @@ export default function CourseCard({ course }) {
         return `${h}h ${m}m`;
     };
 
-    const avgRating = course.reviews_avg_rating ? Math.round(course.reviews_avg_rating) : 5;
+    const hasRating = course.reviews_avg_rating !== null && course.reviews_avg_rating !== undefined && Number(course.reviews_avg_rating) > 0;
+    const avgRating = hasRating ? Math.round(Number(course.reviews_avg_rating)) : 0;
 
     const getImageUrl = (url, defaultImg = '/frontend/assets/images/courses_img_1.jpg') => {
         if (!url) return defaultImg;
@@ -64,10 +65,10 @@ export default function CourseCard({ course }) {
                         {[...Array(5)].map((_, i) => (
                             <i
                                 key={i}
-                                className={i < avgRating ? 'fas fa-star' : 'far fa-star'}
+                                className={hasRating && i < avgRating ? 'fas fa-star' : 'far fa-star'}
                             ></i>
                         ))}
-                        <span>({course.reviews_avg_rating ? Number(course.reviews_avg_rating).toFixed(1) : '5.0'} Rating)</span>
+                        <span>({hasRating ? Number(course.reviews_avg_rating).toFixed(1) : '0.0'} Rating)</span>
                     </p>
                 </div>
 
@@ -75,8 +76,8 @@ export default function CourseCard({ course }) {
                     {course.title}
                 </Link>
                 <ul>
-                    <li>{course.lessons_count || 0} Lessons</li>
-                    <li>{course.enrollments_count || 0} Students</li>
+                    <li>{course.lessons_count ?? 0} Lessons</li>
+                    <li>{course.enrollments_count ?? 0} Students</li>
                 </ul>
                 <div className="author">
                     <div className="img">

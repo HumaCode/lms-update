@@ -24,7 +24,7 @@ export default function OverviewTab({ course, activeLesson, lessonCount }) {
                             </td>
                             <td>
                                 <p className="mb-1">Skill level: {course?.level?.name || 'All Levels'}</p>
-                                <p className="mb-1">Students: {course?.enrollments_count ?? 1}</p>
+                                <p className="mb-1">Students: {course?.enrollments_count ?? 0}</p>
                                 <p className="mb-1">Languages: {course?.language?.name || 'English'}</p>
                                 <p className="mb-0">Captions: Yes</p>
                             </td>

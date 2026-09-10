@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
 import Header from '../Components/Header';
 import Footer from '../Components/Footer';
+import CustomPointer from '../Components/CustomPointer';
 import { useFlashNotification } from '../../Hooks/useFlashNotification';
 
 export default function StudentDashboardLayout({ children, title, subtitle }) {
@@ -16,6 +17,7 @@ export default function StudentDashboardLayout({ children, title, subtitle }) {
 
     return (
         <div className="student_dashboard_wrapper d-flex flex-column min-vh-100">
+            <CustomPointer />
             <Header />
 
             {/* Breadcrumb Banner */}

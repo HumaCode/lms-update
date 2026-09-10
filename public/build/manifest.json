@@ -25,7 +25,7 @@
     "isEntry": true
   },
   "resources/css/frontend.css": {
-    "file": "assets/frontend-DjP8tj1B.css",
+    "file": "assets/frontend-CjdPacZx.css",
     "src": "resources/css/frontend.css",
     "isEntry": true
   },
@@ -69,13 +69,16 @@
     ]
   },
   "resources/js/app.jsx": {
-    "file": "assets/app-CXNRP8KC.js",
+    "file": "assets/app-BWSHEpWg.js",
     "name": "app",
     "src": "resources/js/app.jsx",
     "isEntry": true,
     "imports": [
       "__commonjsHelpers-BosuxZz1.js",
       "_bootstrap-DP082uzN.js"
+    ],
+    "css": [
+      "assets/app-BK2G8fQp.css"
     ]
   },
   "resources/js/frontend/course.js": {

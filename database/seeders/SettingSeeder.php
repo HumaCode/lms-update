@@ -266,7 +266,18 @@ class SettingSeeder extends Seeder
         );
         
 
-        Setting::insert($settings);
-        PaymentSetting::insert($payment_settings);
+        foreach ($settings as $setting) {
+            Setting::updateOrCreate(
+                ['key' => $setting['key']],
+                ['value' => $setting['value']]
+            );
+        }
+
+        foreach ($payment_settings as $payment_setting) {
+            PaymentSetting::updateOrCreate(
+                ['key' => $payment_setting['key']],
+                ['value' => $payment_setting['value']]
+            );
+        }
     }
 }

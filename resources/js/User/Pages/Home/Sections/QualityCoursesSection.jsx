@@ -336,14 +336,20 @@ export default function QualityCoursesSection({ featuredInstructor, courses = []
                                                             <div className="wsus__single_courses_text_3">
                                                                 {/* Star Ratings */}
                                                                 <div className="rating_area" style={{ marginBottom: '10px' }}>
-                                                                    <p className="rating" style={{ color: '#ff9800', margin: 0 }}>
-                                                                        <i className="fas fa-star" style={{ color: '#ff9800', marginRight: '2px' }}></i>
-                                                                        <i className="fas fa-star" style={{ color: '#ff9800', marginRight: '2px' }}></i>
-                                                                        <i className="fas fa-star" style={{ color: '#ff9800', marginRight: '2px' }}></i>
-                                                                        <i className="fas fa-star" style={{ color: '#ff9800', marginRight: '2px' }}></i>
-                                                                        <i className="fas fa-star" style={{ color: '#ff9800', marginRight: '6px' }}></i>
-                                                                        <span style={{ color: '#1e1e2f', fontSize: '14px', fontWeight: '500' }}>
-                                                                            ({course.reviews_avg_rating ? Number(course.reviews_avg_rating).toFixed(1) : '4.8'} Rating)
+                                                                    <p className="rating" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                        {[1, 2, 3, 4, 5].map((star) => {
+                                                                            const hasRating = course.reviews_avg_rating && Number(course.reviews_avg_rating) > 0;
+                                                                            const isFilled = hasRating && star <= Math.round(Number(course.reviews_avg_rating));
+                                                                            return (
+                                                                                <i
+                                                                                    key={star}
+                                                                                    className={isFilled ? 'fas fa-star' : 'far fa-star'}
+                                                                                    style={{ color: isFilled ? '#ff9800' : '#cbd5e1', fontSize: '13px' }}
+                                                                                ></i>
+                                                                            );
+                                                                        })}
+                                                                        <span style={{ color: '#64748b', fontSize: '13px', fontWeight: '500', marginLeft: '4px' }}>
+                                                                            ({course.reviews_avg_rating ? Number(course.reviews_avg_rating).toFixed(1) : '0.0'} Rating)
                                                                         </span>
                                                                     </p>
                                                                 </div>
@@ -370,10 +376,10 @@ export default function QualityCoursesSection({ featuredInstructor, courses = []
                                                                 {/* Lessons & Students */}
                                                                 <ul style={{ display: 'flex', gap: '20px', margin: '0 0 16px', padding: 0 }}>
                                                                     <li style={{ listStyle: 'none' }}>
-                                                                        {course.lessons_count || 24} Lessons
+                                                                        {course.lessons_count ?? 0} Lessons
                                                                     </li>
                                                                     <li style={{ listStyle: 'none' }}>
-                                                                        {course.enrollments_count || 38} Student
+                                                                        {course.enrollments_count ?? 0} Student
                                                                     </li>
                                                                 </ul>
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import UserLayout from '../../Layouts/UserLayout';
+import { getImageUrl } from '@/Utils/formatters';
 
 export default function CartPage({ cart }) {
     const cartItems = cart?.data || [];
@@ -78,7 +79,7 @@ export default function CartPage({ cart }) {
                                                 >
                                                     <div className="d-flex align-items-center gap-3">
                                                         <img
-                                                            src={course.thumbnail ? `/${course.thumbnail}` : '/frontend/assets/images/courses_img_1.jpg'}
+                                                            src={getImageUrl(course.thumbnail, '/frontend/assets/images/courses_img_1.jpg')}
                                                             alt={course.title}
                                                             className="rounded-3"
                                                             style={{ width: '90px', height: '65px', objectFit: 'cover' }}

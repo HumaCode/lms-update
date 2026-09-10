@@ -3,6 +3,7 @@ import { Head } from '@inertiajs/react';
 import axios from 'axios';
 import { Notyf } from 'notyf';
 
+import CustomPointer from '@/User/Components/CustomPointer';
 import PlayerHeader from './Partials/PlayerHeader';
 import VideoDisplay from './Partials/VideoDisplay';
 import CurriculumSidebar from './Partials/CurriculumSidebar';
@@ -76,6 +77,7 @@ export default function CoursePlayer({
 
     return (
         <section className="wsus__course_video">
+            <CustomPointer />
             <Head title={`${activeLesson?.title || 'Player'} - ${course.title}`} />
 
             {/* Fixed Header */}

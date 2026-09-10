@@ -7,60 +7,48 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
-## About Laravel
+# LMS Update Project
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+A modern Learning Management System (LMS) built with **Laravel**, **Inertia.js**, and **React**.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+---
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## 🚀 Rincian Fitur & Pembaruan Terbaru (Changelog)
 
-## Learning Laravel
+### 1. 📢 Sistem Pengumuman Kursus (Announcements System)
+- **Model & Database**: Dibuat tabel `course_announcements` dengan kolom `content` bertipe `LONGTEXT` untuk mendukung penyimpanan teks kaya (Rich Text) dan gambar berukuran besar.
+- **Wizard Manajemen Instruktur**: Ditambahkan langkah ke-3 **Announcements** pada form pengeditan kursus instruktur.
+- **Manajemen Gambar Otomatis (`unlink`)**: Saat pengumuman dihapus, seluruh file gambar yang terlampir pada isi HTML pengumuman akan secara otomatis di-`unlink()` dari direktori server.
+- **Tampilan Siswa**: Dibuat `AnnouncementsTab.jsx` pada Course Player siswa untuk menampilkan pengumuman terbaru dengan indikator waktu relatif.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### 2. 💬 Diskusi & Q&A (Question & Answer System)
+- **Format Waktu Relatif**: Menampilkan waktu relatif Bahasa Indonesia (*"Baru saja"*, *"5 menit yang lalu"*, *"3 hari yang lalu"*) menggunakan helper `timeAgo()`.
+- **Fitur Load More ("Lihat Lainnya")**: Secara default hanya menampilkan 10 pertanyaan teratas, dan menyediakan tombol *Lihat lainnya (+10)* untuk menjaga performa rendering tetap cepat pada data dalam jumlah besar.
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+### 3. ⭐ Sistem Ulasan Peserta & Tanggapan (Reviews & Persistent Votes)
+- **Desain Modern Udemy-Style**:
+  - Ringkasan skor rata-rata dengan breakdown persentase bintang (1-5 Bintang).
+  - Avatar lingkaran dengan **Inisial Dua Huruf Nama User** (misal: *Jhon Deo* -> `JD`).
+  - Fitur pencarian ulasan (*Cari ulasan*) dan filter berdasarkan peringkat bintang.
+  - Pembatasan 1 ulasan per user per kursus dengan notifikasi ucapan terima kasih.
+  - Format judul jumlah ulasan `Reviews (1)` (tanpa `0` di depan).
+- **Fitur Load More**: Default 10 data ulasan terbaru dengan tombol *Lebih banyak ulasan*.
+- **Tanggapan Interaktif & Persisten (`review_votes`)**:
+  - Dibuat tabel & model `ReviewVote` dengan constraint `unique(['user_id', 'review_id'])`.
+  - User hanya bisa memilih **satu** tanggapan per ulasan (*Sangat Membantu* / *Kurang Membantu*). Tombol sebaliknya akan otomatis terkunci.
+  - Tanggapan tersimpan secara permanen di database dan tetap aktif saat reload halaman maupun re-login.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### 4. 🎓 Dashboard & Modal Detail Review Instruktur
+- **Tombol Review di Tabel Instruktur**: Tombol `Review` berwarna oranye (`#c25e00`) pada daftar kursus instruktur.
+- **Modal XXL Detail Review (`InstructorReviewsModal.jsx`)**:
+  - Tampilan ekstra luas (`maxWidth: 1300px`) dengan tabel berukuran pas (`tableLayout: 'fixed'`).
+  - Menampilkan nama kolom **User** (bukan *Siswa*).
+  - Menampilkan rincian statistik ulasan yang dilaporkan, ulasan positif, serta total tanggapan **Likes & Dislikes** yang dihitung secara akurat dari database.
 
-## Laravel Sponsors
+---
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## 🛠️ Teknologi yang Digunakan
+- **Backend**: PHP 8.x, Laravel 11.x, Eloquent ORM
+- **Frontend**: Inertia.js, React, Bootstrap 5, FontAwesome Icons
+- **Utility**: Custom `timeAgo` formatter, SweetAlert2 / Notyf Notifications, Axios AJAX
 
-### Premium Partners
-
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).

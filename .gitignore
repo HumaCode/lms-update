@@ -4,3 +4,17 @@
 __pycache__/
 *.pyc
 database/pg_columns.tsv
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Laravel / Node dependencies & builds
+/node_modules
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
+/vendor
+/.phpunit.cache

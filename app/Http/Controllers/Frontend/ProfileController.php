@@ -37,10 +37,32 @@ class ProfileController extends Controller
     function profileUpdate(ProfileUpdateRequest $request) : RedirectResponse {
         $user = Auth::user();
 
-        if($request->hasFile('avatar')) {
-            $avatarPath = $this->uploadFile($request->file('avatar'));
-            $this->deleteFile($user->image);
-            $user->image = $avatarPath;
+        if ($request->hasFile('avatar')) {
+            // Unlink old physical file if stored in public uploads or private folder
+            if ($user->getRawOriginal('image')) {
+                $oldPath = $user->getRawOriginal('image');
+                $this->deleteFile($oldPath);
+
+                if (preg_match('#/user/([0-9a-zA-Z]+)#', $oldPath, $matches)) {
+                    $oldDir = storage_path("app/private/user/{$matches[1]}");
+                    if (is_dir($oldDir)) {
+                        \Illuminate\Support\Facades\File::deleteDirectory($oldDir);
+                    }
+                }
+            }
+
+            // Clear old Spatie media items & delete their physical directories
+            foreach ($user->getMedia('avatar') as $oldMedia) {
+                $oldDir = storage_path("app/private/user/{$oldMedia->id}");
+                $oldMedia->delete();
+                if (is_dir($oldDir)) {
+                    \Illuminate\Support\Facades\File::deleteDirectory($oldDir);
+                }
+            }
+
+            $media = $user->addMediaFromRequest('avatar')
+                ->toMediaCollection('avatar', 'private');
+            $user->image = "/media/user/{$media->id}/{$media->file_name}";
         }
         $user->name = $request->name;
         $user->email = $request->email;

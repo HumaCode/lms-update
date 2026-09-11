@@ -154,12 +154,20 @@ export default function Index({ profile = {}, gateways = [] }) {
                     {activeTab === 'personal' && (
                         <form onSubmit={handlePersonalSubmit}>
                             <div className="d-flex align-items-center gap-4 mb-4 pb-3 border-bottom">
-                                <img
-                                    src={avatarPreview || '/frontend/assets/images/dash_icon_8.png'}
-                                    alt="Avatar"
-                                    className="rounded-circle border border-2 border-primary shadow-sm"
-                                    style={{ width: '80px', height: '80px', objectFit: 'cover' }}
-                                />
+                                <div
+                                    className="rounded-circle border border-2 border-primary shadow-sm overflow-hidden flex-shrink-0"
+                                    style={{ width: '80px', height: '80px', minWidth: '80px', minHeight: '80px' }}
+                                >
+                                    <img
+                                        src={avatarPreview || '/frontend/assets/images/dash_icon_8.png'}
+                                        alt="Avatar"
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                        onError={(e) => {
+                                            e.target.onerror = null;
+                                            e.target.src = '/frontend/assets/images/dash_icon_8.png';
+                                        }}
+                                    />
+                                </div>
                                 <div>
                                     <label className="form-label fw-bold mb-1">Profile Photo</label>
                                     <input

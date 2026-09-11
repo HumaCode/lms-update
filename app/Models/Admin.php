@@ -35,11 +35,23 @@ class Admin extends Authenticatable implements HasMedia
 {
     use HasUlids, HasFactory, Notifiable, InteractsWithMedia;
 
+    protected $appends = ['image'];
+
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('image')
             ->useDisk('private')
             ->singleFile();
+    }
+
+    public function getImageAttribute(): ?string
+    {
+        $media = $this->getFirstMedia('image');
+        if ($media) {
+            return "/media/user/{$media->id}/{$media->file_name}";
+        }
+
+        return null;
     }
 
     /**

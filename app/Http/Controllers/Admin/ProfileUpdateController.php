@@ -34,10 +34,17 @@ class ProfileUpdateController extends Controller
 
         $admin = Auth::guard('admin')->user();
 
-        if($request->hasFile('image')) {
-            $image = $this->uploadFile($request->file('image'));
-            $this->deleteFile($admin->image);
-           $admin->image = $image; 
+        if ($request->hasFile('image')) {
+            foreach ($admin->getMedia('image') as $oldMedia) {
+                $oldDir = storage_path("app/private/user/{$oldMedia->id}");
+                $oldMedia->delete();
+                if (is_dir($oldDir)) {
+                    \Illuminate\Support\Facades\File::deleteDirectory($oldDir);
+                }
+            }
+
+            $admin->addMediaFromRequest('image')
+                ->toMediaCollection('image', 'private');
         }
 
        $admin->name = $request->name;

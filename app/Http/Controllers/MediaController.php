@@ -44,4 +44,45 @@ class MediaController extends Controller
 
         abort(404);
     }
+
+    public function userMediaFile(string $mediaId, ?string $filename = null): BinaryFileResponse
+    {
+        // 1. Check if media exists in database via Spatie Media model
+        $media = \App\Models\Media::find($mediaId);
+        if ($media && file_exists($media->getPath())) {
+            return response()->file($media->getPath(), [
+                'Content-Type' => $media->mime_type ?? (mime_content_type($media->getPath()) ?: 'image/png'),
+                'Cache-Control' => 'public, max-age=86400',
+            ]);
+        }
+
+        // 2. Direct folder lookup in storage/app/private/user/{mediaId}/
+        $baseDir = storage_path("app/private/user/{$mediaId}");
+        if (is_dir($baseDir)) {
+            if ($filename && file_exists("{$baseDir}/{$filename}")) {
+                $path = "{$baseDir}/{$filename}";
+            } else {
+                $files = glob("{$baseDir}/*");
+                $path = !empty($files) ? $files[0] : null;
+            }
+
+            if ($path && file_exists($path) && !is_dir($path)) {
+                $mime = mime_content_type($path) ?: 'image/png';
+                return response()->file($path, [
+                    'Content-Type' => $mime,
+                    'Cache-Control' => 'public, max-age=86400',
+                ]);
+            }
+        }
+
+        // Fallback default avatar
+        $defaultPath = public_path('frontend/assets/images/dash_icon_8.png');
+        if (file_exists($defaultPath)) {
+            return response()->file($defaultPath, [
+                'Content-Type' => 'image/png',
+            ]);
+        }
+
+        abort(404);
+    }
 }

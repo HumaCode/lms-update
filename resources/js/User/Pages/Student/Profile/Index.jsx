@@ -128,16 +128,20 @@ export default function StudentProfile() {
                 {activeTab === 'personal' && (
                     <form onSubmit={handlePersonalSubmit}>
                         <div className="d-flex align-items-center gap-3 mb-4">
-                            <img
-                                src={avatarPreview || '/default-files/avatar.png'}
-                                alt="Avatar Preview"
-                                className="rounded-circle shadow-sm border"
-                                style={{ width: '80px', height: '80px', objectFit: 'cover' }}
-                                onError={(e) => {
-                                    e.target.onerror = null;
-                                    e.target.src = '/default-files/avatar.png';
-                                }}
-                            />
+                            <div
+                                className="rounded-circle border border-2 border-primary shadow-sm overflow-hidden flex-shrink-0"
+                                style={{ width: '80px', height: '80px', minWidth: '80px', minHeight: '80px' }}
+                            >
+                                <img
+                                    src={avatarPreview || '/default-files/avatar.png'}
+                                    alt="Avatar Preview"
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                    onError={(e) => {
+                                        e.target.onerror = null;
+                                        e.target.src = '/default-files/avatar.png';
+                                    }}
+                                />
+                            </div>
                             <div>
                                 <label className="form-label small fw-bold mb-1">Change Profile Photo</label>
                                 <input

@@ -13,6 +13,9 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+
 /**
  * @property string $id
  * @property string $name
@@ -36,11 +39,31 @@ use Illuminate\Notifications\Notifiable;
     'approve_status',
     'document',
 ])]
-class User extends Authenticatable
+class User extends Authenticatable implements HasMedia
 {
     use HasUlids;
+    use HasFactory, Notifiable, InteractsWithMedia;
 
-    use HasFactory, Notifiable;
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('avatar')
+            ->useFallbackUrl('/frontend/assets/images/dash_icon_8.png')
+            ->singleFile();
+    }
+
+    public function getImageAttribute($value): string
+    {
+        $media = $this->getFirstMedia('avatar');
+        if ($media) {
+            return "/media/user/{$media->id}/{$media->file_name}";
+        }
+
+        if (!empty($value)) {
+            return $value;
+        }
+
+        return '/frontend/assets/images/dash_icon_8.png';
+    }
 
     /**
      * The attributes that should be hidden for serialization.

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Head, Link, router } from '@inertiajs/react';
-import StudentDashboardLayout from '../../../Layouts/StudentDashboardLayout';
+import StudentDashboardLayout from '@/Student/Layouts/StudentDashboardLayout';
 
 export default function StudentReviews({ reviews }) {
     const reviewList = reviews?.data || [];

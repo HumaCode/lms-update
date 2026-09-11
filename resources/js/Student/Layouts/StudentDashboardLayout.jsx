@@ -1,9 +1,9 @@
 import React from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
-import Header from '../Components/Header';
-import Footer from '../Components/Footer';
-import CustomPointer from '../Components/CustomPointer';
-import { useFlashNotification } from '../../Hooks/useFlashNotification';
+import Header from '@/User/Components/Header';
+import Footer from '@/User/Components/Footer';
+import CustomPointer from '@/User/Components/CustomPointer';
+import { useFlashNotification } from '@/Hooks/useFlashNotification';
 
 export default function StudentDashboardLayout({ children, title, subtitle }) {
     useFlashNotification();
@@ -25,22 +25,22 @@ export default function StudentDashboardLayout({ children, title, subtitle }) {
                 className="wsus__breadcrumb"
                 style={{
                     background: 'url(/frontend/assets/images/breadcrumb_bg.jpg) no-repeat center/cover',
-                    padding: '50px 0',
                 }}
             >
-                <div className="container">
-                    <div className="row">
-                        <div className="col-12 text-center text-white">
-                            <h2 className="fw-bold mb-2">{title || 'Student Dashboard'}</h2>
-                            <ul className="d-flex justify-content-center list-unstyled mb-0 gap-2 small">
-                                <li>
-                                    <Link href={route('home')} className="text-white-50 text-decoration-none">
-                                        Home
-                                    </Link>
-                                </li>
-                                <li>/</li>
-                                <li className="text-white">{subtitle || title || 'Dashboard'}</li>
-                            </ul>
+                <div className="wsus__breadcrumb_overlay">
+                    <div className="container">
+                        <div className="row">
+                            <div className="col-12">
+                                <div className="wsus__breadcrumb_text">
+                                    <h1>{title || 'Student Dashboard'}</h1>
+                                    <ul>
+                                        <li>
+                                            <Link href={route('home')}>Home</Link>
+                                        </li>
+                                        <li>{subtitle || title || 'Dashboard'}</li>
+                                    </ul>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -51,7 +51,7 @@ export default function StudentDashboardLayout({ children, title, subtitle }) {
                 <div className="container">
                     <div className="row">
                         {/* Student Sidebar */}
-                        <div className="col-xl-3 col-md-4 wow fadeInLeft">
+                        <div className="col-xl-3 col-md-4">
                             <div className="wsus__dashboard_sidebar shadow-sm rounded-3 bg-white overflow-hidden p-0 mb-4">
                                 <div className="wsus__dashboard_sidebar_top text-center p-4 bg-light border-bottom">
                                     <div className="img mb-3">
@@ -135,7 +135,7 @@ export default function StudentDashboardLayout({ children, title, subtitle }) {
                         </div>
 
                         {/* Main Student Body Content */}
-                        <div className="col-xl-9 col-md-8 wow fadeInRight">
+                        <div className="col-xl-9 col-md-8">
                             <div className="wsus__dashboard_content">
                                 {children}
                             </div>

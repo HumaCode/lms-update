@@ -13,7 +13,7 @@ class StudentOrderController extends Controller
     function index()
     {
         $orders = Order::where('buyer_id', user()->id)->latest()->paginate(20);
-        return \Inertia\Inertia::render('User/Student/Order/Index', [
+        return \Inertia\Inertia::render('Student/Order/Index', [
             'orders' => $orders,
         ]);
     }
@@ -21,7 +21,7 @@ class StudentOrderController extends Controller
     function show(string $id)
     {
         $order = Order::with(['customer', 'orderItems.course'])->where('buyer_id', user()->id)->findOrFail($id);
-        return \Inertia\Inertia::render('User/Student/Order/Show', [
+        return \Inertia\Inertia::render('Student/Order/Show', [
             'order' => $order,
         ]);
     }

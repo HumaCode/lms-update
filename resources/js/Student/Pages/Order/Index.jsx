@@ -1,6 +1,6 @@
 import React from 'react';
 import { Head, Link } from '@inertiajs/react';
-import StudentDashboardLayout from '../../../Layouts/StudentDashboardLayout';
+import StudentDashboardLayout from '@/Student/Layouts/StudentDashboardLayout';
 
 export default function StudentOrderIndex({ orders }) {
     const orderList = orders?.data || [];

@@ -44,6 +44,7 @@ createInertiaApp({
         const pages = import.meta.glob([
             './Admin/Pages/**/*.jsx',
             './Instructor/Pages/**/*.jsx',
+            './Student/Pages/**/*.jsx',
             './User/Pages/**/*.jsx',
             './Pages/**/*.jsx',
             './**/*.jsx'
@@ -56,7 +57,7 @@ createInertiaApp({
 
         // Shorthand check (e.g. 'Admin/Dashboard/Index' -> './Admin/Pages/Dashboard/Index.jsx')
         const parts = name.split('/');
-        if (parts.length >= 2 && ['Admin', 'Instructor', 'User'].includes(parts[0])) {
+        if (parts.length >= 2 && ['Admin', 'Instructor', 'Student', 'User'].includes(parts[0])) {
             const domain = parts[0];
             const rest = parts.slice(1).join('/');
             const withPagesPath = `./${domain}/Pages/${rest}.jsx`;

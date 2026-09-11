@@ -26,7 +26,7 @@ class StudentDashboardController extends Controller
 
         $orders = Order::where('buyer_id', user()->id)->latest()->take(10)->get();
         
-        return \Inertia\Inertia::render('User/Student/Dashboard/Index', [
+        return \Inertia\Inertia::render('Student/Dashboard/Index', [
             'userCourses' => $userCourses,
             'reviewCount' => $reviewCount,
             'orderCount' => $orderCount,
@@ -38,7 +38,7 @@ class StudentDashboardController extends Controller
     {
         if(auth()->user()->role == 'instructor') abort(403);
 
-        return \Inertia\Inertia::render('User/Student/BecomeInstructor/Index'); 
+        return \Inertia\Inertia::render('Student/BecomeInstructor/Index'); 
     }
 
     function becomeInstructorUpdate(Request $request, User $user) : RedirectResponse {
@@ -57,7 +57,7 @@ class StudentDashboardController extends Controller
     function review()
     {
         $reviews = Review::with('course')->where('user_id', user()->id)->paginate(10);
-        return \Inertia\Inertia::render('User/Student/Review/Index', [
+        return \Inertia\Inertia::render('Student/Review/Index', [
             'reviews' => $reviews,
         ]);
     }

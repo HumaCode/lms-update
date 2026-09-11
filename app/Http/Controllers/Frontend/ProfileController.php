@@ -21,7 +21,7 @@ class ProfileController extends Controller
 
     function index()
     {
-        return \Inertia\Inertia::render('User/Student/Profile/Index'); 
+        return \Inertia\Inertia::render('Student/Profile/Index'); 
     }
 
     function instructorIndex()

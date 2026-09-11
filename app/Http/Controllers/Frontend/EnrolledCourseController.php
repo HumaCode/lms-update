@@ -16,7 +16,7 @@ class EnrolledCourseController extends Controller
     function index()
     {
         $enrollments = Enrollment::with(['course.instructor', 'course.category'])->where('user_id', user()->id)->get();
-        return \Inertia\Inertia::render('User/Student/EnrolledCourse/Index', [
+        return \Inertia\Inertia::render('Student/EnrolledCourse/Index', [
             'enrollments' => $enrollments,
         ]);     
     }
@@ -64,7 +64,7 @@ class EnrolledCourseController extends Controller
                 return $rev;
             });
 
-        return \Inertia\Inertia::render('User/Student/CoursePlayer/Index', [
+        return \Inertia\Inertia::render('Student/CoursePlayer/Index', [
             'course' => $course,
             'lastWatchHistory' => $lastWatchHistory,
             'watchedLessonIds' => $watchedLessonIds,

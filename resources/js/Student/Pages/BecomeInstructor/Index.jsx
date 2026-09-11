@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Head, usePage, router } from '@inertiajs/react';
-import StudentDashboardLayout from '../../../Layouts/StudentDashboardLayout';
+import StudentDashboardLayout from '@/Student/Layouts/StudentDashboardLayout';
 
 export default function BecomeInstructor() {
     const { auth } = usePage().props;

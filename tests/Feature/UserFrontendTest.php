@@ -148,7 +148,7 @@ class UserFrontendTest extends TestCase
         $response = $this->actingAs($this->student, 'web')->get('/student/dashboard');
         $response->assertStatus(200);
         $response->assertInertia(fn (Assert $page) => $page
-            ->component('User/Student/Dashboard/Index')
+            ->component('Student/Dashboard/Index')
             ->has('userCourses')
             ->has('reviewCount')
             ->has('orderCount')
@@ -160,7 +160,7 @@ class UserFrontendTest extends TestCase
         $response = $this->actingAs($this->student, 'web')->get('/student/profile');
         $response->assertStatus(200);
         $response->assertInertia(fn (Assert $page) => $page
-            ->component('User/Student/Profile/Index')
+            ->component('Student/Profile/Index')
         );
     }
 
@@ -169,7 +169,7 @@ class UserFrontendTest extends TestCase
         $response = $this->actingAs($this->student, 'web')->get('/student/enrolled-courses');
         $response->assertStatus(200);
         $response->assertInertia(fn (Assert $page) => $page
-            ->component('User/Student/EnrolledCourse/Index')
+            ->component('Student/EnrolledCourse/Index')
             ->has('enrollments')
         );
     }
@@ -179,7 +179,7 @@ class UserFrontendTest extends TestCase
         $response = $this->actingAs($this->student, 'web')->get('/student/orders');
         $response->assertStatus(200);
         $response->assertInertia(fn (Assert $page) => $page
-            ->component('User/Student/Order/Index')
+            ->component('Student/Order/Index')
             ->has('orders')
         );
     }
@@ -189,7 +189,7 @@ class UserFrontendTest extends TestCase
         $response = $this->actingAs($this->student, 'web')->get('/student/review');
         $response->assertStatus(200);
         $response->assertInertia(fn (Assert $page) => $page
-            ->component('User/Student/Review/Index')
+            ->component('Student/Review/Index')
             ->has('reviews')
         );
     }
@@ -199,7 +199,7 @@ class UserFrontendTest extends TestCase
         $response = $this->actingAs($this->student, 'web')->get('/student/become-instructor');
         $response->assertStatus(200);
         $response->assertInertia(fn (Assert $page) => $page
-            ->component('User/Student/BecomeInstructor/Index')
+            ->component('Student/BecomeInstructor/Index')
         );
     }
 
@@ -218,7 +218,7 @@ class UserFrontendTest extends TestCase
             $response = $this->actingAs($this->student, 'web')->get("/student/course-player/{$course->slug}");
             $response->assertStatus(200);
             $response->assertInertia(fn (Assert $page) => $page
-                ->component('User/Student/CoursePlayer/Index')
+                ->component('Student/CoursePlayer/Index')
                 ->has('course')
             );
         }

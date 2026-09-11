@@ -15,40 +15,52 @@ A modern Learning Management System (LMS) built with **Laravel**, **Inertia.js**
 
 ## 🚀 Rincian Fitur & Pembaruan Terbaru (Changelog)
 
-### 1. 📢 Sistem Pengumuman Kursus (Announcements System)
-- **Model & Database**: Dibuat tabel `course_announcements` dengan kolom `content` bertipe `LONGTEXT` untuk mendukung penyimpanan teks kaya (Rich Text) dan gambar berukuran besar.
+### 1. 🔔 Sistem Notifikasi Real-Time Database Admin
+- **Database & Model (`admin_notifications`)**: Tabel khusus pencatatan notifikasi sistem ke Admin dengan field `title`, `message`, `url`, `is_read`, dan timestamp.
+- **Topbar Admin Header Dropdown**: Icon lonceng notifikasi (`SVG`) dengan badge merah berpenunjuk angka belum dibaca (`unread_admin_notifications_count`).
+- **Trigger Notifikasi Otomatis**:
+  1. Instruktur mengajukan penarikan dana (*Payout Request*).
+  2. Instruktur membuat draf kursus baru (*Basic Info*).
+  3. Instruktur mengajukan peninjauan kursus (*Submit Course for Review*).
+- **Interaksi Satu Klik**: Klik item notifikasi menandai sebagai dibaca dan mengarahkan Admin langsung ke halaman rincian bersangkutan.
+
+### 2. 💸 Penarikan Dana & Mode Payout Ganda (Dual Payout Mode: Manual vs Xendit API)
+- **Pengaturan Payout Mode di Admin**: Menu `Payment Settings -> Xendit Configuration` menyediakan opsi saklar:
+  - 📝 **Manual Transfer**: Transfer manual via m-Banking lalu tandai status *Approved*.
+  - ⚡ **Automatic Xendit Payout API**: Transfer instan otomatis langsung ke 100+ Bank & E-Wallet (DANA, OVO, GoPay) via Xendit Disbursement API.
+- **SweetAlert2 Modal Interaktif**: Dialog konfirmasi modern bertema dinamis (*Approve*, *Reject*, atau *API Dispatch*).
+- **Redesign Halaman Details Payout**: Tampilan kartu modern dengan info rekening instruktur, avatar kondisional (foto profil/inisial nama), serta status badge.
+
+### 3. 🏷️ Arsitektur Sistem Harga & Diskon Kursus Konsisten
+- **Model Accessor (`final_price`)**: Virtual attribute `course.final_price` di model `Course.php` secara otomatis menghitung `price - discount` tanpa ambigu.
+- **Label Form Instruktur Jelas**:
+  - `Price / Harga Normal (Rp)` (Harga sebelum diskon).
+  - `Discount Amount / Potongan Diskon (Rp)` (Nominal potongan diskon).
+- **Visualisasi Harga Tiga Elemen**:
+  - **Harga Akhir (Hijau Utama)**: Rp 180.000
+  - **Harga Asli (Abu Coret)**: ~~Rp 200.000~~
+  - **Badge Potongan**: Diskon Rp 20.000
+- **Pewarnaan Baris Manajemen Kursus Admin**:
+  - Baris bertanda **Pending**: Latar kuning pastel lembut (`rgba(254, 240, 138, 0.25)`).
+  - Baris bertanda **Rejected**: Latar merah pastel lembut (`rgba(254, 226, 226, 0.35)`).
+
+### 4. 📢 Sistem Pengumuman Kursus (Announcements System)
+- **Model & Database**: Dibuat tabel `course_announcements` dengan kolom `content` bertipe `LONGTEXT` untuk mendukung penyimpanan teks kaya (Rich Text) dan gambar.
 - **Wizard Manajemen Instruktur**: Ditambahkan langkah ke-3 **Announcements** pada form pengeditan kursus instruktur.
 - **Manajemen Gambar Otomatis (`unlink`)**: Saat pengumuman dihapus, seluruh file gambar yang terlampir pada isi HTML pengumuman akan secara otomatis di-`unlink()` dari direktori server.
 - **Tampilan Siswa**: Dibuat `AnnouncementsTab.jsx` pada Course Player siswa untuk menampilkan pengumuman terbaru dengan indikator waktu relatif.
 
-### 2. 💬 Diskusi & Q&A (Question & Answer System)
+### 5. 💬 Diskusi & Q&A (Question & Answer System)
 - **Format Waktu Relatif**: Menampilkan waktu relatif Bahasa Indonesia (*"Baru saja"*, *"5 menit yang lalu"*, *"3 hari yang lalu"*) menggunakan helper `timeAgo()`.
-- **Fitur Load More ("Lihat Lainnya")**: Secara default hanya menampilkan 10 pertanyaan teratas, dan menyediakan tombol *Lihat lainnya (+10)* untuk menjaga performa rendering tetap cepat pada data dalam jumlah besar.
+- **Fitur Load More ("Lihat Lainnya")**: Secara default hanya menampilkan 10 pertanyaan teratas dengan tombol *Lihat lainnya (+10)*.
 
-### 3. ⭐ Sistem Ulasan Peserta & Tanggapan (Reviews & Persistent Votes)
-- **Desain Modern Udemy-Style**:
-  - Ringkasan skor rata-rata dengan breakdown persentase bintang (1-5 Bintang).
-  - Avatar lingkaran dengan **Inisial Dua Huruf Nama User** (misal: *Jhon Deo* -> `JD`).
-  - Fitur pencarian ulasan (*Cari ulasan*) dan filter berdasarkan peringkat bintang.
-  - Pembatasan 1 ulasan per user per kursus dengan notifikasi ucapan terima kasih.
-  - Format judul jumlah ulasan `Reviews (1)` (tanpa `0` di depan).
-- **Fitur Load More**: Default 10 data ulasan terbaru dengan tombol *Lebih banyak ulasan*.
-- **Tanggapan Interaktif & Persisten (`review_votes`)**:
-  - Dibuat tabel & model `ReviewVote` dengan constraint `unique(['user_id', 'review_id'])`.
-  - User hanya bisa memilih **satu** tanggapan per ulasan (*Sangat Membantu* / *Kurang Membantu*). Tombol sebaliknya akan otomatis terkunci.
-  - Tanggapan tersimpan secara permanen di database dan tetap aktif saat reload halaman maupun re-login.
-
-### 4. 🎓 Dashboard & Modal Detail Review Instruktur
-- **Tombol Review di Tabel Instruktur**: Tombol `Review` berwarna oranye (`#c25e00`) pada daftar kursus instruktur.
-- **Modal XXL Detail Review (`InstructorReviewsModal.jsx`)**:
-  - Tampilan ekstra luas (`maxWidth: 1300px`) dengan tabel berukuran pas (`tableLayout: 'fixed'`).
-  - Menampilkan nama kolom **User** (bukan *Siswa*).
-  - Menampilkan rincian statistik ulasan yang dilaporkan, ulasan positif, serta total tanggapan **Likes & Dislikes** yang dihitung secara akurat dari database.
+### 6. ⭐ Sistem Ulasan Peserta & Tanggapan (Reviews & Persistent Votes)
+- **Desain Modern Udemy-Style**: Ringkasan skor rata-rata dengan breakdown persentase bintang (1-5 Bintang), avatar inisial nama, pencarian, dan filter ulasan.
+- **Tanggapan Interaktif & Persisten (`review_votes`)**: Constraint `unique(['user_id', 'review_id'])` menjaga tanggapan user tersimpan secara permanen.
 
 ---
 
 ## 🛠️ Teknologi yang Digunakan
-- **Backend**: PHP 8.x, Laravel 11.x, Eloquent ORM
-- **Frontend**: Inertia.js, React, Bootstrap 5, FontAwesome Icons
-- **Utility**: Custom `timeAgo` formatter, SweetAlert2 / Notyf Notifications, Axios AJAX
-
+- **Backend**: PHP 8.x, Laravel 11.x, Eloquent ORM, Xendit PHP SDK
+- **Frontend**: Inertia.js, React 19, Bootstrap 5, Tabler UI Icons, FontAwesome
+- **Utility**: Custom `timeAgo` & `formatCurrency`, SweetAlert2, Notyf Notifications, Axios AJAX

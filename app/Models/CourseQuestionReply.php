@@ -2,22 +2,34 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property int $id
+ * @property int $question_id
+ * @property int $user_id
+ * @property string $content
+ * @property int $upvotes
+ * @property bool $is_banned
+ * @property bool $is_reported
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ */
+#[Fillable([
+    'question_id',
+    'user_id',
+    'content',
+    'upvotes',
+    'is_banned',
+    'is_reported',
+])]
 class CourseQuestionReply extends Model
 {
     use HasFactory;
-
-    protected $fillable = [
-        'question_id',
-        'user_id',
-        'content',
-        'upvotes',
-        'is_banned',
-        'is_reported',
-    ];
 
     public function user(): BelongsTo
     {

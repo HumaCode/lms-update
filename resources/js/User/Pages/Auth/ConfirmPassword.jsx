@@ -1,25 +1,22 @@
 import React from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
 
-export default function Login({ status }) {
+export default function ConfirmPassword() {
     const { data, setData, post, processing, errors, reset } = useForm({
-        username: '',
         password: '',
-        remember: false,
     });
 
     const submit = (e) => {
         e.preventDefault();
-        post(route('login'), {
+        post(route('password.confirm'), {
             onFinish: () => reset('password'),
         });
     };
 
     return (
         <>
-            <Head title="Sign In - EduCore" />
+            <Head title="Confirm Password - EduCore" />
 
-            {/* SIGN IN SECTION */}
             <section
                 className="wsus__sign_in"
                 style={{
@@ -29,10 +26,7 @@ export default function Login({ status }) {
                     overflow: 'hidden',
                 }}
             >
-                <div
-                    className="row align-items-center"
-                    style={{ minHeight: '100vh', margin: 0 }}
-                >
+                <div className="row align-items-center" style={{ minHeight: '100vh', margin: 0 }}>
                     <div className="col-xxl-5 col-xl-6 col-lg-6 wow fadeInLeft p-0">
                         <div
                             className="wsus__sign_img"
@@ -45,7 +39,7 @@ export default function Login({ status }) {
                         >
                             <img
                                 src="/frontend/assets/images/login_img_1.jpg"
-                                alt="login"
+                                alt="confirm password"
                                 style={{
                                     width: '100%',
                                     height: '100%',
@@ -72,60 +66,25 @@ export default function Login({ status }) {
                     </div>
                     <div className="col-xxl-4 col-xl-5 col-lg-6 col-md-9 m-auto wow fadeInRight py-4">
                         <div className="wsus__sign_form_area">
-                            <div className="tab-content" id="pills-tabContent">
-                                <div
-                                    className="tab-pane fade show active"
-                                    id="pills-home"
-                                    role="tabpanel"
-                                    tabIndex="0"
-                                >
+                            <div className="tab-content">
+                                <div className="tab-pane fade show active">
                                     <form onSubmit={submit}>
-                                        <h2>
-                                            Log in<span>!</span>
-                                        </h2>
+                                        <h2>Confirm Password<span>!</span></h2>
                                         <p className="new_user">
-                                            Welcome Back, please provide your credentials for login
+                                            This is a secure area of the application. Please confirm your password before continuing.
                                         </p>
-
-                                        {status && (
-                                            <div className="alert alert-success small py-2 mb-3">
-                                                {status}
-                                            </div>
-                                        )}
 
                                         <div className="row">
                                             <div className="col-xl-12">
                                                 <div className="wsus__login_form_input">
-                                                    <label>Username *</label>
-                                                    <input
-                                                        type="text"
-                                                        value={data.username}
-                                                        onChange={(e) => setData('username', e.target.value)}
-                                                        placeholder="Username"
-                                                        required
-                                                    />
-                                                    {errors.username && (
-                                                        <span className="text-danger small mt-1 d-block">
-                                                            {errors.username}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            <div className="col-xl-12">
-                                                <div className="wsus__login_form_input">
-                                                    <label>
-                                                        Password*{' '}
-                                                        <Link href={route('password.request')}>
-                                                            Forgot Password?
-                                                        </Link>
-                                                    </label>
+                                                    <label>Password *</label>
                                                     <input
                                                         type="password"
                                                         value={data.password}
                                                         onChange={(e) => setData('password', e.target.value)}
                                                         placeholder="Password"
                                                         required
+                                                        autoFocus
                                                     />
                                                     {errors.password && (
                                                         <span className="text-danger small mt-1 d-block">
@@ -137,39 +96,17 @@ export default function Login({ status }) {
 
                                             <div className="col-xl-12">
                                                 <div className="wsus__login_form_input">
-                                                    <div className="form-check">
-                                                        <input
-                                                            className="form-check-input"
-                                                            type="checkbox"
-                                                            checked={data.remember}
-                                                            onChange={(e) =>
-                                                                setData('remember', e.target.checked)
-                                                            }
-                                                            id="flexCheckDefault"
-                                                        />
-                                                        <label
-                                                            className="form-check-label"
-                                                            htmlFor="flexCheckDefault"
-                                                        >
-                                                            Remember Me
-                                                        </label>
-                                                    </div>
                                                     <button
                                                         type="submit"
                                                         className="common_btn"
                                                         disabled={processing}
                                                     >
-                                                        {processing ? 'Signing In...' : 'Sign In'}
+                                                        {processing ? 'Confirming...' : 'Confirm'}
                                                     </button>
                                                 </div>
                                             </div>
                                         </div>
                                     </form>
-
-                                    <p className="create_account">
-                                        Don't have an account?{' '}
-                                        <Link href={route('register')}>Create free account</Link>
-                                    </p>
                                 </div>
                             </div>
                         </div>

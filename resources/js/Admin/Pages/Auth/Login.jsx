@@ -28,7 +28,7 @@ export default function Login({ status }) {
     const [showPassword, setShowPassword] = useState(false);
 
     const { data, setData, post, processing, errors, reset } = useForm({
-        email: '',
+        username: '',
         password: '',
         remember: false,
     });
@@ -66,18 +66,18 @@ export default function Login({ status }) {
                         <h2 className="h2 text-center mb-4">Login to Admin Portal</h2>
                         <form onSubmit={submit} autoComplete="off">
                             <div className="mb-3">
-                                <label className="form-label">Email address</label>
+                                <label className="form-label">Username</label>
                                 <input
-                                    type="email"
-                                    className={`form-control ${errors.email ? 'is-invalid' : ''}`}
-                                    placeholder="your@email.com"
-                                    value={data.email}
-                                    onChange={(e) => setData('email', e.target.value)}
+                                    type="text"
+                                    className={`form-control ${errors.username ? 'is-invalid' : ''}`}
+                                    placeholder="username"
+                                    value={data.username}
+                                    onChange={(e) => setData('username', e.target.value)}
                                     autoFocus
                                     required
                                 />
-                                {errors.email && (
-                                    <div className="invalid-feedback">{errors.email}</div>
+                                {errors.username && (
+                                    <div className="invalid-feedback">{errors.username}</div>
                                 )}
                             </div>
 

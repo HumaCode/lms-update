@@ -4,11 +4,12 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * @property int $id
+ * @property string $id
  * @property string|null $element_id
  * @property string|null $x_position
  * @property string|null $y_position
@@ -22,5 +23,5 @@ use Illuminate\Database\Eloquent\Model;
 ])]
 class CertificateBuilderItem extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUlids;
 }

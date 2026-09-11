@@ -4,11 +4,12 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * @property int $id
+ * @property string $id
  * @property string|null $counter_one
  * @property string|null $title_one
  * @property string|null $counter_two
@@ -33,5 +34,5 @@ use Illuminate\Database\Eloquent\Model;
 
 class Counter extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUlids;
 }

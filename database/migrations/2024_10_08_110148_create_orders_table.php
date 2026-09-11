@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('orders', function (Blueprint $table) {
-            $table->id();
+            $table->ulid('id')->primary();
             $table->string('invoice_id');
-            $table->foreignId('buyer_id')->constrained('users');
+            $table->foreignUlid('buyer_id')->constrained('users');
             $table->enum('status', ['pending', 'approved'])->default('pending');
             $table->double('total_amount');
             $table->double('paid_amount');

@@ -12,12 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('course_categories', function (Blueprint $table) {
-            $table->id();
+            $table->ulid('id')->primary();
             $table->string('image')->nullable();
             $table->string('icon')->nullable();
             $table->string('name')->unique();
             $table->string('slug')->unique();
-            $table->foreignId('parent_id')->nullable();
+            $table->foreignUlid('parent_id')->nullable();
             $table->boolean('show_at_trending')->default(0)->nullable();
             $table->boolean('status')->default(1)->nullable();
             $table->timestamps();

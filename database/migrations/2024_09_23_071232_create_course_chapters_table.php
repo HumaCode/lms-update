@@ -12,10 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('course_chapters', function (Blueprint $table) {
-            $table->id();
+            $table->ulid('id')->primary();
             $table->string('title');
-            $table->foreignId('instructor_id')->constrained('users');
-            $table->foreignId('course_id')->constrained('courses')->onDelete('cascade');
+            $table->foreignUlid('instructor_id')->constrained('users');
+            $table->foreignUlid('course_id')->constrained('courses')->onDelete('cascade');
             $table->integer('order');
             $table->boolean('status')->default(1);
             $table->timestamps();

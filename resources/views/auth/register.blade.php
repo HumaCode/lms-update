@@ -45,6 +45,15 @@
                                             <x-input-error :messages="$errors->get('name')" class="mt-2" />
                                         </div>
                                     </div>
+
+                                    <div class="col-xl-12">
+                                        <div class="wsus__login_form_input">
+                                            <label>Username</label>
+                                            <input type="text" placeholder="Username" name="username" value="{{ old('username') }}" required>
+
+                                            <x-input-error :messages="$errors->get('username')" class="mt-2" />
+                                        </div>
+                                    </div>
                                    
                                     <div class="col-xl-12">
                                         <div class="wsus__login_form_input">
@@ -90,8 +99,17 @@
                                     <div class="col-xl-12">
                                         <div class="wsus__login_form_input">
                                             <label>Name</label>
-                                            <input type="text" placeholder="Name" name="name" required>
+                                            <input type="text" placeholder="Name" name="name" value="{{ old('name') }}" required>
                                             <x-input-error :messages="$errors->get('name')" class="mt-2" />
+
+                                        </div>
+                                    </div>
+
+                                    <div class="col-xl-12">
+                                        <div class="wsus__login_form_input">
+                                            <label>Username</label>
+                                            <input type="text" placeholder="Username" name="username" value="{{ old('username') }}" required>
+                                            <x-input-error :messages="$errors->get('username')" class="mt-2" />
 
                                         </div>
                                     </div>
@@ -99,7 +117,7 @@
                                     <div class="col-xl-12">
                                         <div class="wsus__login_form_input">
                                             <label>Your email</label>
-                                            <input type="email" placeholder="Your email" name="email" required>
+                                            <input type="email" placeholder="Your email" name="email" value="{{ old('email') }}" required>
                                             <x-input-error :messages="$errors->get('email')" class="mt-2" />
 
                                         </div>

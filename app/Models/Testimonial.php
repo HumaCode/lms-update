@@ -4,11 +4,12 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * @property int $id
+ * @property string $id
  * @property int $rating
  * @property string $review
  * @property string $user_image
@@ -26,5 +27,5 @@ use Illuminate\Database\Eloquent\Model;
 ])]
 class Testimonial extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUlids;
 }

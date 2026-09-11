@@ -12,10 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('enrollments', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained('users');
-            $table->foreignId('course_id');
-            $table->foreignId('instructor_id');
+            $table->ulid('id')->primary();
+            $table->foreignUlid('user_id')->constrained('users');
+            $table->foreignUlid('course_id');
+            $table->foreignUlid('instructor_id');
             $table->boolean('have_access')->default(true);
             $table->timestamps();
         });

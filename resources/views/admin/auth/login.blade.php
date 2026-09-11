@@ -43,11 +43,11 @@
                     <form action="{{ route('admin.login.store') }}" method="POST" autocomplete="off" novalidate>
                         @csrf
                         <div class="mb-3">
-                            <label class="form-label">Email address</label>
+                            <label class="form-label">Username</label>
 
-                            <input type="email" name="email" value="{{ old('email') }}" class="form-control"
-                                placeholder="your@email.com" autocomplete="off" required>
-                            <x-input-error :messages="$errors->get('email')" class="mt-2" />
+                            <input type="text" name="username" value="{{ old('username') }}" class="form-control"
+                                placeholder="username" autocomplete="off" required>
+                            <x-input-error :messages="$errors->get('username')" class="mt-2" />
                         </div>
 
                         <div class="mb-2">

@@ -12,6 +12,10 @@ class CustomPathGenerator implements PathGenerator
      */
     public function getPath(Media $media): string
     {
+        if ($media->model_type === 'App\Models\Admin' || $media->model_type === 'App\Models\User' || $media->collection_name === 'user' || $media->collection_name === 'avatar') {
+            return 'user/' . $media->id . '/';
+        }
+
         if ($media->collection_name === 'thumbnail' || $media->collection_name === 'course_thumbnail') {
             return 'course/thumbnail/' . $media->id . '/';
         }

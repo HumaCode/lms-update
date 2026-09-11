@@ -4,13 +4,14 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * @property int $id
+ * @property string $id
  * @property int $user_id
  * @property int $blog_category_id
  * @property string $image
@@ -32,7 +33,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 ])]
 class Blog extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUlids;
 
     public function category(): BelongsTo
     {

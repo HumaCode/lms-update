@@ -5,16 +5,19 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
 /**
- * @property int $id
+ * @property string $id
  * @property string $name
+ * @property string|null $username
  * @property string $email
  * @property string $password
- * @property string|null $image
  * @property string|null $bio
  * @property string|null $remember_token
  * @property Carbon|null $email_verified_at
@@ -23,14 +26,21 @@ use Illuminate\Notifications\Notifiable;
  */
 #[Fillable([
     'name',
+    'username',
     'email',
     'password',
-    'image',
     'bio',
 ])]
-class Admin extends Authenticatable
+class Admin extends Authenticatable implements HasMedia
 {
-    use HasFactory, Notifiable;
+    use HasUlids, HasFactory, Notifiable, InteractsWithMedia;
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('image')
+            ->useDisk('private')
+            ->singleFile();
+    }
 
     /**
      * The attributes that should be hidden for serialization.

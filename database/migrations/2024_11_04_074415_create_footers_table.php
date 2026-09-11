@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('footers', function (Blueprint $table) {
-            $table->id();
+            $table->ulid('id')->primary();
             $table->string('description')->nullable();
             $table->string('copyright')->nullable();
             $table->string('phone')->nullable();

@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('blogs', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->foreignId('blog_category_id')->constrained('blog_categories')->onDelete('cascade');
+            $table->ulid('id')->primary();
+            $table->foreignUlid('user_id')->constrained('users')->onDelete('cascade');
+            $table->foreignUlid('blog_category_id')->constrained('blog_categories')->onDelete('cascade');
             $table->string('image');
             $table->string('title');
             $table->string('slug');

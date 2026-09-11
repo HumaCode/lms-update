@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('certificate_builder_items', function (Blueprint $table) {
-            $table->id();
+            $table->ulid('id')->primary();
             $table->string('element_id')->nullable();
             $table->string('x_position')->nullable();
             $table->string('y_position')->nullable();

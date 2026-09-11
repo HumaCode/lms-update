@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -13,8 +14,9 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 /**
- * @property int $id
+ * @property string $id
  * @property string $name
+ * @property string|null $username
  * @property string $email
  * @property string $password
  * @property string $role
@@ -27,6 +29,7 @@ use Illuminate\Notifications\Notifiable;
  */
 #[Fillable([
     'name',
+    'username',
     'email',
     'password',
     'role',
@@ -35,6 +38,8 @@ use Illuminate\Notifications\Notifiable;
 ])]
 class User extends Authenticatable
 {
+    use HasUlids;
+
     use HasFactory, Notifiable;
 
     /**

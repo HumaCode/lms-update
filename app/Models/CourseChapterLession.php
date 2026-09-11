@@ -4,11 +4,12 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * @property int $id
+ * @property string $id
  * @property string $title
  * @property string $slug
  * @property string|null $description
@@ -48,7 +49,7 @@ use Illuminate\Database\Eloquent\Model;
 ])]
 class CourseChapterLession extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUlids;
 
     protected $attributes = [
         'lesson_type' => 'lesson',

@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('footer_column_twos', function (Blueprint $table) {
-            $table->id();
+            $table->ulid('id')->primary();
             $table->string('title');
             $table->string('url');
             $table->boolean('status')->default(1);

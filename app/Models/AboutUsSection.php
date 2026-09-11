@@ -4,11 +4,12 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * @property int $id
+ * @property string $id
  * @property string|null $rounded_text
  * @property string|null $lerner_count
  * @property string|null $lerner_count_text
@@ -38,5 +39,5 @@ use Illuminate\Database\Eloquent\Model;
 ])]
 class AboutUsSection extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUlids;
 }

@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('custom_pages', function (Blueprint $table) {
-            $table->id();
+            $table->ulid('id')->primary();
             $table->string('title');
             $table->string('slug');
             $table->text('description')->nullable();

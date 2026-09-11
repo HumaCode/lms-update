@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('withdraws', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('instructor_id')->constrained('users');
+            $table->ulid('id')->primary();
+            $table->foreignUlid('instructor_id')->constrained('users');
             $table->double('amount');
             $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
             $table->string('transaction_id')->nullable();

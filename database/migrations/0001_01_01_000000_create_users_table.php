@@ -12,10 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
-            $table->id();
+            $table->ulid('id')->primary();
             $table->enum('role', ['instructor', 'student']);
             $table->string('image')->default('/default-files/avatar.png');
             $table->string('name');
+            $table->string('username')->unique()->nullable();
             $table->string('headline')->nullable();
             $table->string('email')->unique();
             $table->text('bio')->nullable();
@@ -43,7 +44,7 @@ return new class extends Migration
 
         Schema::create('sessions', function (Blueprint $table) {
             $table->string('id')->primary();
-            $table->foreignId('user_id')->nullable()->index();
+            $table->foreignUlid('user_id')->nullable()->index();
             $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();
             $table->longText('payload');

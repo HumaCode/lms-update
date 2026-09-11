@@ -4,13 +4,14 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * @property int $id
+ * @property string $id
  * @property int $course_id
  * @property int $user_id
  * @property int|null $lesson_id
@@ -34,7 +35,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 ])]
 class CourseQuestion extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUlids;
 
     public function user(): BelongsTo
     {

@@ -12,12 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('featured_instructors', function (Blueprint $table) {
-            $table->id();
+            $table->ulid('id')->primary();
             $table->string('title')->nullable();
             $table->string('subtitle')->nullable();
             $table->string('button_text')->nullable();
             $table->string('button_url')->nullable();
-            $table->foreignId('instructor_id')->constrained('users')->nullable();
+            $table->foreignUlid('instructor_id')->constrained('users')->nullable();
             $table->json('featured_courses')->nullable();
             $table->string('instructor_image')->nullable();
             $table->timestamps();

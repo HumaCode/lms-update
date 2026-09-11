@@ -26,9 +26,9 @@
                                 <div class="row">
                                     <div class="col-xl-12">
                                         <div class="wsus__login_form_input">
-                                            <label>Email *</label>
-                                            <input type="email" name="email" value="{{ old('email') }}" placeholder="Email" required>
-                                            <x-input-error :messages="$errors->get('email')" class="mt-2" />
+                                            <label>Username *</label>
+                                            <input type="text" name="username" value="{{ old('username') }}" placeholder="Username" required>
+                                            <x-input-error :messages="$errors->get('username')" class="mt-2" />
                                         </div>
                                     </div>
                                          

@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('review_votes', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->foreignId('review_id')->constrained('reviews')->onDelete('cascade');
+            $table->ulid('id')->primary();
+            $table->foreignUlid('user_id')->constrained('users')->onDelete('cascade');
+            $table->foreignUlid('review_id')->constrained('reviews')->onDelete('cascade');
             $table->enum('vote_type', ['like', 'dislike']);
             $table->timestamps();
 

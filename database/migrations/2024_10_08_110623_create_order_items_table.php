@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('order_items', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('order_id')->constrained('orders');
-            $table->foreignId('course_id');
+            $table->ulid('id')->primary();
+            $table->foreignUlid('order_id')->constrained('orders');
+            $table->foreignUlid('course_id');
             $table->integer('qty')->default(1);
             $table->double('price');
             $table->double('commission_rate')->nullable();

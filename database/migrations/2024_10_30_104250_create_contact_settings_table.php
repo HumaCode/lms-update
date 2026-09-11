@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('contact_settings', function (Blueprint $table) {
-            $table->id();
+            $table->ulid('id')->primary();
             $table->string('image')->nullable();
             $table->text('map_url')->nullable();
             $table->timestamps();

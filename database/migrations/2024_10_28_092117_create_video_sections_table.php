@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('video_sections', function (Blueprint $table) {
-            $table->id();
+            $table->ulid('id')->primary();
             $table->string('background')->nullable();
             $table->string('video_url')->nullable();
             $table->string('description')->nullable();

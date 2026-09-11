@@ -17,6 +17,7 @@ class AdminSeeder extends Seeder
             ['email' => 'admin@gmail.com'],
             [
                 'name' => 'Admin',
+                'username' => 'admin',
                 'password' => bcrypt('123')
             ]
         );

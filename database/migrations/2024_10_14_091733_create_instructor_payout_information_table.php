@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('instructor_payout_information', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('instructor_id')->constrained('users');
+            $table->ulid('id')->primary();
+            $table->foreignUlid('instructor_id')->constrained('users');
             $table->string('gateway');
             $table->text('information');
             $table->timestamps();

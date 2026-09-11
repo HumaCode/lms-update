@@ -12,12 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('latest_course_sections', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('category_one')->nullable();
-            $table->foreignId('category_two')->nullable();
-            $table->foreignId('category_three')->nullable();
-            $table->foreignId('category_four')->nullable();
-            $table->foreignId('category_five')->nullable();
+            $table->ulid('id')->primary();
+            $table->foreignUlid('category_one')->nullable();
+            $table->foreignUlid('category_two')->nullable();
+            $table->foreignUlid('category_three')->nullable();
+            $table->foreignUlid('category_four')->nullable();
+            $table->foreignUlid('category_five')->nullable();
             $table->timestamps();
         });
     }

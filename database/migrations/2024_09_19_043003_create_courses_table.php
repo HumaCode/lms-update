@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('courses', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('instructor_id')->constrained('users');
-            $table->foreignId('category_id')->nullable();
+            $table->ulid('id')->primary();
+            $table->foreignUlid('instructor_id')->constrained('users');
+            $table->foreignUlid('category_id')->nullable();
             $table->enum('course_type', ['course'])->default('course');
             $table->string('title');
             $table->string('slug');
@@ -33,8 +33,8 @@ return new class extends Migration
             $table->text('message_for_reviewer')->nullable();
             $table->enum('is_approved', ['pending', 'approved', 'rejected'])->default('pending');
             $table->enum('status', ['active', 'inactive', 'draft'])->default('draft');
-            $table->foreignId('course_level_id')->nullable();
-            $table->foreignId('course_language_id')->nullable();
+            $table->foreignUlid('course_level_id')->nullable();
+            $table->foreignUlid('course_language_id')->nullable();
             $table->timestamps();
         });
     }

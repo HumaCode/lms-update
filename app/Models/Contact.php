@@ -4,11 +4,12 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * @property int $id
+ * @property string $id
  * @property string $icon
  * @property string $title
  * @property string|null $line_one
@@ -26,5 +27,5 @@ use Illuminate\Database\Eloquent\Model;
 ])]
 class Contact extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUlids;
 }

@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('top_bars', function (Blueprint $table) {
-            $table->id();
+            $table->ulid('id')->primary();
             $table->string('email')->nullable();
             $table->string('phone')->nullable();
             $table->string('offer_name')->nullable();

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -12,7 +13,7 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
 /**
- * @property int $id
+ * @property string $id
  * @property int $instructor_id
  * @property int $category_id
  * @property string $course_type
@@ -64,6 +65,8 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 ])]
 class Course extends Model implements HasMedia
 {
+    use HasUlids;
+
     use HasFactory, InteractsWithMedia;
 
     protected $appends = ['thumbnail'];

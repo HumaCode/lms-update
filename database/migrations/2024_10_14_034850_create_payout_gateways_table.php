@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('payout_gateways', function (Blueprint $table) {
-            $table->id();
+            $table->ulid('id')->primary();
             $table->string('name');
             $table->text('description');
             $table->boolean('status')->default(1);

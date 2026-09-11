@@ -4,11 +4,12 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * @property int $id
+ * @property string $id
  * @property string|null $image
  * @property string|null $url
  * @property bool $status
@@ -22,5 +23,5 @@ use Illuminate\Database\Eloquent\Model;
 ])]
 class Brand extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUlids;
 }

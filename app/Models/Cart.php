@@ -4,12 +4,13 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * @property int $id
+ * @property string $id
  * @property int $user_id
  * @property int $course_id
  * @property Carbon|null $created_at
@@ -21,7 +22,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 ])]
 class Cart extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUlids;
 
     public function course(): BelongsTo
     {

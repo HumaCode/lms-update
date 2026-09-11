@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('about_us_sections', function (Blueprint $table) {
-            $table->id();
+            $table->ulid('id')->primary();
             $table->string('image')->nullable();
             $table->string('rounded_text')->nullable();
             $table->string('lerner_count')->nullable();

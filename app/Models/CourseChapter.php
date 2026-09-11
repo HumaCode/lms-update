@@ -4,12 +4,13 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * @property int $id
+ * @property string $id
  * @property string $title
  * @property int $instructor_id
  * @property int $course_id
@@ -27,7 +28,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 ])]
 class CourseChapter extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUlids;
 
     public function lessons(): HasMany
     {

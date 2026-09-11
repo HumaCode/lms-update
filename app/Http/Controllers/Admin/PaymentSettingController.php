@@ -16,10 +16,31 @@ class PaymentSettingController extends Controller
     {
         return \Inertia\Inertia::render('Admin/PaymentSetting/Index', [
             'gatewaySettings' => config('gateway_settings') ?? [],
-            'paypalCurrencies' => config('gateway_currencies.paypal_currencies') ?? [],
-            'stripeCurrencies' => config('gateway_currencies.stripe_currencies') ?? [],
-            'razorpayCurrencies' => config('gateway_currencies.razorpay_currencies') ?? [],
+            'paypalCurrencies' => array_values(config('gateway_currencies.paypal_currencies') ?? []),
+            'stripeCurrencies' => array_values(config('gateway_currencies.stripe_currencies') ?? []),
+            'razorpayCurrencies' => array_values(config('gateway_currencies.razorpay_currencies') ?? []),
         ]);     
+    }
+
+    function xenditSetting(Request $request) : RedirectResponse 
+    {
+        $validatedData = $request->validate([
+            'xendit_status' => ['required', 'in:active,inactive'],
+            'xendit_mode' => ['required', 'in:development,production'],
+            'xendit_currency' => ['required'],
+            'xendit_secret_key' => ['required', 'string'],
+            'xendit_webhook_token' => ['nullable', 'string'],
+        ]);
+        
+        foreach($validatedData as $key => $value) {
+            PaymentSetting::updateOrCreate(['key' => $key], ['value' => $value]);
+        }
+
+        Cache::forget('gatewaySettings');
+
+        notyf()->success("Xendit Settings Updated Successfully!");
+
+        return redirect()->back();
     }
 
     function paypalSetting(Request $request) : RedirectResponse 

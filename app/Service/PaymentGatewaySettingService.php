@@ -19,6 +19,13 @@ class PaymentGatewaySettingService
   function setGlobalSettings() {
     $settings = $this->getSettings();
     config()->set('gateway_settings', $settings);
+
+    if (!empty($settings['xendit_secret_key'])) {
+        config()->set('xendit.secret_key', $settings['xendit_secret_key']);
+    }
+    if (!empty($settings['xendit_webhook_token'])) {
+        config()->set('xendit.webhook_token', $settings['xendit_webhook_token']);
+    }
   }
 
 }

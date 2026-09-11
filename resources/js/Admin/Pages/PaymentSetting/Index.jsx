@@ -10,7 +10,27 @@ export default function Index({
     stripeCurrencies = [],
     razorpayCurrencies = [],
 }) {
-    const [activeTab, setActiveTab] = useState('paypal');
+    const [activeTab, setActiveTab] = useState('xendit');
+
+    // Ensure array safety for currency dropdowns
+    const safePaypalCurrencies = Array.isArray(paypalCurrencies)
+        ? paypalCurrencies
+        : Object.values(paypalCurrencies || {});
+    const safeStripeCurrencies = Array.isArray(stripeCurrencies)
+        ? stripeCurrencies
+        : Object.values(stripeCurrencies || {});
+    const safeRazorpayCurrencies = Array.isArray(razorpayCurrencies)
+        ? razorpayCurrencies
+        : Object.values(razorpayCurrencies || {});
+
+    // Xendit Form
+    const xenditForm = useForm({
+        xendit_status: gatewaySettings.xendit_status || 'active',
+        xendit_mode: gatewaySettings.xendit_mode || 'development',
+        xendit_currency: gatewaySettings.xendit_currency || 'IDR',
+        xendit_secret_key: gatewaySettings.xendit_secret_key || 'xnd_development_sZPXUVfXQMwOexwHH1jizq3PYHlQITdEZBOBauzdzlWZ4YJCdr0gXAoiOlrZH',
+        xendit_webhook_token: gatewaySettings.xendit_webhook_token || '',
+    });
 
     // PayPal Form
     const paypalForm = useForm({
@@ -40,6 +60,11 @@ export default function Index({
         razorpay_secret: gatewaySettings.razorpay_secret || '',
     });
 
+    const handleXenditSubmit = (e) => {
+        e.preventDefault();
+        xenditForm.post(route('admin.xendit-setting.update'));
+    };
+
     const handlePaypalSubmit = (e) => {
         e.preventDefault();
         paypalForm.post(route('admin.paypal-setting.update'));
@@ -67,12 +92,22 @@ export default function Index({
                 ]}
             />
 
-            <div className="card">
-                <div className="card-header">
+            <div className="card shadow-sm border-0 rounded-3">
+                <div className="card-header bg-white border-bottom">
                     <ul className="nav nav-tabs card-header-tabs" role="tablist">
                         <li className="nav-item" role="presentation">
                             <button
-                                className={`nav-link ${activeTab === 'paypal' ? 'active' : ''}`}
+                                className={`nav-link fw-bold ${activeTab === 'xendit' ? 'active text-primary' : 'text-secondary'}`}
+                                onClick={() => setActiveTab('xendit')}
+                                type="button"
+                            >
+                                <i className="ti ti-wallet me-2"></i>
+                                Xendit (Indonesia)
+                            </button>
+                        </li>
+                        <li className="nav-item" role="presentation">
+                            <button
+                                className={`nav-link fw-semibold ${activeTab === 'paypal' ? 'active' : ''}`}
                                 onClick={() => setActiveTab('paypal')}
                                 type="button"
                             >
@@ -82,7 +117,7 @@ export default function Index({
                         </li>
                         <li className="nav-item" role="presentation">
                             <button
-                                className={`nav-link ${activeTab === 'stripe' ? 'active' : ''}`}
+                                className={`nav-link fw-semibold ${activeTab === 'stripe' ? 'active' : ''}`}
                                 onClick={() => setActiveTab('stripe')}
                                 type="button"
                             >
@@ -92,7 +127,7 @@ export default function Index({
                         </li>
                         <li className="nav-item" role="presentation">
                             <button
-                                className={`nav-link ${activeTab === 'razorpay' ? 'active' : ''}`}
+                                className={`nav-link fw-semibold ${activeTab === 'razorpay' ? 'active' : ''}`}
                                 onClick={() => setActiveTab('razorpay')}
                                 type="button"
                             >
@@ -103,11 +138,121 @@ export default function Index({
                     </ul>
                 </div>
 
-                <div className="card-body">
+                <div className="card-body p-4">
+                    {/* XENDIT TAB */}
+                    {activeTab === 'xendit' && (
+                        <form onSubmit={handleXenditSubmit}>
+                            <div className="d-flex justify-content-between align-items-center mb-4">
+                                <div>
+                                    <h4 className="fw-bold text-dark mb-1">Xendit Payment Gateway Configuration</h4>
+                                    <p className="text-muted small mb-0">
+                                        Terima pembayaran otomatis via Transfer Bank (VA), E-Wallet (GoPay, OVO, DANA, ShopeePay), QRIS, & Kartu Kredit.
+                                    </p>
+                                </div>
+                                <span
+                                    className="badge px-3 py-2 fs-6 fw-bold shadow-sm"
+                                    style={{
+                                        backgroundColor: xenditForm.data.xendit_status === 'active' ? '#10b981' : '#64748b',
+                                        color: '#ffffff',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        textTransform: 'capitalize',
+                                    }}
+                                >
+                                    <i className={`ti ${xenditForm.data.xendit_status === 'active' ? 'ti-circle-check-filled' : 'ti-circle-x-filled'} me-1`}></i>
+                                    Status: {xenditForm.data.xendit_status}
+                                </span>
+                            </div>
+
+                            <div className="row g-3">
+                                <div className="col-md-4">
+                                    <label className="form-label required fw-semibold">Xendit Gateway Status</label>
+                                    <select
+                                        className="form-select"
+                                        value={xenditForm.data.xendit_status}
+                                        onChange={(e) => xenditForm.setData('xendit_status', e.target.value)}
+                                    >
+                                        <option value="active">Active (Aktif)</option>
+                                        <option value="inactive">Inactive (Non-aktif)</option>
+                                    </select>
+                                </div>
+
+                                <div className="col-md-4">
+                                    <label className="form-label required fw-semibold">Environment / Mode</label>
+                                    <select
+                                        className="form-select"
+                                        value={xenditForm.data.xendit_mode}
+                                        onChange={(e) => xenditForm.setData('xendit_mode', e.target.value)}
+                                    >
+                                        <option value="development">Development (Testing / Sandbox)</option>
+                                        <option value="production">Production (Live)</option>
+                                    </select>
+                                </div>
+
+                                <div className="col-md-4">
+                                    <label className="form-label required fw-semibold">Currency</label>
+                                    <select
+                                        className="form-select"
+                                        value={xenditForm.data.xendit_currency}
+                                        onChange={(e) => xenditForm.setData('xendit_currency', e.target.value)}
+                                    >
+                                        <option value="IDR">IDR (Rupiah Indonesia)</option>
+                                        <option value="PHP">PHP (Philippine Peso)</option>
+                                        <option value="USD">USD (US Dollar)</option>
+                                    </select>
+                                </div>
+
+                                <div className="col-12">
+                                    <label className="form-label required fw-semibold">Secret API Key</label>
+                                    <input
+                                        type="text"
+                                        className={`form-control ${xenditForm.errors.xendit_secret_key ? 'is-invalid' : ''}`}
+                                        value={xenditForm.data.xendit_secret_key}
+                                        onChange={(e) => xenditForm.setData('xendit_secret_key', e.target.value)}
+                                        placeholder="xnd_development_... / xnd_production_..."
+                                    />
+                                    <div className="form-text small">
+                                        API Key rahasia dari Dashboard Xendit Anda (Menu Configuration / API Keys).
+                                    </div>
+                                    {xenditForm.errors.xendit_secret_key && (
+                                        <div className="invalid-feedback">{xenditForm.errors.xendit_secret_key}</div>
+                                    )}
+                                </div>
+
+                                <div className="col-12">
+                                    <label className="form-label fw-semibold">Webhook Verification Token (Opsional)</label>
+                                    <input
+                                        type="text"
+                                        className={`form-control ${xenditForm.errors.xendit_webhook_token ? 'is-invalid' : ''}`}
+                                        value={xenditForm.data.xendit_webhook_token}
+                                        onChange={(e) => xenditForm.setData('xendit_webhook_token', e.target.value)}
+                                        placeholder="Token verifikasi callback webhook Xendit"
+                                    />
+                                    <div className="form-text small">
+                                        Token verifikasi dari menu Webhooks di Dashboard Xendit untuk memverifikasi callback status transaksi otomatis.
+                                    </div>
+                                    {xenditForm.errors.xendit_webhook_token && (
+                                        <div className="invalid-feedback">{xenditForm.errors.xendit_webhook_token}</div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="mt-4 pt-3 border-top text-end">
+                                <button
+                                    type="submit"
+                                    className="btn btn-primary px-4 fw-bold shadow-sm"
+                                    disabled={xenditForm.processing}
+                                >
+                                    {xenditForm.processing ? 'Saving...' : 'Save Xendit Settings'}
+                                </button>
+                            </div>
+                        </form>
+                    )}
+
                     {/* PAYPAL TAB */}
                     {activeTab === 'paypal' && (
                         <form onSubmit={handlePaypalSubmit}>
-                            <h3 className="card-title mb-4">PayPal Configuration</h3>
+                            <h4 className="fw-bold text-dark mb-4">PayPal Configuration</h4>
                             <div className="row g-3">
                                 <div className="col-md-4">
                                     <label className="form-label required">PayPal Mode</label>
@@ -128,7 +273,7 @@ export default function Index({
                                         value={paypalForm.data.paypal_currency}
                                         onChange={(e) => paypalForm.setData('paypal_currency', e.target.value)}
                                     >
-                                        {paypalCurrencies.map((curr, idx) => {
+                                        {safePaypalCurrencies.map((curr, idx) => {
                                             const code = typeof curr === 'object' ? curr.code : curr;
                                             return (
                                                 <option key={idx} value={code}>
@@ -207,7 +352,7 @@ export default function Index({
                     {/* STRIPE TAB */}
                     {activeTab === 'stripe' && (
                         <form onSubmit={handleStripeSubmit}>
-                            <h3 className="card-title mb-4">Stripe Configuration</h3>
+                            <h4 className="fw-bold text-dark mb-4">Stripe Configuration</h4>
                             <div className="row g-3">
                                 <div className="col-md-4">
                                     <label className="form-label required">Stripe Status</label>
@@ -228,7 +373,7 @@ export default function Index({
                                         value={stripeForm.data.stripe_currency}
                                         onChange={(e) => stripeForm.setData('stripe_currency', e.target.value)}
                                     >
-                                        {stripeCurrencies.map((curr, idx) => {
+                                        {safeStripeCurrencies.map((curr, idx) => {
                                             const code = typeof curr === 'object' ? curr.code : curr;
                                             return (
                                                 <option key={idx} value={code}>
@@ -294,7 +439,7 @@ export default function Index({
                     {/* RAZORPAY TAB */}
                     {activeTab === 'razorpay' && (
                         <form onSubmit={handleRazorpaySubmit}>
-                            <h3 className="card-title mb-4">Razorpay Configuration</h3>
+                            <h4 className="fw-bold text-dark mb-4">Razorpay Configuration</h4>
                             <div className="row g-3">
                                 <div className="col-md-4">
                                     <label className="form-label required">Razorpay Status</label>
@@ -315,7 +460,7 @@ export default function Index({
                                         value={razorpayForm.data.razorpay_currency}
                                         onChange={(e) => razorpayForm.setData('razorpay_currency', e.target.value)}
                                     >
-                                        {razorpayCurrencies.map((curr, idx) => {
+                                        {safeRazorpayCurrencies.map((curr, idx) => {
                                             const code = typeof curr === 'object' ? curr.code : curr;
                                             return (
                                                 <option key={idx} value={code}>

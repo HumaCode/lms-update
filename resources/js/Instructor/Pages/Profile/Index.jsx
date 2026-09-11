@@ -4,7 +4,9 @@ import InstructorLayout from '@/Instructor/Layouts/InstructorLayout';
 import { route } from '@/Utils/routes';
 
 export default function Index({ profile = {}, gateways = [] }) {
-    const [activeTab, setActiveTab] = useState('personal');
+    const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const initialTab = urlParams?.get('tab') || 'personal';
+    const [activeTab, setActiveTab] = useState(initialTab);
 
     // 1. Personal Info Form
     const [personalData, setPersonalData] = useState({
@@ -407,12 +409,25 @@ export default function Index({ profile = {}, gateways = [] }) {
                                     <label className="form-label required">Select Payout Gateway</label>
                                     <select
                                         className={`form-select ${payoutForm.errors.gateway ? 'is-invalid' : ''}`}
-                                        value={payoutForm.data.gateway}
+                                        value={
+                                            (gateways && gateways.length > 0 ? gateways : [
+                                                { id: 1, name: 'Bank Transfer' },
+                                                { id: 2, name: 'PayPal' },
+                                                { id: 3, name: 'E-Wallet (DANA/OVO/GoPay)' },
+                                            ]).find(gw => gw.name.toLowerCase() === (payoutForm.data.gateway || '').toLowerCase())?.name || payoutForm.data.gateway
+                                        }
                                         onChange={(e) => payoutForm.setData('gateway', e.target.value)}
                                     >
                                         <option value="">-- Choose Gateway --</option>
-                                        {gateways.map((gw) => (
-                                            <option key={gw.id} value={gw.name}>
+                                        {(gateways && gateways.length > 0
+                                            ? gateways
+                                            : [
+                                                  { id: 1, name: 'Bank Transfer' },
+                                                  { id: 2, name: 'PayPal' },
+                                                  { id: 3, name: 'E-Wallet (DANA/OVO/GoPay)' },
+                                              ]
+                                        ).map((gw, idx) => (
+                                            <option key={gw.id || idx} value={gw.name}>
                                                 {gw.name}
                                             </option>
                                         ))}
@@ -427,7 +442,15 @@ export default function Index({ profile = {}, gateways = [] }) {
                                     <textarea
                                         className={`form-control ${payoutForm.errors.information ? 'is-invalid' : ''}`}
                                         rows="5"
-                                        placeholder="Bank Name: ...&#10;Account Number: ...&#10;Account Holder: ...&#10;Routing / SWIFT: ..."
+                                        placeholder={
+                                            !payoutForm.data.gateway
+                                                ? "Pilih metode pembayaran di atas terlebih dahulu..."
+                                                : payoutForm.data.gateway.toLowerCase().includes('bank')
+                                                ? "Nama Bank: Bank BCA\nNomor Rekening: 8830192831\nNama Pemilik Rekening: Jhon Deo"
+                                                : payoutForm.data.gateway.toLowerCase().includes('paypal')
+                                                ? "PayPal Email: jhon.deo@example.com\nNama Pemilik Akun: Jhon Deo"
+                                                : "Jenis E-Wallet: DANA / OVO / GoPay\nNomor HP: 081234567890\nNama Pemilik Akun: Jhon Deo"
+                                        }
                                         value={payoutForm.data.information}
                                         onChange={(e) => payoutForm.setData('information', e.target.value)}
                                     ></textarea>

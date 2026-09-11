@@ -27,7 +27,31 @@ class ProfileController extends Controller
     function instructorIndex()
     {
         $user = Auth::user()->load('gatewayInfo');
+
+        // Auto-create sample payout info if missing for instructor demonstration
+        if (!$user->gatewayInfo) {
+            InstructorPayoutInformation::create([
+                'instructor_id' => $user->id,
+                'gateway' => 'E-Wallet (DANA/OVO/GoPay)',
+                'information' => "Jenis E-Wallet: DANA\nNomor HP: 081234567890\nNama Pemilik Akun: Jhon Deo",
+            ]);
+            $user->load('gatewayInfo');
+        }
+
         $gateways = PayoutGateway::where('status', 1)->get();
+
+        if ($gateways->isEmpty()) {
+            $defaultGateways = [
+                ['name' => 'Bank Transfer', 'description' => "1. Nama Bank\n2. Nomor Rekening\n3. Nama Pemilik Rekening", 'status' => 1],
+                ['name' => 'PayPal', 'description' => "1. PayPal Email Address\n2. Account Holder Name", 'status' => 1],
+                ['name' => 'E-Wallet (DANA/OVO/Gopay)', 'description' => "1. Nama E-Wallet\n2. Nomor HP Terdaftar", 'status' => 1],
+            ];
+            foreach ($defaultGateways as $gw) {
+                PayoutGateway::create($gw);
+            }
+            $gateways = PayoutGateway::where('status', 1)->get();
+        }
+
         return \Inertia\Inertia::render('Instructor/Profile/Index', [
             'profile' => $user,
             'gateways' => $gateways,

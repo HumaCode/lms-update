@@ -1,8 +1,8 @@
 import React from 'react';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import InstructorLayout from '@/Instructor/Layouts/InstructorLayout';
 import StatCard from '@/Instructor/Components/StatCard';
-import { formatCurrency } from '@/Utils/formatters';
+import { formatCurrency, formatPriceInput, parseRawPrice } from '@/Utils/formatters';
 import { route } from '@/Utils/routes';
 
 export default function RequestPayout({
@@ -11,6 +11,11 @@ export default function RequestPayout({
     totalPayout = 0,
     gatewayInfo = null,
 }) {
+    const { settings } = usePage().props;
+    const currency = (settings?.default_currency || settings?.site_currency || '').toUpperCase();
+    const icon = settings?.currency_icon || settings?.site_currency_icon || 'Rp';
+    const isRupiah = currency === 'IDR' || icon.toLowerCase().includes('rp') || icon.toLowerCase() === 'idr';
+
     const { data, setData, post, processing, errors } = useForm({
         amount: '',
     });
@@ -19,6 +24,16 @@ export default function RequestPayout({
         e.preventDefault();
         post(route('instructor.withdraw.request-payout.create'));
     };
+
+    const handleChangeAmount = (e) => {
+        const raw = parseRawPrice(e.target.value, isRupiah);
+        setData('amount', raw);
+    };
+
+    const numAmount = Number(data.amount) || 0;
+    const numBalance = Number(currentBalance) || 0;
+    const isExceeding = numAmount > numBalance;
+    const isDisabled = processing || !gatewayInfo || numBalance <= 0 || isExceeding || numAmount <= 0;
 
     return (
         <InstructorLayout
@@ -35,7 +50,7 @@ export default function RequestPayout({
                 <div className="col-md-4">
                     <StatCard
                         title="Available Balance"
-                        value={formatCurrency(currentBalance)}
+                        value={formatCurrency(currentBalance, settings)}
                         icon="fas fa-wallet"
                         variant="success"
                     />
@@ -43,7 +58,7 @@ export default function RequestPayout({
                 <div className="col-md-4">
                     <StatCard
                         title="Pending Payout"
-                        value={formatCurrency(pendingBalance)}
+                        value={formatCurrency(pendingBalance, settings)}
                         icon="fas fa-hourglass-half"
                         variant="warning"
                     />
@@ -51,7 +66,7 @@ export default function RequestPayout({
                 <div className="col-md-4">
                     <StatCard
                         title="Total Paid Out"
-                        value={formatCurrency(totalPayout)}
+                        value={formatCurrency(totalPayout, settings)}
                         icon="fas fa-money-check-alt"
                         variant="primary"
                     />
@@ -75,7 +90,7 @@ export default function RequestPayout({
                                     {gatewayInfo.gateway}
                                 </span>
                                 <Link
-                                    href={route('instructor.profile.index')}
+                                    href={`${route('instructor.profile.index')}?tab=payout`}
                                     className="small text-primary text-decoration-none fw-semibold"
                                 >
                                     <i className="fas fa-cog me-1"></i> Change Payout Details
@@ -91,7 +106,7 @@ export default function RequestPayout({
                                 <i className="fas fa-exclamation-triangle me-2"></i>
                                 <strong>Payout Account Missing:</strong> You haven't set up your payout bank/gateway account yet.
                             </div>
-                            <Link href={route('instructor.profile.index')} className="btn btn-sm btn-dark">
+                            <Link href={`${route('instructor.profile.index')}?tab=payout`} className="btn btn-sm btn-dark">
                                 Configure Payout Account
                             </Link>
                         </div>
@@ -101,33 +116,48 @@ export default function RequestPayout({
                         <div className="mb-3">
                             <label className="form-label required fw-semibold">Payout Amount</label>
                             <div className="input-group">
-                                <span className="input-group-text">$</span>
+                                <span className="input-group-text">{icon}</span>
                                 <input
-                                    type="number"
-                                    step="0.01"
-                                    min="1"
-                                    max={currentBalance}
-                                    className={`form-control ${errors.amount ? 'is-invalid' : ''}`}
-                                    placeholder="Enter amount to withdraw..."
-                                    value={data.amount}
-                                    onChange={(e) => setData('amount', e.target.value)}
-                                    autoFocus
+                                    type="text"
+                                    inputMode="numeric"
+                                    className={`form-control ${errors.amount || isExceeding ? 'is-invalid' : ''}`}
+                                    placeholder={!gatewayInfo ? "Configure payout account first..." : (isRupiah ? "e.g. 50.000" : "e.g. 50.00")}
+                                    value={formatPriceInput(data.amount, isRupiah)}
+                                    onChange={handleChangeAmount}
+                                    disabled={!gatewayInfo}
+                                    autoFocus={!!gatewayInfo}
                                 />
                                 {errors.amount && (
                                     <div className="invalid-feedback">{errors.amount}</div>
                                 )}
+                                {isExceeding && !errors.amount && (
+                                    <div className="invalid-feedback">
+                                        Jumlah penarikan tidak boleh melebihi saldo tersedia ({formatCurrency(currentBalance, settings)}).
+                                    </div>
+                                )}
                             </div>
-                            <div className="form-text">
-                                Maximum withdrawable amount: <strong>{formatCurrency(currentBalance)}</strong>
-                            </div>
+                            {!gatewayInfo ? (
+                                <div className="text-danger small mt-1 fw-semibold">
+                                    <i className="fas fa-exclamation-circle me-1"></i>
+                                    Anda belum mengatur rekening/rekening bank penarikan. Silakan klik <strong>Configure Payout Account</strong> di atas terlebih dahulu.
+                                </div>
+                            ) : (
+                                <div className={`form-text ${isExceeding ? 'text-danger fw-semibold' : ''}`}>
+                                    Maximum withdrawable amount: <strong>{formatCurrency(currentBalance, settings)}</strong>
+                                </div>
+                            )}
                         </div>
 
                         <button
                             type="submit"
                             className="btn btn-primary px-4"
-                            disabled={processing || !gatewayInfo || Number(currentBalance) <= 0}
+                            disabled={isDisabled}
                         >
-                            {processing ? 'Submitting Request...' : 'Confirm & Request Payout'}
+                            {!gatewayInfo
+                                ? 'Setup Payout Account First'
+                                : processing
+                                ? 'Submitting Request...'
+                                : 'Confirm & Request Payout'}
                         </button>
                     </form>
                 </div>

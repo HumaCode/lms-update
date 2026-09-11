@@ -1,5 +1,5 @@
 import React from 'react';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import InstructorLayout from '@/Instructor/Layouts/InstructorLayout';
 import StatCard from '@/Instructor/Components/StatCard';
 import Pagination from '@/Components/UI/Pagination';
@@ -12,6 +12,8 @@ export default function Index({
     totalPayout = 0,
     withdraws = {},
 }) {
+    const { settings } = usePage().props;
+
     return (
         <InstructorLayout
             title="Earnings & Withdrawals"
@@ -24,7 +26,7 @@ export default function Index({
                 <div className="col-md-4">
                     <StatCard
                         title="Available Balance"
-                        value={formatCurrency(currentBalance)}
+                        value={formatCurrency(currentBalance, settings)}
                         icon="fas fa-wallet"
                         variant="success"
                     />
@@ -32,7 +34,7 @@ export default function Index({
                 <div className="col-md-4">
                     <StatCard
                         title="Pending Payout"
-                        value={formatCurrency(pendingBalance)}
+                        value={formatCurrency(pendingBalance, settings)}
                         icon="fas fa-hourglass-half"
                         variant="warning"
                     />
@@ -40,7 +42,7 @@ export default function Index({
                 <div className="col-md-4">
                     <StatCard
                         title="Total Paid Out"
-                        value={formatCurrency(totalPayout)}
+                        value={formatCurrency(totalPayout, settings)}
                         icon="fas fa-money-check-alt"
                         variant="primary"
                     />
@@ -80,7 +82,7 @@ export default function Index({
                                             {(withdraws.current_page - 1) * withdraws.per_page + idx + 1}
                                         </td>
                                         <td className="fw-bold text-dark">
-                                            {formatCurrency(item.amount)}
+                                            {formatCurrency(item.amount, settings)}
                                         </td>
                                         <td>
                                             {item.status === 'approved' && (

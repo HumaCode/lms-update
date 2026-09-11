@@ -18,6 +18,19 @@ class PayoutGatewayController extends Controller
     public function index(): Response
     {
         $gateways = PayoutGateway::all();
+
+        if ($gateways->isEmpty()) {
+            $defaultGateways = [
+                ['name' => 'Bank Transfer', 'description' => "1. Nama Bank\n2. Nomor Rekening\n3. Nama Pemilik Rekening", 'status' => 1],
+                ['name' => 'PayPal', 'description' => "1. PayPal Email Address\n2. Account Holder Name", 'status' => 1],
+                ['name' => 'E-Wallet (DANA/OVO/GoPay)', 'description' => "1. Nama E-Wallet\n2. Nomor HP Terdaftar", 'status' => 1],
+            ];
+            foreach ($defaultGateways as $gw) {
+                PayoutGateway::create($gw);
+            }
+            $gateways = PayoutGateway::all();
+        }
+
         return Inertia::render('Admin/PayoutGateway/Index', [
             'gateways' => $gateways,
         ]);

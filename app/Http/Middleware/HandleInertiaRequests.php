@@ -78,6 +78,12 @@ class HandleInertiaRequests extends Middleware
                 },
             ],
             'settings' => fn () => config('settings'),
+            'admin_notifications' => fn () => auth('admin')->check()
+                ? \App\Models\AdminNotification::latest()->take(10)->get()
+                : [],
+            'unread_admin_notifications_count' => fn () => auth('admin')->check()
+                ? \App\Models\AdminNotification::where('is_read', false)->count()
+                : 0,
             'cart_count' => fn () => auth()->guard('web')->check() ? cartCount() : 0,
             'nav_categories' => fn () => \App\Models\CourseCategory::whereNull('parent_id')->where('status', 1)->with('subCategories')->get(),
             'topbar' => fn () => \App\Models\TopBar::first(),

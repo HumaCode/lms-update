@@ -7,7 +7,7 @@ import Pagination from '@/Components/UI/Pagination';
 import { formatCurrency, formatDate } from '@/Utils/formatters';
 import { route } from '@/Utils/routes';
 
-export default function Index({ withdraws }) {
+export default function Index({ withdraws, settings }) {
     return (
         <AdminLayout>
             <Head title="Withdraw Requests" />
@@ -20,7 +20,9 @@ export default function Index({ withdraws }) {
                 ]}
             />
 
-            <div className="card">
+            <div className="page-body">
+                <div className="container-xl">
+                    <div className="card">
                 <div className="card-header">
                     <h3 className="card-title">All Payout Requests</h3>
                     <div className="card-actions">
@@ -59,10 +61,10 @@ export default function Index({ withdraws }) {
                                             </div>
                                         </td>
                                         <td className="font-weight-bold text-danger">
-                                            {formatCurrency(item.amount)}
+                                            {formatCurrency(item.amount, settings)}
                                         </td>
                                         <td className="text-secondary">
-                                            {formatCurrency(item.instructor?.wallet || 0)}
+                                            {formatCurrency(item.instructor?.wallet || 0, settings)}
                                         </td>
                                         <td>
                                             <StatusBadge status={item.status} />
@@ -97,6 +99,8 @@ export default function Index({ withdraws }) {
                         <Pagination links={withdraws.links} />
                     </div>
                 )}
+                    </div>
+                </div>
             </div>
         </AdminLayout>
     );

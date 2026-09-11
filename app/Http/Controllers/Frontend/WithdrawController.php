@@ -59,6 +59,15 @@ class WithdrawController extends Controller
         $withdraw->instructor_id = user()->id;
         $withdraw->amount = $request->amount;
         $withdraw->save();
+
+        // Create Admin Notification
+        \App\Models\AdminNotification::create([
+            'title' => 'Pengajuan Penarikan Dana Baru',
+            'message' => 'Instruktur ' . (user()->name ?? 'Instruktur') . ' mengajukan penarikan dana sebesar ' . formatCurrency($withdraw->amount, config('settings')),
+            'url' => route('admin.withdraw-request.show', $withdraw->id),
+            'is_read' => false,
+        ]);
+
         notyf()->success("Withdraw Request Sent!");
         return redirect()->back();
     }

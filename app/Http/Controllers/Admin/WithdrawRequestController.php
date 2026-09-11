@@ -21,7 +21,7 @@ class WithdrawRequestController extends Controller
 
     public function show(Withdraw $withdraw): Response
     {
-        $withdraw->load('instructor');
+        $withdraw->load(['instructor.gatewayInfo']);
         return Inertia::render('Admin/WithdrawRequest/Show', [
             'withdraw' => $withdraw,
         ]);

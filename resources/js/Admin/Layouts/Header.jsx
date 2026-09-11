@@ -3,12 +3,15 @@ import { Link, router, usePage } from '@inertiajs/react';
 import { route } from '@/Utils/routes';
 
 export default function Header() {
-    const { auth } = usePage().props;
+    const { auth, admin_notifications = [], unread_admin_notifications_count = 0 } = usePage().props;
     const admin = auth?.admin;
 
     const [theme, setTheme] = useState('light');
     const [userMenuOpen, setUserMenuOpen] = useState(false);
+    const [notifMenuOpen, setNotifMenuOpen] = useState(false);
+
     const dropdownRef = useRef(null);
+    const notifDropdownRef = useRef(null);
 
     useEffect(() => {
         const savedTheme = localStorage.getItem('tablerTheme') || 'light';
@@ -19,6 +22,9 @@ export default function Header() {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
                 setUserMenuOpen(false);
             }
+            if (notifDropdownRef.current && !notifDropdownRef.current.contains(event.target)) {
+                setNotifMenuOpen(false);
+            }
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -28,6 +34,16 @@ export default function Header() {
         setTheme(newTheme);
         localStorage.setItem('tablerTheme', newTheme);
         document.body.setAttribute('data-bs-theme', newTheme);
+    };
+
+    const handleMarkAllRead = (e) => {
+        e.preventDefault();
+        router.post(route('admin.notifications.mark-all-read'), {}, { preserveScroll: true });
+    };
+
+    const handleNotificationClick = (id, url) => {
+        setNotifMenuOpen(false);
+        router.get(route('admin.notifications.mark-read', id));
     };
 
     const handleLogout = (e) => {
@@ -51,7 +67,8 @@ export default function Header() {
                 </button>
 
                 <div className="navbar-nav flex-row order-md-last">
-                    <div className="d-none d-md-flex ms-3 me-3 align-items-center">
+                    <div className="d-none d-md-flex ms-3 me-3 align-items-center gap-1">
+                        {/* THEME TOGGLE */}
                         {theme === 'light' ? (
                             <button
                                 onClick={() => toggleTheme('dark')}
@@ -98,6 +115,103 @@ export default function Header() {
                                 </svg>
                             </button>
                         )}
+
+                        {/* NOTIFICATION BELL */}
+                        <div className={`nav-item dropdown ${notifMenuOpen ? 'show' : ''}`} ref={notifDropdownRef}>
+                            <button
+                                type="button"
+                                className="btn btn-icon btn-ghost-secondary position-relative"
+                                onClick={() => setNotifMenuOpen((prev) => !prev)}
+                                title="Notifications"
+                                style={{ border: 'none', background: 'transparent' }}
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="icon"
+                                    width="24"
+                                    height="24"
+                                    viewBox="0 0 24 24"
+                                    strokeWidth="2"
+                                    stroke="currentColor"
+                                    fill="none"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                >
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                    <path d="M10 5a2 2 0 0 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6" />
+                                    <path d="M9 17v1a3 3 0 0 0 6 0v-1" />
+                                </svg>
+                                {unread_admin_notifications_count > 0 && (
+                                    <span
+                                        className="badge bg-danger position-absolute rounded-circle"
+                                        style={{ top: '2px', right: '2px', width: '18px', height: '18px', fontSize: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                    >
+                                        {unread_admin_notifications_count}
+                                    </span>
+                                )}
+                            </button>
+
+                            <div
+                                className={`dropdown-menu dropdown-menu-end ${notifMenuOpen ? 'show' : ''}`}
+                                style={notifMenuOpen ? { display: 'block', position: 'absolute', right: 0, top: '100%', width: '340px', zIndex: 1050 } : {}}
+                            >
+                                <div className="card border-0 shadow-sm">
+                                    <div className="card-header d-flex justify-content-between align-items-center py-2 px-3 bg-light">
+                                        <span className="fw-bold text-dark small">Notifikasi Admin</span>
+                                        {unread_admin_notifications_count > 0 && (
+                                            <button
+                                                onClick={handleMarkAllRead}
+                                                className="btn btn-link btn-sm text-decoration-none p-0 text-muted"
+                                                style={{ fontSize: '11px' }}
+                                            >
+                                                Tandai semua dibaca
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="list-group list-group-flush overflow-auto" style={{ maxHeight: '300px' }}>
+                                        {admin_notifications && admin_notifications.length > 0 ? (
+                                            admin_notifications.map((item) => (
+                                                <div
+                                                    key={item.id}
+                                                    onClick={() => handleNotificationClick(item.id, item.url)}
+                                                    className={`list-group-item list-group-item-action p-3 border-bottom ${!item.is_read ? 'bg-light-subtle' : ''}`}
+                                                    style={{ cursor: 'pointer' }}
+                                                >
+                                                    <div className="d-flex align-items-start gap-2">
+                                                        {!item.is_read && (
+                                                            <span className="badge bg-primary rounded-circle p-1 mt-1 me-1"></span>
+                                                        )}
+                                                        <div className="flex-grow-1">
+                                                            <div className="fw-semibold text-dark small">{item.title}</div>
+                                                            <div className="text-secondary small mt-1" style={{ fontSize: '12px', lineHeight: '1.4' }}>
+                                                                {item.message}
+                                                            </div>
+                                                            <div className="text-muted mt-1" style={{ fontSize: '10px' }}>
+                                                                {item.created_at ? new Date(item.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }) : ''}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="text-center py-4 text-muted small">
+                                                <i className="ti ti-bell-off fs-2 d-block mb-1 opacity-50"></i>
+                                                Belum ada notifikasi baru.
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="card-footer text-center py-2 bg-light border-top">
+                                        <Link
+                                            href={route('admin.withdraw-request.index')}
+                                            className="text-primary small text-decoration-none fw-semibold"
+                                            onClick={() => setNotifMenuOpen(false)}
+                                        >
+                                            Kelola Permintaan Penarikan
+                                        </Link>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div className={`nav-item dropdown ${userMenuOpen ? 'show' : ''}`} ref={dropdownRef}>

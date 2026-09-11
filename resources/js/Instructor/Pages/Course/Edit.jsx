@@ -576,7 +576,7 @@ export default function Edit({
                                 {!isFree && (
                                     <>
                                         <div className="col-md-6">
-                                            <label className="form-label required fw-semibold">Price ({currencyIcon})</label>
+                                            <label className="form-label required fw-semibold">Price / Harga Normal ({currencyIcon})</label>
                                             <input
                                                 type="text"
                                                 className={`form-control ${step1Errors.price ? 'is-invalid' : ''}`}
@@ -588,14 +588,17 @@ export default function Edit({
                                         </div>
 
                                         <div className="col-md-6">
-                                            <label className="form-label fw-semibold">Discounted Price ({currencyIcon})</label>
+                                            <label className="form-label fw-semibold">Discount Amount / Potongan Diskon ({currencyIcon})</label>
                                             <input
                                                 type="text"
                                                 className="form-control"
-                                                placeholder="Optional promo price"
+                                                placeholder="Contoh: 20.000"
                                                 value={formatPriceInput(step1Data.discount, isRupiah)}
                                                 onChange={(e) => setStep1Data({ ...step1Data, discount: parseRawPrice(e.target.value, isRupiah) })}
                                             />
+                                            <div className="form-text text-muted small">
+                                                Kosongkan jika tidak ada diskon. Contoh: Harga 200.000 & Diskon 20.000 = Harga akhir Rp 180.000.
+                                            </div>
                                         </div>
                                     </>
                                 )}
@@ -1188,10 +1191,56 @@ export default function Edit({
                                             <i className="fas fa-globe me-1"></i>
                                             {course.language?.name || course.course_language?.name || 'English'}
                                         </span>
-                                        <span className="badge bg-success-subtle text-success fw-bold border border-success-subtle px-3 py-2">
-                                            <i className="fas fa-tag me-1"></i>
-                                            {Number(course.price) === 0 ? 'Free' : formatCurrency(course.discount ? course.discount : course.price, settings)}
-                                        </span>
+                                        {(() => {
+                                            const numPrice = Number(course.price || 0);
+                                            const numDiscount = Number(course.discount || 0);
+                                            const isFree = numPrice === 0;
+
+                                            if (isFree) {
+                                                return (
+                                                    <span className="badge bg-success-subtle text-success fw-bold border border-success-subtle px-3 py-2">
+                                                        <i className="fas fa-tag me-1"></i>Free
+                                                    </span>
+                                                );
+                                            }
+
+                                            // Check if discount exists
+                                            if (numDiscount > 0) {
+                                                // Case A: If discount value is less than price (e.g. Price 200.000, Discount input 20.000)
+                                                // Final price = 200.000 - 20.000 = 180.000, Discount Amount = 20.000
+                                                const isNominalDiscount = numDiscount < numPrice;
+                                                const finalPrice = isNominalDiscount ? (numPrice - numDiscount) : numDiscount;
+                                                const discountAmount = isNominalDiscount ? numDiscount : (numPrice - numDiscount);
+
+                                                return (
+                                                    <div className="d-inline-flex align-items-center gap-2 flex-wrap">
+                                                        {/* Final Price after discount */}
+                                                        <span className="badge bg-success-subtle text-success fw-bold border border-success-subtle px-3 py-2 fs-6">
+                                                            <i className="fas fa-tag me-1"></i>
+                                                            {formatCurrency(finalPrice, settings)}
+                                                        </span>
+                                                        {/* Original Price strikethrough in gray */}
+                                                        <span className="text-muted text-decoration-line-through small me-1">
+                                                            {formatCurrency(numPrice, settings)}
+                                                        </span>
+                                                        {/* Discount Amount badge */}
+                                                        {discountAmount > 0 && (
+                                                            <span className="badge bg-danger text-white rounded-pill px-2 py-1 small">
+                                                                Diskon {formatCurrency(discountAmount, settings)}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                );
+                                            }
+
+                                            // No discount
+                                            return (
+                                                <span className="badge bg-success-subtle text-success fw-bold border border-success-subtle px-3 py-2">
+                                                    <i className="fas fa-tag me-1"></i>
+                                                    {formatCurrency(numPrice, settings)}
+                                                </span>
+                                            );
+                                        })()}
                                     </div>
 
                                     <div className="d-flex gap-4 text-muted small">

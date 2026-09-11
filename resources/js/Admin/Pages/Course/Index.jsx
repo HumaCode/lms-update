@@ -83,8 +83,19 @@ export default function Index({ courses }) {
                                 </thead>
                                 <tbody>
                                     {courses.data && courses.data.length > 0 ? (
-                                        courses.data.map((course) => (
-                                            <tr key={course.id}>
+                                        courses.data.map((course) => {
+                                            const isPending = course.is_approved === 'pending';
+                                            const isRejected = course.is_approved === 'rejected';
+
+                                            let rowStyle = {};
+                                            if (isPending) {
+                                                rowStyle = { backgroundColor: 'rgba(254, 240, 138, 0.25)' }; // soft pastel yellow
+                                            } else if (isRejected) {
+                                                rowStyle = { backgroundColor: 'rgba(254, 226, 226, 0.35)' }; // soft pastel red
+                                            }
+
+                                            return (
+                                                <tr key={course.id} style={rowStyle}>
                                                 <td>
                                                     <div className="d-flex align-items-center">
                                                         <img
@@ -117,25 +128,41 @@ export default function Index({ courses }) {
                                                     </div>
                                                 </td>
                                                 <td>
-                                                    {Number(course.price) === 0 || course.price === '0' || course.price === 0 ? (
-                                                        <span className="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 fw-bold">
-                                                            Free
-                                                        </span>
-                                                    ) : (
-                                                        <div>
+                                                    {(() => {
+                                                        const numPrice = Number(course.price || 0);
+                                                        const numDiscount = Number(course.discount || 0);
+                                                        const isFree = numPrice === 0;
+
+                                                        if (isFree) {
+                                                            return (
+                                                                <span className="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 fw-bold">
+                                                                    Free
+                                                                </span>
+                                                            );
+                                                        }
+
+                                                        if (numDiscount > 0) {
+                                                            const isNominalDiscount = numDiscount < numPrice;
+                                                            const finalPrice = isNominalDiscount ? (numPrice - numDiscount) : numDiscount;
+
+                                                            return (
+                                                                <div>
+                                                                    <div className="font-weight-bold text-dark">
+                                                                        {formatCurrency(finalPrice, settings)}
+                                                                    </div>
+                                                                    <small className="text-decoration-line-through text-muted d-block" style={{ fontSize: '0.75rem' }}>
+                                                                        {formatCurrency(numPrice, settings)}
+                                                                    </small>
+                                                                </div>
+                                                            );
+                                                        }
+
+                                                        return (
                                                             <div className="font-weight-bold text-dark">
-                                                                {formatCurrency(
-                                                                    Number(course.discount) > 0 ? course.discount : course.price,
-                                                                    settings
-                                                                )}
+                                                                {formatCurrency(numPrice, settings)}
                                                             </div>
-                                                            {Number(course.discount) > 0 && Number(course.discount) < Number(course.price) && (
-                                                                <small className="text-decoration-line-through text-muted d-block" style={{ fontSize: '0.75rem' }}>
-                                                                    {formatCurrency(course.price, settings)}
-                                                                </small>
-                                                            )}
-                                                        </div>
-                                                    )}
+                                                        );
+                                                    })()}
                                                 </td>
                                                 <td>
                                                     <div className="font-weight-medium">
@@ -187,7 +214,8 @@ export default function Index({ courses }) {
                                                     </button>
                                                 </td>
                                             </tr>
-                                        ))
+                                            );
+                                        })
                                     ) : (
                                         <tr>
                                             <td colSpan="6" className="text-center text-muted py-4">
@@ -262,15 +290,36 @@ export default function Index({ courses }) {
                                                         <i className="ti ti-world me-1"></i>
                                                         {selectedCourse.language?.name || selectedCourse.course_language?.name || 'English'}
                                                     </span>
-                                                    {Number(selectedCourse.price) === 0 ? (
-                                                        <span className="badge bg-green-lt px-2.5 py-1 fw-bold">
-                                                            Free
-                                                        </span>
-                                                    ) : (
-                                                        <span className="badge bg-green-lt px-2.5 py-1 fw-bold">
-                                                            {formatCurrency(selectedCourse.discount ? selectedCourse.discount : selectedCourse.price, settings)}
-                                                        </span>
-                                                    )}
+                                                    {(() => {
+                                                        const numPrice = Number(selectedCourse.price || 0);
+                                                        const numDiscount = Number(selectedCourse.discount || 0);
+                                                        const isFree = numPrice === 0;
+
+                                                        if (isFree) {
+                                                            return (
+                                                                <span className="badge bg-green-lt px-2.5 py-1 fw-bold">
+                                                                    Free
+                                                                </span>
+                                                            );
+                                                        }
+
+                                                        if (numDiscount > 0) {
+                                                            const isNominalDiscount = numDiscount < numPrice;
+                                                            const finalPrice = isNominalDiscount ? (numPrice - numDiscount) : numDiscount;
+
+                                                            return (
+                                                                <span className="badge bg-green-lt px-2.5 py-1 fw-bold">
+                                                                    {formatCurrency(finalPrice, settings)}
+                                                                </span>
+                                                            );
+                                                        }
+
+                                                        return (
+                                                            <span className="badge bg-green-lt px-2.5 py-1 fw-bold">
+                                                                {formatCurrency(numPrice, settings)}
+                                                            </span>
+                                                        );
+                                                    })()}
                                                 </div>
 
                                                 <div className="row g-2 text-secondary small bg-light p-2 rounded-2 border">

@@ -69,7 +69,26 @@ class Course extends Model implements HasMedia
 
     use HasFactory, InteractsWithMedia;
 
-    protected $appends = ['thumbnail'];
+    protected $appends = ['final_price', 'thumbnail'];
+
+    public function getFinalPriceAttribute(): float
+    {
+        $numPrice = (float) ($this->price ?? 0);
+        $numDiscount = (float) ($this->discount ?? 0);
+
+        if ($numPrice <= 0) {
+            return 0.0;
+        }
+
+        if ($numDiscount > 0) {
+            if ($numDiscount < $numPrice) {
+                return (float) ($numPrice - $numDiscount);
+            }
+            return (float) $numDiscount;
+        }
+
+        return $numPrice;
+    }
 
     public function registerMediaCollections(): void
     {

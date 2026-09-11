@@ -216,7 +216,7 @@ export default function Create() {
                             {!isFree && (
                                 <>
                                     <div className="col-md-6">
-                                        <label className="form-label required fw-semibold">Course Price ({currencyIcon})</label>
+                                        <label className="form-label required fw-semibold">Price / Harga Normal ({currencyIcon})</label>
                                         <input
                                             type="text"
                                             className={`form-control ${errors.price ? 'is-invalid' : ''}`}
@@ -228,14 +228,17 @@ export default function Create() {
                                     </div>
 
                                     <div className="col-md-6">
-                                        <label className="form-label fw-semibold">Discounted Price ({currencyIcon})</label>
+                                        <label className="form-label fw-semibold">Discount Amount / Potongan Diskon ({currencyIcon})</label>
                                         <input
                                             type="text"
                                             className={`form-control ${errors.discount ? 'is-invalid' : ''}`}
-                                            placeholder="Optional promo price"
+                                            placeholder="Contoh: 20.000"
                                             value={formatPriceInput(data.discount, isRupiah)}
                                             onChange={(e) => setData('discount', parseRawPrice(e.target.value, isRupiah))}
                                         />
+                                        <div className="form-text text-muted small">
+                                            Kosongkan jika tidak ada diskon. Contoh: Harga 200.000 & Diskon 20.000 = Harga akhir Rp 180.000.
+                                        </div>
                                         {errors.discount && <div className="invalid-feedback">{errors.discount}</div>}
                                     </div>
                                 </>

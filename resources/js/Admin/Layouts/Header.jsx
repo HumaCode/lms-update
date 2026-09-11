@@ -120,10 +120,10 @@ export default function Header() {
                         <div className={`nav-item dropdown ${notifMenuOpen ? 'show' : ''}`} ref={notifDropdownRef}>
                             <button
                                 type="button"
-                                className="btn btn-icon btn-ghost-secondary position-relative"
+                                className="nav-link px-0 me-2 position-relative d-flex align-items-center justify-content-center"
                                 onClick={() => setNotifMenuOpen((prev) => !prev)}
                                 title="Notifications"
-                                style={{ border: 'none', background: 'transparent' }}
+                                style={{ border: 'none', background: 'transparent', width: '36px', height: '36px' }}
                             >
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -132,10 +132,11 @@ export default function Header() {
                                     height="24"
                                     viewBox="0 0 24 24"
                                     strokeWidth="2"
-                                    stroke="currentColor"
+                                    stroke="#1e293b"
                                     fill="none"
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
+                                    style={{ color: '#1e293b' }}
                                 >
                                     <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                                     <path d="M10 5a2 2 0 0 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6" />
@@ -143,8 +144,8 @@ export default function Header() {
                                 </svg>
                                 {unread_admin_notifications_count > 0 && (
                                     <span
-                                        className="badge bg-danger position-absolute rounded-circle"
-                                        style={{ top: '2px', right: '2px', width: '18px', height: '18px', fontSize: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                        className="badge bg-danger text-white fw-bold position-absolute rounded-circle"
+                                        style={{ top: '2px', right: '2px', width: '18px', height: '18px', fontSize: '11px', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}
                                     >
                                         {unread_admin_notifications_count}
                                     </span>

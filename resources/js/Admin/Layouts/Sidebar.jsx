@@ -43,6 +43,10 @@ export default function Sidebar() {
                             height="32"
                             alt="Logo"
                             className="navbar-brand-image"
+                            onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = '/default-files/logo.png';
+                            }}
                         />
                     </Link>
                 </h1>

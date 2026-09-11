@@ -44,14 +44,14 @@ class Admin extends Authenticatable implements HasMedia
             ->singleFile();
     }
 
-    public function getImageAttribute(): ?string
+    public function getImageAttribute(): string
     {
         $media = $this->getFirstMedia('image');
         if ($media) {
             return "/media/user/{$media->id}/{$media->file_name}";
         }
 
-        return null;
+        return '/default-files/avatar.png';
     }
 
     /**

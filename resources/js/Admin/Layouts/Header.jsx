@@ -112,7 +112,7 @@ export default function Header() {
                             <span
                                 className="avatar avatar-sm"
                                 style={{
-                                    backgroundImage: `url(${admin?.image || '/default-files/avatar.png'})`,
+                                    backgroundImage: `url(${admin?.image ? (admin.image.startsWith('/') ? admin.image : `/${admin.image}`) : '/default-files/avatar.png'})`,
                                 }}
                             ></span>
                             <div className="d-none d-xl-block ps-2 text-start">

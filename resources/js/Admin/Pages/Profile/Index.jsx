@@ -15,7 +15,7 @@ export default function Index({ admin = {} }) {
     const [profileErrors, setProfileErrors] = useState({});
     const [profileProcessing, setProfileProcessing] = useState(false);
     const [avatarPreview, setAvatarPreview] = useState(
-        admin.image ? `/${admin.image}` : null
+        admin.image ? (admin.image.startsWith('/') ? admin.image : `/${admin.image}`) : '/default-files/avatar.png'
     );
 
     // Password form
@@ -82,12 +82,10 @@ export default function Index({ admin = {} }) {
                                     <span
                                         className="avatar avatar-xl rounded-circle"
                                         style={{
-                                            backgroundImage: avatarPreview ? `url(${avatarPreview})` : undefined,
+                                            backgroundImage: `url(${avatarPreview || '/default-files/avatar.png'})`,
                                             backgroundColor: '#f1f5f9',
                                         }}
-                                    >
-                                        {!avatarPreview && <i className="ti ti-user fs-1 text-muted"></i>}
-                                    </span>
+                                    ></span>
                                     <div>
                                         <label className="form-label mb-1">Change Avatar</label>
                                         <input

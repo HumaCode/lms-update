@@ -5,7 +5,7 @@ export default function CategorySection({ categories = [] }) {
     if (!categories || categories.length === 0) return null;
 
     return (
-        <section className="wsus__category_4 mt_190 xs_mt_100">
+        <section className="wsus__category_4 mt_190 xs_mt_100 mb_120 pb_30">
             <div className="container">
                 <div className="row">
                     <div className="col-xl-6 m-auto wow fadeInUp">

@@ -64,8 +64,22 @@ class FrontendController extends Controller
                     ->withCount(['enrollments', 'lessons'])
                     ->latest()
                     ->take(8);
+            }, 'subCategories.courses' => function($query) {
+                $query->where(['is_approved' => 'approved', 'status' => 'active'])
+                    ->with(['instructor', 'category'])
+                    ->withAvg('reviews', 'rating')
+                    ->withCount(['enrollments', 'lessons'])
+                    ->latest()
+                    ->take(8);
             }])
             ->get();
+
+        $latestCourseCategories->transform(function ($category) {
+            if ($category->courses->isEmpty() && $category->subCategories->isNotEmpty()) {
+                $category->setRelation('courses', $category->subCategories->pluck('courses')->flatten());
+            }
+            return $category;
+        });
 
         return \Inertia\Inertia::render('User/Home/Index', [
             'hero' => $hero,

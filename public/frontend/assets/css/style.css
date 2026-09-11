@@ -1134,16 +1134,16 @@ header .wsus__header_right li .nice-select .list {
     margin-right: 8px;
 }
 
-.menu_category ul li a::after {
+.menu_category ul li.has_sub_category > a::after {
     position: absolute;
     content: "\f054";
-    font-family: "Font awesome 5 free";
-    font-weight: 600;
-    color: var(--colorBlack);
-    font-size: 12px;
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    color: #64748b;
+    font-size: 10px;
     top: 50%;
-    right: 20px;
-    opacity: 0;
+    right: 15px;
+    opacity: 0.6;
     transform: translateY(-50%);
     -webkit-transform: translateY(-50%);
     -moz-transform: translateY(-50%);
@@ -1160,8 +1160,9 @@ header .wsus__header_right li .nice-select .list {
     color: var(--colorBlack);
 }
 
-.menu_category ul li:hover a::after {
+.menu_category ul li.has_sub_category:hover > a::after {
     opacity: 1;
+    color: var(--colorPrimary);
 }
 
 .menu_category:hover>ul {
@@ -5422,15 +5423,19 @@ footer {
 }
 
 .wsus__courses_3 .wsus__filter_area ul {
-    border: 1px solid var(--borderColor);
-    padding: 0;
-    gap: 10px;
+    border: 1px solid #e2e8f0;
+    background-color: #f1f5f9;
+    padding: 6px;
+    gap: 6px;
     display: inline-flex;
-    border-radius: 6px;
-    -webkit-border-radius: 6px;
-    -moz-border-radius: 6px;
-    -ms-border-radius: 6px;
-    -o-border-radius: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    -webkit-border-radius: 8px;
+    -moz-border-radius: 8px;
+    -ms-border-radius: 8px;
+    -o-border-radius: 8px;
 }
 
 .wsus__courses_3 .wsus__filter_area ul li button::after {

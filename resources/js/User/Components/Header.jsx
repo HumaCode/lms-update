@@ -107,35 +107,38 @@ export default function Header() {
                         Category
                         <ul>
                             {categories && categories.length > 0 ? (
-                                categories.map((category) => (
-                                    <li key={category.id}>
-                                        <Link href={route('courses.index', { main_category: category.slug })}>
-                                            <span>
-                                                <img
-                                                    src={category.image ? `/${category.image}` : '/frontend/assets/images/grid_icon.png'}
-                                                    alt="Category"
-                                                    className="img-fluid"
-                                                    onError={(e) => {
-                                                        e.target.onerror = null;
-                                                        e.target.style.display = 'none';
-                                                    }}
-                                                />
-                                            </span>
-                                            {category.name}
-                                        </Link>
-                                        {category.sub_categories && category.sub_categories.length > 0 && (
-                                            <ul className="category_sub_menu">
-                                                {category.sub_categories.map((subCategory) => (
-                                                    <li key={subCategory.id}>
-                                                        <Link href={route('courses.index', { category: subCategory.id })}>
-                                                            {subCategory.name}
-                                                        </Link>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        )}
-                                    </li>
-                                ))
+                                categories.map((category) => {
+                                    const hasSub = category.sub_categories && category.sub_categories.length > 0;
+                                    return (
+                                        <li key={category.id} className={hasSub ? 'has_sub_category' : ''}>
+                                            <Link href={route('courses.index', { main_category: category.slug })}>
+                                                <span>
+                                                    <img
+                                                        src={category.image ? `/${category.image}` : '/frontend/assets/images/grid_icon.png'}
+                                                        alt="Category"
+                                                        className="img-fluid"
+                                                        onError={(e) => {
+                                                            e.target.onerror = null;
+                                                            e.target.style.display = 'none';
+                                                        }}
+                                                    />
+                                                </span>
+                                                {category.name}
+                                            </Link>
+                                            {hasSub && (
+                                                <ul className="category_sub_menu">
+                                                    {category.sub_categories.map((subCategory) => (
+                                                        <li key={subCategory.id}>
+                                                            <Link href={route('courses.index', { category: subCategory.id })}>
+                                                                {subCategory.name}
+                                                            </Link>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            )}
+                                        </li>
+                                    );
+                                })
                             ) : (
                                 <li>
                                     <span

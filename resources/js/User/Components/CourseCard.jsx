@@ -34,6 +34,7 @@ export default function CourseCard({ course }) {
 
     const hasRating = course.reviews_avg_rating !== null && course.reviews_avg_rating !== undefined && Number(course.reviews_avg_rating) > 0;
     const avgRating = hasRating ? Math.round(Number(course.reviews_avg_rating)) : 0;
+    const isFree = !course.price || Number(course.price) === 0;
 
     const getImageUrl = (url, defaultImg = '/frontend/assets/images/courses_img_1.jpg') => {
         if (!url) return defaultImg;
@@ -95,15 +96,24 @@ export default function CourseCard({ course }) {
                 </div>
             </div>
             <div className="wsus__single_courses_3_footer">
-                <a
-                    className="common_btn add_to_cart"
-                    href="#"
-                    onClick={handleAddToCart}
-                    style={{ pointerEvents: adding ? 'none' : 'auto', opacity: adding ? 0.7 : 1 }}
-                >
-                    {adding ? 'Adding...' : 'Add to Cart'}{' '}
-                    <i className="far fa-arrow-right"></i>
-                </a>
+                {isFree ? (
+                    <Link
+                        className="common_btn"
+                        href={route('courses.show', course.slug)}
+                    >
+                        Enroll <i className="fas fa-arrow-right"></i>
+                    </Link>
+                ) : (
+                    <a
+                        className="common_btn add_to_cart"
+                        href="#"
+                        onClick={handleAddToCart}
+                        style={{ pointerEvents: adding ? 'none' : 'auto', opacity: adding ? 0.7 : 1 }}
+                    >
+                        {adding ? 'Adding...' : 'Add to Cart'}{' '}
+                        <i className="fas fa-arrow-right"></i>
+                    </a>
+                )}
                 <p>
                     {course.discount > 0 ? (
                         <>

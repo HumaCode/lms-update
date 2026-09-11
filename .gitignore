@@ -18,3 +18,7 @@ database/pg_columns.tsv
 /storage/*.key
 /vendor
 /.phpunit.cache
+
+# API keys & secrets
+/xendit-appkey/
+xendit-appkey

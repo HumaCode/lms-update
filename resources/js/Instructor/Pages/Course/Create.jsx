@@ -1,13 +1,31 @@
 import React, { useState } from 'react';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import InstructorLayout from '@/Instructor/Layouts/InstructorLayout';
 import RichTextEditor from '@/Components/RichTextEditor';
 import { route } from '@/Utils/routes';
 import { notify } from '@/Utils/notifications';
+import { formatPriceInput, parseRawPrice } from '@/Utils/formatters';
+
+const slugify = (text) => {
+    return (text || '')
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/[\s-]+/g, '-');
+};
 
 export default function Create() {
+    const { props } = usePage();
+    const settings = props?.settings || {};
+    const currencyIcon = settings?.currency_icon || '$';
+    const isRupiah = (settings?.default_currency || '').toUpperCase() === 'IDR' || currencyIcon.toLowerCase() === 'rp';
+    const pricePlaceholder = isRupiah ? 'e.g. 150000' : 'e.g. 49.99';
+
+    const [slugEdited, setSlugEdited] = useState(false);
+
     const { data, setData, post, processing, errors } = useForm({
         title: '',
+        slug: '',
         seo_description: '',
         thumbnail: null,
         demo_video_storage: 'youtube',
@@ -73,10 +91,35 @@ export default function Create() {
                                     className={`form-control ${errors.title ? 'is-invalid' : ''}`}
                                     placeholder="e.g. Modern Fullstack Web Development with Laravel and React"
                                     value={data.title}
-                                    onChange={(e) => setData('title', e.target.value)}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        setData((prev) => ({
+                                            ...prev,
+                                            title: val,
+                                            slug: slugify(val),
+                                        }));
+                                    }}
                                     autoFocus
                                 />
                                 {errors.title && <div className="invalid-feedback">{errors.title}</div>}
+                            </div>
+
+                            <div className="col-12">
+                                <label className="form-label fw-semibold">
+                                    Course URL Slug <span className="text-muted fw-normal small">(Auto-generated from title)</span>
+                                </label>
+                                <div className="input-group">
+                                    <span className="input-group-text bg-light text-muted small">/courses/</span>
+                                    <input
+                                        type="text"
+                                        className={`form-control bg-light ${errors.slug ? 'is-invalid' : ''}`}
+                                        placeholder="Auto-generated slug..."
+                                        value={data.slug}
+                                        disabled
+                                        readOnly
+                                    />
+                                    {errors.slug && <div className="invalid-feedback">{errors.slug}</div>}
+                                </div>
                             </div>
 
                             <div className="col-12">
@@ -173,29 +216,25 @@ export default function Create() {
                             {!isFree && (
                                 <>
                                     <div className="col-md-6">
-                                        <label className="form-label required fw-semibold">Course Price ($)</label>
+                                        <label className="form-label required fw-semibold">Course Price ({currencyIcon})</label>
                                         <input
-                                            type="number"
-                                            step="0.01"
-                                            min="0"
+                                            type="text"
                                             className={`form-control ${errors.price ? 'is-invalid' : ''}`}
-                                            placeholder="e.g. 49.99"
-                                            value={data.price}
-                                            onChange={(e) => setData('price', e.target.value)}
+                                            placeholder={pricePlaceholder}
+                                            value={formatPriceInput(data.price, isRupiah)}
+                                            onChange={(e) => setData('price', parseRawPrice(e.target.value, isRupiah))}
                                         />
                                         {errors.price && <div className="invalid-feedback">{errors.price}</div>}
                                     </div>
 
                                     <div className="col-md-6">
-                                        <label className="form-label fw-semibold">Discounted Price ($)</label>
+                                        <label className="form-label fw-semibold">Discounted Price ({currencyIcon})</label>
                                         <input
-                                            type="number"
-                                            step="0.01"
-                                            min="0"
+                                            type="text"
                                             className={`form-control ${errors.discount ? 'is-invalid' : ''}`}
                                             placeholder="Optional promo price"
-                                            value={data.discount}
-                                            onChange={(e) => setData('discount', e.target.value)}
+                                            value={formatPriceInput(data.discount, isRupiah)}
+                                            onChange={(e) => setData('discount', parseRawPrice(e.target.value, isRupiah))}
                                         />
                                         {errors.discount && <div className="invalid-feedback">{errors.discount}</div>}
                                     </div>

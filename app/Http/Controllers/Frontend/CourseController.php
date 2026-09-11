@@ -44,7 +44,7 @@ class CourseController extends Controller
     {
         $course = new Course();
         $course->title = $request->title;
-        $course->slug = \Str::slug($request->title);
+        $course->slug = Course::generateUniqueSlug($request->title);
         $course->seo_description = $request->seo_description;
         $course->demo_video_storage = $request->demo_video_storage;
         $course->demo_video_source = $request->demo_video_source;
@@ -120,7 +120,7 @@ class CourseController extends Controller
                 }
 
                 $course->title = $request->title;
-                $course->slug = \Str::slug($request->title);
+                $course->slug = Course::generateUniqueSlug($request->title, $course->id);
                 $course->seo_description = $request->seo_description;
                 $course->demo_video_storage = $request->demo_video_storage;
 
@@ -152,9 +152,9 @@ class CourseController extends Controller
                     'features' => ['nullable', 'string', 'max:500'],
                     'qna' => ['nullable', 'boolean'],
                     'certificate' => ['nullable', 'boolean'],
-                    'category' => ['required', 'integer'],
-                    'level' => ['required', 'integer'],
-                    'language' => ['required', 'integer'],
+                    'category' => ['required', 'string'],
+                    'level' => ['required', 'string'],
+                    'language' => ['required', 'string'],
                 ]);
 
                 $course = Course::where('instructor_id', Auth::user()->id)->findOrFail($request->id);

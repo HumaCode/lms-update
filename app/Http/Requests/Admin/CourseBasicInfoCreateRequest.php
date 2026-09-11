@@ -22,7 +22,7 @@ class CourseBasicInfoCreateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'instructor' => ['required', 'integer'],
+            'instructor' => ['required', 'string'],
             'title' => ['required', 'max:255', 'string'],
             'seo_description' => ['nullable', 'max:255', 'string'],
             'demo_video_storage' => ['nullable', 'in:youtube,vimeo,external_link,upload', 'string'],

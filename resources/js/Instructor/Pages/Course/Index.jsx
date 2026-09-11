@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import InstructorLayout from '@/Instructor/Layouts/InstructorLayout';
 import Pagination from '@/Components/UI/Pagination';
 import InstructorQnaModal from '@/Components/InstructorQnaModal';
@@ -8,6 +8,8 @@ import { formatCurrency } from '@/Utils/formatters';
 import { route } from '@/Utils/routes';
 
 export default function Index({ courses }) {
+    const { props } = usePage();
+    const settings = props?.settings || {};
     const [selectedQnaCourse, setSelectedQnaCourse] = useState(null);
     const [showQnaModal, setShowQnaModal] = useState(false);
 
@@ -111,7 +113,7 @@ export default function Index({ courses }) {
                                         <td>
                                             {course.price > 0 ? (
                                                 <span className="fw-semibold text-dark">
-                                                    {formatCurrency(course.discount_price || course.price)}
+                                                    {formatCurrency(course.discount_price || course.price, settings)}
                                                 </span>
                                             ) : (
                                                 <span className="badge bg-success">Free</span>

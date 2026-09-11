@@ -138,4 +138,21 @@ class Course extends Model implements HasMedia
     {
         return $this->hasMany(CourseAnnouncement::class, 'course_id', 'id')->orderBy('created_at', 'desc');
     }
+
+    public static function generateUniqueSlug(string $title, ?string $ignoreId = null): string
+    {
+        $slug = \Str::slug($title);
+        if (empty($slug)) {
+            $slug = 'course-' . \Str::random(6);
+        }
+        $originalSlug = $slug;
+        $count = 1;
+
+        while (static::where('slug', $slug)->when($ignoreId, fn($q) => $q->where('id', '!=', $ignoreId))->exists()) {
+            $slug = "{$originalSlug}-{$count}";
+            $count++;
+        }
+
+        return $slug;
+    }
 }

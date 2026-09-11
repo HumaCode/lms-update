@@ -5,13 +5,23 @@
  */
 export function formatCurrency(amount, settings = {}) {
     const num = parseFloat(amount || 0);
-    const formattedNum = num.toLocaleString('en-US', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    });
-
     const icon = settings?.currency_icon || '$';
     const position = settings?.currency_position || 'left';
+    const currency = (settings?.default_currency || '').toUpperCase();
+    const isRupiah = currency === 'IDR' || icon.toLowerCase() === 'rp';
+
+    let formattedNum;
+    if (isRupiah) {
+        formattedNum = num.toLocaleString('id-ID', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+        });
+    } else {
+        formattedNum = num.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
+    }
 
     if (position === 'right') {
         return `${formattedNum} ${icon}`;
@@ -53,22 +63,52 @@ export function timeAgo(date) {
     }
 
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) {
-        return `${hours} jam yang lalu`;
-    }
+    if (hours < 24) return `${hours} jam yang lalu`;
 
     const days = Math.floor(hours / 24);
-    if (days < 30) {
-        return `${days} hari yang lalu`;
-    }
+    if (days < 30) return `${days} hari yang lalu`;
 
     const months = Math.floor(days / 30);
-    if (months < 12) {
-        return `${months} bulan yang lalu`;
-    }
+    if (months < 12) return `${months} bulan yang lalu`;
 
     const years = Math.floor(days / 365);
     return `${years} tahun yang lalu`;
+}
+
+/**
+ * Formats a raw numeric string into a formatted price string for input display.
+ * E.g. for IDR: 10000 -> 10.000, 100000 -> 100.000
+ * E.g. for USD: 1000 -> 1,000, 49.99 -> 49.99
+ */
+export function formatPriceInput(val, isRupiah = false) {
+    if (val === null || val === undefined || val === '') return '';
+    const str = val.toString();
+    if (isRupiah) {
+        const digits = str.replace(/[^0-9]/g, '');
+        if (!digits) return '';
+        return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    } else {
+        const parts = str.replace(/[^0-9.]/g, '').split('.');
+        const intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        return parts.length > 1 ? `${intPart}.${parts[1]}` : intPart;
+    }
+}
+
+/**
+ * Parses a formatted input string back into raw numeric string for form submission.
+ */
+export function parseRawPrice(val, isRupiah = false) {
+    if (val === null || val === undefined || val === '') return '';
+    const str = val.toString();
+    if (isRupiah) {
+        return str.replace(/[^0-9]/g, '');
+    } else {
+        const parts = str.replace(/[^0-9.]/g, '').split('.');
+        if (parts.length > 2) {
+            return parts[0] + '.' + parts.slice(1).join('');
+        }
+        return parts.join('.');
+    }
 }
 
 /**

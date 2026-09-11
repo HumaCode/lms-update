@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Head, Link, useForm, router } from '@inertiajs/react';
+import { Head, Link, useForm, router, usePage } from '@inertiajs/react';
 import InstructorLayout from '@/Instructor/Layouts/InstructorLayout';
 import RichTextEditor from '@/Components/RichTextEditor';
 import Select2Input from '@/Components/Select2Input';
 import ConfirmModal from '@/Components/ConfirmModal';
-import { formatCurrency, timeAgo } from '@/Utils/formatters';
+import { formatCurrency, timeAgo, formatPriceInput, parseRawPrice } from '@/Utils/formatters';
 import { route } from '@/Utils/routes';
 import { notify } from '@/Utils/notifications';
 import { confirmDelete } from '@/Utils/confirmation';
@@ -16,6 +16,12 @@ export default function Edit({
     languages = [],
     currentStep = 1,
 }) {
+    const { props } = usePage();
+    const settings = props?.settings || {};
+    const currencyIcon = settings?.currency_icon || '$';
+    const isRupiah = (settings?.default_currency || '').toUpperCase() === 'IDR' || currencyIcon.toLowerCase() === 'rp';
+    const pricePlaceholder = isRupiah ? 'e.g. 150000' : 'e.g. 49.99';
+
     const [activeStep, setActiveStep] = useState(Number(currentStep) || 1);
 
     const getImageUrl = (url, defaultImg = '/frontend/assets/images/courses_img_1.jpg') => {
@@ -40,6 +46,7 @@ export default function Edit({
         id: course.id,
         current_step: '1',
         title: course.title || '',
+        slug: course.slug || '',
         seo_description: course.seo_description || '',
         thumbnail: null,
         demo_video_storage: course.demo_video_storage || 'youtube',
@@ -441,9 +448,30 @@ export default function Edit({
                                         type="text"
                                         className={`form-control ${step1Errors.title ? 'is-invalid' : ''}`}
                                         value={step1Data.title}
-                                        onChange={(e) => setStep1Data({ ...step1Data, title: e.target.value })}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            const slugified = (val || '').toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/[\s-]+/g, '-');
+                                            setStep1Data({ ...step1Data, title: val, slug: slugified });
+                                        }}
                                     />
                                     {step1Errors.title && <div className="invalid-feedback">{step1Errors.title}</div>}
+                                </div>
+
+                                <div className="col-12">
+                                    <label className="form-label fw-semibold">
+                                        Course URL Slug <span className="text-muted fw-normal small">(Auto-generated from title)</span>
+                                    </label>
+                                    <div className="input-group">
+                                        <span className="input-group-text bg-light text-muted small">/courses/</span>
+                                        <input
+                                            type="text"
+                                            className={`form-control bg-light ${step1Errors.slug ? 'is-invalid' : ''}`}
+                                            value={step1Data.slug}
+                                            disabled
+                                            readOnly
+                                        />
+                                        {step1Errors.slug && <div className="invalid-feedback">{step1Errors.slug}</div>}
+                                    </div>
                                 </div>
 
                                 <div className="col-12">
@@ -548,27 +576,25 @@ export default function Edit({
                                 {!isFree && (
                                     <>
                                         <div className="col-md-6">
-                                            <label className="form-label required fw-semibold">Price ($)</label>
+                                            <label className="form-label required fw-semibold">Price ({currencyIcon})</label>
                                             <input
-                                                type="number"
-                                                step="0.01"
-                                                min="0"
+                                                type="text"
                                                 className={`form-control ${step1Errors.price ? 'is-invalid' : ''}`}
-                                                value={step1Data.price}
-                                                onChange={(e) => setStep1Data({ ...step1Data, price: e.target.value })}
+                                                placeholder={pricePlaceholder}
+                                                value={formatPriceInput(step1Data.price, isRupiah)}
+                                                onChange={(e) => setStep1Data({ ...step1Data, price: parseRawPrice(e.target.value, isRupiah) })}
                                             />
                                             {step1Errors.price && <div className="invalid-feedback">{step1Errors.price}</div>}
                                         </div>
 
                                         <div className="col-md-6">
-                                            <label className="form-label fw-semibold">Discounted Price ($)</label>
+                                            <label className="form-label fw-semibold">Discounted Price ({currencyIcon})</label>
                                             <input
-                                                type="number"
-                                                step="0.01"
-                                                min="0"
+                                                type="text"
                                                 className="form-control"
-                                                value={step1Data.discount}
-                                                onChange={(e) => setStep1Data({ ...step1Data, discount: e.target.value })}
+                                                placeholder="Optional promo price"
+                                                value={formatPriceInput(step1Data.discount, isRupiah)}
+                                                onChange={(e) => setStep1Data({ ...step1Data, discount: parseRawPrice(e.target.value, isRupiah) })}
                                             />
                                         </div>
                                     </>
@@ -1164,7 +1190,7 @@ export default function Edit({
                                         </span>
                                         <span className="badge bg-success-subtle text-success fw-bold border border-success-subtle px-3 py-2">
                                             <i className="fas fa-tag me-1"></i>
-                                            {Number(course.price) === 0 ? 'Free' : formatCurrency(course.discount ? course.discount : course.price)}
+                                            {Number(course.price) === 0 ? 'Free' : formatCurrency(course.discount ? course.discount : course.price, settings)}
                                         </span>
                                     </div>
 

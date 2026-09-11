@@ -1,7 +1,9 @@
 import React from 'react';
+import { usePage } from '@inertiajs/react';
 import { formatCurrency } from '@/Utils/formatters';
 
 export default function DashboardEarningCards({ metrics = {} }) {
+    const { settings } = usePage().props;
     const totalRevenue = Number(metrics.total_revenue) || 0;
     const thisMonthEarning = Number(metrics.this_month_earning) || 0;
     const totalStudents = Number(metrics.total_students) || 0;
@@ -18,11 +20,11 @@ export default function DashboardEarningCards({ metrics = {} }) {
                 <div className="col-xl-4 col-sm-6">
                     <div className="wsus__dash_earning shadow-sm h-100 mt-0">
                         <h6>REVENUE</h6>
-                        <h3 className="text-dark fw-bold">{formatCurrency(totalRevenue)}</h3>
+                        <h3 className="text-dark fw-bold">{formatCurrency(totalRevenue, settings)}</h3>
                         <p className="mb-0">
                             <i className="fas fa-calendar-alt me-1"></i>
                             {thisMonthEarning > 0
-                                ? `${formatCurrency(thisMonthEarning)} this month`
+                                ? `${formatCurrency(thisMonthEarning, settings)} this month`
                                 : 'Earning this month'}
                         </p>
                     </div>

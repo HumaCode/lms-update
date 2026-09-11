@@ -1,14 +1,14 @@
 import React from 'react';
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { formatCurrency, formatDate } from '@/Utils/formatters';
 import { route } from '@/Utils/routes';
 
 export default function RecentSalesTable({ orders = [] }) {
+    const { settings } = usePage().props;
     const calculateEarnings = (price, commissionRate) => {
         const rate = Number(commissionRate) || 0;
         const p = Number(price) || 0;
-        const commission = (p * rate) / 100;
-        return p - commission;
+        return (p * rate) / 100;
     };
 
     return (
@@ -27,20 +27,20 @@ export default function RecentSalesTable({ orders = [] }) {
                 <table className="table table-hover align-middle mb-0">
                     <thead className="table-light">
                         <tr>
-                            <th style={{ width: '40px' }}>#</th>
+                            <th className="ps-4" style={{ width: '50px' }}>#</th>
                             <th>Course</th>
                             <th>Student</th>
                             <th>Price</th>
-                            <th>Platform Fee</th>
+                            <th>Commission</th>
                             <th>Your Earning</th>
-                            <th>Date</th>
+                            <th className="pe-4">Date</th>
                         </tr>
                     </thead>
                     <tbody>
                         {orders && orders.length > 0 ? (
                             orders.map((item, idx) => (
                                 <tr key={item.id || idx}>
-                                    <td className="text-muted">{idx + 1}</td>
+                                    <td className="text-muted ps-4">{idx + 1}</td>
                                     <td>
                                         <div className="fw-semibold text-dark">
                                             {item.course?.title || 'Course'}
@@ -55,7 +55,7 @@ export default function RecentSalesTable({ orders = [] }) {
                                         </div>
                                     </td>
                                     <td className="fw-medium">
-                                        {formatCurrency(item.price, item.order?.currency)}
+                                        {formatCurrency(item.price, item.order?.currency || settings)}
                                     </td>
                                     <td className="text-muted">
                                         {item.commission_rate ?? 0}%
@@ -63,10 +63,10 @@ export default function RecentSalesTable({ orders = [] }) {
                                     <td className="fw-bold text-success">
                                         {formatCurrency(
                                             calculateEarnings(item.price, item.commission_rate),
-                                            item.order?.currency
+                                            item.order?.currency || settings
                                         )}
                                     </td>
-                                    <td className="text-muted small">
+                                    <td className="text-muted small pe-4">
                                         {item.created_at ? formatDate(item.created_at) : '-'}
                                     </td>
                                 </tr>

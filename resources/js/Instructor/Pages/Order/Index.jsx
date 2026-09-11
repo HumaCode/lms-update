@@ -8,8 +8,7 @@ export default function Index({ orderItems }) {
     const calculateEarnings = (price, commissionRate) => {
         const rate = Number(commissionRate) || 0;
         const p = Number(price) || 0;
-        const commission = (p * rate) / 100;
-        return p - commission;
+        return (p * rate) / 100;
     };
 
     return (
@@ -38,7 +37,7 @@ export default function Index({ orderItems }) {
                                 <th>Course</th>
                                 <th>Student</th>
                                 <th>Gross Price</th>
-                                <th>Platform Fee</th>
+                                <th>Commission</th>
                                 <th>Your Earnings</th>
                                 <th>Date</th>
                             </tr>

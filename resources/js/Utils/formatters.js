@@ -1,14 +1,72 @@
 /**
- * Formats an amount using the currency icon and position from settings.
- * @param {number|string} amount
- * @param {object} settings
+ * Helper to retrieve default settings from DOM or Inertia state if not explicitly passed.
  */
-export function formatCurrency(amount, settings = {}) {
+function getGlobalSettings() {
+    try {
+        if (typeof window !== 'undefined') {
+            if (window.__pageProps?.settings) return window.__pageProps.settings;
+
+            const appEl = document.getElementById('app');
+            if (appEl && appEl.dataset && appEl.dataset.page) {
+                const pageData = JSON.parse(appEl.dataset.page);
+                if (pageData?.props?.settings) {
+                    return pageData.props.settings;
+                }
+            }
+        }
+    } catch (e) {
+        // Fallback silently if DOM or JSON parse unavailable
+    }
+    return {};
+}
+
+/**
+ * Formats an amount using the currency icon and position from settings or currency code.
+ * @param {number|string} amount
+ * @param {object|string} settings
+ */
+export function formatCurrency(amount, settings = null) {
     const num = parseFloat(amount || 0);
-    const icon = settings?.currency_icon || '$';
-    const position = settings?.currency_position || 'left';
-    const currency = (settings?.default_currency || '').toUpperCase();
-    const isRupiah = currency === 'IDR' || icon.toLowerCase() === 'rp';
+
+    let icon = '';
+    let position = 'left';
+    let currency = '';
+
+    // Handle case where settings is passed as a string currency code (e.g. "IDR", "USD", "EUR")
+    if (typeof settings === 'string' && settings.trim()) {
+        const str = settings.trim().toUpperCase();
+        if (str === 'IDR' || str === 'RP') {
+            currency = 'IDR';
+            icon = 'Rp';
+        } else if (str === 'USD' || str === '$') {
+            currency = 'USD';
+            icon = '$';
+        } else {
+            currency = str;
+            icon = str;
+        }
+    } else {
+        // Resolve settings object or fallback to global settings from Inertia DOM
+        let s = settings;
+        if (!s || (typeof s === 'object' && Object.keys(s).length === 0)) {
+            s = getGlobalSettings();
+        }
+
+        icon = s?.currency_icon || s?.site_currency_icon || '';
+        position = s?.currency_position || 'left';
+        currency = (s?.default_currency || s?.site_currency || '').toUpperCase();
+    }
+
+    // Default icon fallback if still empty
+    if (!icon) {
+        if (currency === 'IDR') {
+            icon = 'Rp';
+        } else {
+            icon = '$';
+        }
+    }
+
+    const isRupiah = currency === 'IDR' || icon.toLowerCase().includes('rp') || icon.toLowerCase() === 'idr';
 
     let formattedNum;
     if (isRupiah) {

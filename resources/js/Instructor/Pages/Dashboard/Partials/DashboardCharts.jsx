@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { usePage } from '@inertiajs/react';
 import { formatCurrency } from '@/Utils/formatters';
 
 export default function DashboardCharts({
     monthlyEarnings = [],
     coursesProgress = [],
 }) {
+    const { settings } = usePage().props;
     const [hoveredBar, setHoveredBar] = useState(null);
 
     // Prepare chart dimensions & scaling
@@ -82,7 +84,7 @@ export default function DashboardCharts({
                                                         pointerEvents: 'none',
                                                     }}
                                                 >
-                                                    <div className="fw-bold">{formatCurrency(value)}</div>
+                                                    <div className="fw-bold">{formatCurrency(value, settings)}</div>
                                                     <div className="text-white-50" style={{ fontSize: '10px' }}>
                                                         {item.sales || 0} sales
                                                     </div>
@@ -117,7 +119,7 @@ export default function DashboardCharts({
 
                         <div className="d-flex align-items-center justify-content-between mt-3 text-muted small">
                             <span>* Updated based on verified completed orders</span>
-                            <span className="fw-semibold text-success">Max: {formatCurrency(maxEarning)}</span>
+                            <span className="fw-semibold text-success">Max: {formatCurrency(maxEarning, settings)}</span>
                         </div>
                     </div>
                 </div>

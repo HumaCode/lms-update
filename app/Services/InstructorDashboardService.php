@@ -31,7 +31,7 @@ class InstructorDashboardService extends BaseService implements InstructorDashbo
         foreach ($allOrderItems as $item) {
             $rate = (float) ($item->commission_rate ?? 0);
             $price = (float) ($item->price ?? 0);
-            $earning = $price - ($price * $rate / 100);
+            $earning = calculateCommission($price, $rate);
 
             $totalRevenue += $earning;
 
@@ -110,7 +110,7 @@ class InstructorDashboardService extends BaseService implements InstructorDashbo
                 $itemMonth = $item->created_at->month;
                 $rate = (float) ($item->commission_rate ?? 0);
                 $price = (float) ($item->price ?? 0);
-                $earning = $price - ($price * $rate / 100);
+                $earning = calculateCommission($price, $rate);
 
                 if (isset($months[$itemMonth])) {
                     $months[$itemMonth]['earnings'] += $earning;

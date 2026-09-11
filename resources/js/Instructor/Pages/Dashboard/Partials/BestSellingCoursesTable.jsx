@@ -1,9 +1,10 @@
 import React from 'react';
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { formatCurrency } from '@/Utils/formatters';
 import { route } from '@/Utils/routes';
 
 export default function BestSellingCoursesTable({ courses = [] }) {
+    const { settings } = usePage().props;
     // Render 5 star rating icons based on score
     const renderStars = (rating = 5) => {
         const fullStars = Math.floor(rating);
@@ -34,10 +35,11 @@ export default function BestSellingCoursesTable({ courses = [] }) {
                 <div className="d-flex gap-2">
                     <Link
                         href={route('instructor.courses.create')}
-                        className="btn btn-primary btn-sm px-3 d-flex align-items-center gap-2"
+                        className="btn btn-primary btn-sm px-3 d-flex align-items-center gap-2 text-white fw-bold shadow-sm"
+                        style={{ color: '#ffffff' }}
                     >
-                        <i className="fas fa-plus"></i>
-                        <span>New Course</span>
+                        <i className="fas fa-plus text-white"></i>
+                        <span className="text-white">New Course</span>
                     </Link>
                     <Link
                         href={route('instructor.courses.index')}
@@ -53,17 +55,17 @@ export default function BestSellingCoursesTable({ courses = [] }) {
                     <table className="table table-borderless align-middle mb-0">
                         <thead className="border-bottom">
                             <tr>
-                                <th className="image" style={{ width: '180px' }}>COURSES</th>
+                                <th className="image ps-4" style={{ width: '180px' }}>COURSES</th>
                                 <th className="details">DETAILS</th>
                                 <th className="sale text-center" style={{ width: '120px' }}>SALES</th>
-                                <th className="amount text-end" style={{ width: '160px' }}>AMOUNT</th>
+                                <th className="amount text-end pe-4" style={{ width: '180px' }}>AMOUNT</th>
                             </tr>
                         </thead>
                         <tbody>
                             {courses && courses.length > 0 ? (
                                 courses.map((course) => (
                                     <tr key={course.id} className="border-bottom">
-                                        <td className="image py-3">
+                                        <td className="image py-3 ps-4">
                                             <div className="image_category position-relative">
                                                 <img
                                                     src={course.thumbnail}
@@ -95,7 +97,7 @@ export default function BestSellingCoursesTable({ courses = [] }) {
                                                 {course.title}
                                             </Link>
                                             <div className="text-muted small">
-                                                <span>Price: <strong>{formatCurrency(course.price)}</strong></span>
+                                                <span>Price: <strong>{formatCurrency(course.price, settings)}</strong></span>
                                                 {course.reviews_count > 0 && (
                                                     <span className="ms-2">({course.reviews_count} reviews)</span>
                                                 )}
@@ -106,9 +108,9 @@ export default function BestSellingCoursesTable({ courses = [] }) {
                                                 {course.sales_count}
                                             </span>
                                         </td>
-                                        <td className="amount py-3 text-end">
+                                        <td className="amount py-3 text-end pe-4">
                                             <div className="fw-bold fs-6 text-success">
-                                                {formatCurrency(course.amount)}
+                                                {formatCurrency(course.amount, settings)}
                                             </div>
                                             <div className="text-muted small">Total earned</div>
                                         </td>

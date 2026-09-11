@@ -28,6 +28,7 @@ class PaymentSettingController extends Controller
             'xendit_status' => ['required', 'in:active,inactive'],
             'xendit_mode' => ['required', 'in:development,production'],
             'xendit_currency' => ['required'],
+            'xendit_payout_mode' => ['required', 'in:manual,automatic'],
             'xendit_secret_key' => ['required', 'string'],
             'xendit_webhook_token' => ['nullable', 'string'],
         ]);

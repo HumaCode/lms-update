@@ -28,6 +28,7 @@ export default function Index({
         xendit_status: gatewaySettings.xendit_status || 'active',
         xendit_mode: gatewaySettings.xendit_mode || 'development',
         xendit_currency: gatewaySettings.xendit_currency || 'IDR',
+        xendit_payout_mode: gatewaySettings.xendit_payout_mode || 'manual',
         xendit_secret_key: gatewaySettings.xendit_secret_key || 'xnd_development_sZPXUVfXQMwOexwHH1jizq3PYHlQITdEZBOBauzdzlWZ4YJCdr0gXAoiOlrZH',
         xendit_webhook_token: gatewaySettings.xendit_webhook_token || '',
     });
@@ -200,6 +201,28 @@ export default function Index({
                                         <option value="PHP">PHP (Philippine Peso)</option>
                                         <option value="USD">USD (US Dollar)</option>
                                     </select>
+                                </div>
+
+                                <div className="col-12">
+                                    <div className="p-3 bg-light rounded-3 border">
+                                        <label className="form-label required fw-bold mb-1 text-dark">
+                                            <i className="ti ti-arrows-left-right text-primary me-2"></i>
+                                            Payout Processing Mode (Pencairan Saldo Instruktur)
+                                        </label>
+                                        <select
+                                            className="form-select border-primary"
+                                            value={xenditForm.data.xendit_payout_mode}
+                                            onChange={(e) => xenditForm.setData('xendit_payout_mode', e.target.value)}
+                                        >
+                                            <option value="manual">Manual Transfer (Admin transfer manual via m-Banking lalu ubah status)</option>
+                                            <option value="automatic">Automatic Xendit Payout API (Transfer instan otomatis via Saldo Xendit Disbursement)</option>
+                                        </select>
+                                        <div className="form-text text-muted small mt-2">
+                                            {xenditForm.data.xendit_payout_mode === 'automatic'
+                                                ? '⚡ Mode Otomatis Aktif: Ketika Admin menyetujui pengajuan penarikan, dana akan langsung dikirim otomatis ke rekening/E-wallet instruktur via Xendit API.'
+                                                : '📝 Mode Manual Aktif: Admin melakukan transfer manual via bank dan menyetujui status secara manual.'}
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div className="col-12">

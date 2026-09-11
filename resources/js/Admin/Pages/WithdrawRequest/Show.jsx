@@ -8,7 +8,7 @@ import { route } from '@/Utils/routes';
 
 import Swal from 'sweetalert2';
 
-export default function Show({ withdraw, settings }) {
+export default function Show({ withdraw, settings, payoutMode = 'manual' }) {
     const [selectedStatus, setSelectedStatus] = useState(withdraw.status);
     const isPending = withdraw.status === 'pending';
 
@@ -20,15 +20,18 @@ export default function Show({ withdraw, settings }) {
         e.preventDefault();
         const isApproved = selectedStatus === 'approved';
         const isRejected = selectedStatus === 'rejected';
+        const isAuto = isApproved && payoutMode === 'automatic';
 
         Swal.fire({
-            title: `Konfirmasi Perubahan Status`,
-            html: `Apakah Anda yakin ingin mengubah status pengajuan penarikan dana ini menjadi <strong class="${isApproved ? 'text-success' : isRejected ? 'text-danger' : 'text-primary'}">${selectedStatus.toUpperCase()}</strong>?`,
-            icon: isApproved ? 'question' : isRejected ? 'warning' : 'info',
+            title: isAuto ? `⚡ Konfirmasi Disbursement Otomatis` : `Konfirmasi Perubahan Status`,
+            html: isAuto
+                ? `Apakah Anda yakin ingin menyetujui penarikan ini? Sistem akan <strong>secara otomatis mengirim dana riil via Xendit API</strong> sebesar <strong class="text-success">${formatCurrency(withdraw.amount, settings)}</strong> ke rekening instruktur.`
+                : `Apakah Anda yakin ingin mengubah status pengajuan penarikan dana ini menjadi <strong class="${isApproved ? 'text-success' : isRejected ? 'text-danger' : 'text-primary'}">${selectedStatus.toUpperCase()}</strong>?`,
+            icon: isApproved ? (isAuto ? 'success' : 'question') : isRejected ? 'warning' : 'info',
             showCancelButton: true,
             confirmButtonColor: isApproved ? '#2fb344' : isRejected ? '#d63939' : '#206bc4',
             cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Ya, Proses Sekarang',
+            confirmButtonText: isAuto ? '🚀 Kirim Dana via Xendit API' : 'Ya, Proses Sekarang',
             cancelButtonText: 'Batal',
             customClass: {
                 popup: 'rounded-4 shadow-lg border-0',
@@ -170,11 +173,14 @@ export default function Show({ withdraw, settings }) {
 
                             {/* Action Form Card */}
                             <div className="card shadow-sm border-0">
-                                <div className="card-header bg-white py-3">
+                                <div className="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                                     <h4 className="card-title fw-bold mb-0 text-dark">
                                         <i className="ti ti-settings me-2 text-primary fs-3"></i>
                                         Action & Status
                                     </h4>
+                                    <span className={`badge ${payoutMode === 'automatic' ? 'bg-success-subtle text-success border border-success' : 'bg-secondary-subtle text-secondary border'}`}>
+                                        {payoutMode === 'automatic' ? '⚡ Auto API' : '📝 Manual'}
+                                    </span>
                                 </div>
                                 <div className="card-body p-4">
                                     {!isPending ? (
@@ -191,11 +197,15 @@ export default function Show({ withdraw, settings }) {
                                         </div>
                                     ) : (
                                         <form onSubmit={handleStatusSubmit}>
-                                            <div className="alert alert-warning border-0 shadow-sm mb-4">
+                                            <div className={`alert ${payoutMode === 'automatic' ? 'alert-primary' : 'alert-warning'} border-0 shadow-sm mb-4`}>
                                                 <div className="d-flex align-items-start">
-                                                    <i className="ti ti-alert-circle fs-2 me-2 mt-1"></i>
+                                                    <i className={`ti ${payoutMode === 'automatic' ? 'ti-bolt' : 'ti-alert-circle'} fs-2 me-2 mt-1`}></i>
                                                     <div className="small">
-                                                        <strong>Caution:</strong> Approving will automatically deduct <strong>{formatCurrency(withdraw.amount, settings)}</strong> from the instructor's wallet.
+                                                        {payoutMode === 'automatic' ? (
+                                                            <span><strong>Mode Otomatis Xendit API:</strong> Menyetujui status ini akan <strong>secara instan mentransfer dana nyata</strong> sebesar <strong>{formatCurrency(withdraw.amount, settings)}</strong> ke akun instruktur via API.</span>
+                                                        ) : (
+                                                            <span><strong>Mode Manual:</strong> Pastikan Anda telah melakukan transfer manual via bank sebelum menyetujui. <strong>{formatCurrency(withdraw.amount, settings)}</strong> akan dipotong dari dompet instruktur.</span>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>

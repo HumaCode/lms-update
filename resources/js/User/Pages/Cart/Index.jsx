@@ -1,9 +1,11 @@
 import React from 'react';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import UserLayout from '../../Layouts/UserLayout';
-import { getImageUrl } from '@/Utils/formatters';
+import { getImageUrl, formatCurrency } from '@/Utils/formatters';
 
 export default function CartPage({ cart }) {
+    const { props } = usePage();
+    const settings = props?.settings || {};
     const cartItems = cart?.data || [];
 
     const calculateSubtotal = () => {
@@ -110,11 +112,11 @@ export default function CartPage({ cart }) {
                                                             ) : (
                                                                 <>
                                                                     <div className="fw-bold text-primary fs-5">
-                                                                        ${Number(price || 0).toFixed(2)}
+                                                                        {formatCurrency(price || 0, settings)}
                                                                     </div>
                                                                     {hasDiscount && (
                                                                         <span className="text-muted text-decoration-line-through small">
-                                                                            ${Number(course.price).toFixed(2)}
+                                                                            {formatCurrency(course.price, settings)}
                                                                         </span>
                                                                     )}
                                                                 </>
@@ -142,16 +144,16 @@ export default function CartPage({ cart }) {
                                     <h5 className="fw-bold text-dark mb-3">Order Summary</h5>
                                     <div className="d-flex justify-content-between mb-2">
                                         <span className="text-muted">Subtotal:</span>
-                                        <span className="fw-bold">${subtotal.toFixed(2)}</span>
+                                        <span className="fw-bold">{formatCurrency(subtotal, settings)}</span>
                                     </div>
                                     <div className="d-flex justify-content-between mb-3">
                                         <span className="text-muted">Discount:</span>
-                                        <span className="text-success">$0.00</span>
+                                        <span className="text-success">{formatCurrency(0, settings)}</span>
                                     </div>
                                     <hr />
                                     <div className="d-flex justify-content-between mb-4">
                                         <h5 className="fw-bold text-dark">Total:</h5>
-                                        <h5 className="fw-bold text-primary">${subtotal.toFixed(2)}</h5>
+                                        <h5 className="fw-bold text-primary">{formatCurrency(subtotal, settings)}</h5>
                                     </div>
 
                                     <div className="d-grid gap-2">

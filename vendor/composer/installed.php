@@ -3,7 +3,7 @@
         'name' => 'laravel/laravel',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '387e6168d650ad1871e9e0b0bb5d3ef9af1fe4f1',
+        'reference' => '13304780486dc0f95735297a5d4cc490dddcf30a',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -552,7 +552,7 @@
         'laravel/laravel' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '387e6168d650ad1871e9e0b0bb5d3ef9af1fe4f1',
+            'reference' => '13304780486dc0f95735297a5d4cc490dddcf30a',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
@@ -1737,6 +1737,15 @@
             'install_path' => __DIR__ . '/../webmozart/assert',
             'aliases' => array(),
             'dev_requirement' => true,
+        ),
+        'xendit/xendit-php' => array(
+            'pretty_version' => '7.0.0',
+            'version' => '7.0.0.0',
+            'reference' => '4c6e1b9899aef8c6224c7c1ae46963b71435280b',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../xendit/xendit-php',
+            'aliases' => array(),
+            'dev_requirement' => false,
         ),
     ),
 );

@@ -12,7 +12,7 @@ class OrderService
 
     static function storeOrder(
         string $transaction_id,
-        int $buyer_id,
+        string $buyer_id,
         string $status,
         float $total_amount,
         float $paid_amount,

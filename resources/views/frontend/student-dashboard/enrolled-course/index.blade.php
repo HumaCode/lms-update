@@ -64,8 +64,8 @@
                                                 @forelse($enrollments as $enrollment)
                                                 <tr>
                                                     <td class="image">
-                                                        <div class="image_category">
-                                                            <img src="{{ asset($enrollment->course->thumbnail) }}" alt="img" class="img-fluid w-100">
+                                                        <div class="image_category" style="width: 140px; height: 95px; overflow: hidden; border-radius: 8px;">
+                                                            <img src="{{ asset($enrollment->course->thumbnail) }}" alt="img" class="img-fluid w-100 h-100" style="object-fit: cover; object-position: center;">
                                                         </div>
                                                     </td>
                                                     <td class="details">

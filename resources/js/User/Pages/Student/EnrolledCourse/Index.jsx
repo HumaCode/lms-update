@@ -31,18 +31,19 @@ export default function EnrolledCourses({ enrollments = [] }) {
                             return (
                                 <div className="col-lg-4 col-md-6" key={enr.id}>
                                     <div className="card h-100 border-0 shadow-sm rounded-3 overflow-hidden transition-all hover-lift">
-                                        <div className="position-relative" style={{ height: '170px' }}>
+                                        <div className="position-relative overflow-hidden" style={{ height: '180px' }}>
                                             <img
                                                 src={getImageUrl(course.thumbnail, '/frontend/assets/images/courses_img_1.jpg')}
                                                 alt={course.title}
-                                                className="w-100 h-100 object-fit-cover"
+                                                className="w-100 h-100"
+                                                style={{ objectFit: 'cover', objectPosition: 'center', width: '100%', height: '100%', transition: 'transform 0.3s ease' }}
                                                 onError={(e) => {
                                                     e.target.onerror = null;
                                                     e.target.src = '/frontend/assets/images/courses_img_1.jpg';
                                                 }}
                                             />
                                             {course.category && (
-                                                <span className="badge bg-primary position-absolute top-0 start-0 m-2">
+                                                <span className="badge bg-primary position-absolute top-0 start-0 m-2 shadow-sm">
                                                     {course.category.name}
                                                 </span>
                                             )}

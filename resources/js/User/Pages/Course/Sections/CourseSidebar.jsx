@@ -1,6 +1,6 @@
 import React from 'react';
-import { Link } from '@inertiajs/react';
-import { getImageUrl } from '@/Utils/formatters';
+import { Link, usePage } from '@inertiajs/react';
+import { getImageUrl, formatCurrency } from '@/Utils/formatters';
 
 export default function CourseSidebar({
     course,
@@ -10,6 +10,8 @@ export default function CourseSidebar({
     addingToCart,
     isEnrolled = false,
 }) {
+    const { props } = usePage();
+    const settings = props?.settings || {};
     const hasDiscount = course.discount && Number(course.discount) > 0;
     const finalPrice = hasDiscount ? Number(course.discount) : Number(course.price || 0);
     const isFree = !course.price || Number(course.price) === 0;
@@ -121,11 +123,11 @@ export default function CourseSidebar({
                     'FREE'
                 ) : hasDiscount ? (
                     <>
-                        <del>${Number(course.price).toFixed(2)}</del>
-                        ${finalPrice.toFixed(2)}
+                        <del>{formatCurrency(course.price, settings)}</del>
+                        {formatCurrency(finalPrice, settings)}
                     </>
                 ) : (
-                    `$${finalPrice.toFixed(2)}`
+                    formatCurrency(finalPrice, settings)
                 )}
             </h3>
 

@@ -1,35 +1,23 @@
 import React, { useState } from 'react';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import UserLayout from '../../Layouts/UserLayout';
+import { formatCurrency } from '@/Utils/formatters';
 
 export default function CheckoutPage({ totalAmount, totalCount }) {
-    const [selectedGateway, setSelectedGateway] = useState('stripe');
+    const { settings } = usePage().props;
+    const [selectedGateway, setSelectedGateway] = useState('xendit');
 
     const gateways = [
         {
-            id: 'stripe',
-            name: 'Stripe',
-            logo: '/default-files/stripe-logo.png',
-            payUrl: route('stripe.payment'),
-            description: 'Pay securely with Credit Card or Debit Card via Stripe',
-        },
-        {
-            id: 'paypal',
-            name: 'PayPal',
-            logo: '/default-files/paypal-logo.png',
-            payUrl: route('paypal.payment'),
-            description: 'Pay with your PayPal account or PayPal balance',
-        },
-        {
-            id: 'razorpay',
-            name: 'Razorpay',
-            logo: '/default-files/razorpay-logo.png',
-            payUrl: route('razorpay.redirect'),
-            description: 'UPI, NetBanking, and Card payments via Razorpay',
+            id: 'xendit',
+            name: 'Xendit Payment Gateway',
+            logo: 'https://images.xendit.co/xendit-logo.svg',
+            payUrl: route('xendit.payment'),
+            description: 'Bayar dengan Transfer Bank (Virtual Account), E-Wallet (GoPay, OVO, DANA, ShopeePay), QRIS, atau Kartu Kredit via Xendit',
         },
     ];
 
-    const currentGateway = gateways.find((g) => g.id === selectedGateway) || gateways[0];
+    const currentGateway = gateways[0];
 
     return (
         <UserLayout>
@@ -62,26 +50,28 @@ export default function CheckoutPage({ totalAmount, totalCount }) {
                         {/* Gateway Selection */}
                         <div className="col-lg-8">
                             <div className="card border-0 shadow-sm rounded-3 bg-white p-4">
-                                <h5 className="fw-bold text-dark mb-4">Select Payment Method</h5>
+                                <h5 className="fw-bold text-dark mb-4">Metode Pembayaran</h5>
 
                                 <div className="row g-3 mb-4">
                                     {gateways.map((gw) => (
-                                        <div className="col-sm-4" key={gw.id}>
+                                        <div className="col-sm-6" key={gw.id}>
                                             <div
-                                                className={`card p-3 text-center cursor-pointer rounded-3 border-2 transition-all ${selectedGateway === gw.id ? 'border-primary shadow-sm bg-primary-subtle' : 'border-light-subtle'}`}
+                                                className={`card p-3 cursor-pointer rounded-3 border-2 transition-all ${selectedGateway === gw.id ? 'border-primary shadow-sm bg-primary-subtle' : 'border-light-subtle'}`}
                                                 style={{ cursor: 'pointer' }}
                                                 onClick={() => setSelectedGateway(gw.id)}
                                             >
-                                                <div className="d-flex align-items-center justify-content-center" style={{ height: '50px' }}>
-                                                    <img
-                                                        src={gw.logo}
-                                                        alt={gw.name}
-                                                        className="img-fluid"
-                                                        style={{ maxHeight: '40px' }}
-                                                        onError={(e) => { e.target.outerHTML = `<span class="fw-bold">${gw.name}</span>`; }}
-                                                    />
+                                                <div className="d-flex align-items-center justify-content-between">
+                                                    <div className="d-flex align-items-center gap-3">
+                                                        <div className="bg-dark p-2 rounded-2 d-flex align-items-center justify-content-center" style={{ width: '80px', height: '40px' }}>
+                                                            <span className="fw-bold text-white fs-5">xendit</span>
+                                                        </div>
+                                                        <div>
+                                                            <div className="fw-bold text-dark">{gw.name}</div>
+                                                            <span className="badge bg-success small mt-1">Otomatis & Realtime</span>
+                                                        </div>
+                                                    </div>
+                                                    <i className="fas fa-check-circle text-primary fs-4"></i>
                                                 </div>
-                                                <div className="small fw-semibold mt-2">{gw.name}</div>
                                             </div>
                                         </div>
                                     ))}
@@ -91,7 +81,7 @@ export default function CheckoutPage({ totalAmount, totalCount }) {
                                     <div className="d-flex align-items-center">
                                         <i className="fas fa-shield-alt text-success fs-3 me-3"></i>
                                         <div>
-                                            <h6 className="fw-bold mb-1 text-dark">Secure & Encrypted Checkout</h6>
+                                            <h6 className="fw-bold mb-1 text-dark">Pembayaran Aman & Terenkripsi</h6>
                                             <p className="text-muted small mb-0">{currentGateway.description}</p>
                                         </div>
                                     </div>
@@ -102,7 +92,7 @@ export default function CheckoutPage({ totalAmount, totalCount }) {
                                         href={currentGateway.payUrl}
                                         className="btn btn-primary btn-lg px-5 shadow-sm"
                                     >
-                                        Proceed with {currentGateway.name} <i className="fas fa-arrow-right ms-2"></i>
+                                        Bayar dengan Xendit <i className="fas fa-arrow-right ms-2"></i>
                                     </a>
                                 </div>
                             </div>
@@ -111,22 +101,22 @@ export default function CheckoutPage({ totalAmount, totalCount }) {
                         {/* Order Summary */}
                         <div className="col-lg-4">
                             <div className="card border-0 shadow-sm rounded-3 bg-white p-4 sticky-top" style={{ top: '90px' }}>
-                                <h5 className="fw-bold text-dark mb-3">Order Total</h5>
+                                <h5 className="fw-bold text-dark mb-3">Ringkasan Pesanan</h5>
                                 <div className="d-flex justify-content-between mb-2">
-                                    <span className="text-muted">Total Courses:</span>
-                                    <span className="fw-bold">{totalCount ?? 'Cart items'}</span>
+                                    <span className="text-muted">Total Kursus:</span>
+                                    <span className="fw-bold">{totalCount ?? 'Item di Keranjang'}</span>
                                 </div>
                                 <div className="d-flex justify-content-between mb-3">
-                                    <span className="text-muted">Payment Method:</span>
-                                    <span className="badge bg-primary text-capitalize">{selectedGateway}</span>
+                                    <span className="text-muted">Metode Pembayaran:</span>
+                                    <span className="badge bg-primary text-uppercase">{selectedGateway}</span>
                                 </div>
                                 <hr />
                                 <div className="d-flex justify-content-between mb-4">
-                                    <h5 className="fw-bold text-dark">Amount Due:</h5>
-                                    <h5 className="fw-bold text-primary">${Number(totalAmount || 0).toFixed(2)}</h5>
+                                    <h5 className="fw-bold text-dark">Total Tagihan:</h5>
+                                    <h5 className="fw-bold text-primary">{formatCurrency(totalAmount || 0, settings)}</h5>
                                 </div>
                                 <div className="small text-muted text-center">
-                                    <i className="fas fa-lock me-1"></i> 256-bit SSL Encrypted Transaction
+                                    <i className="fas fa-lock me-1"></i> Transaksi Terenkripsi SSL 256-bit
                                 </div>
                             </div>
                         </div>

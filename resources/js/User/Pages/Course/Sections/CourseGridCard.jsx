@@ -1,8 +1,10 @@
 import React from 'react';
-import { Link } from '@inertiajs/react';
-import { getImageUrl } from '@/Utils/formatters';
+import { Link, usePage } from '@inertiajs/react';
+import { getImageUrl, formatCurrency } from '@/Utils/formatters';
 
 export default function CourseGridCard({ course }) {
+    const { props } = usePage();
+    const settings = props?.settings || {};
     const hasDiscount = course.discount && Number(course.discount) > 0;
     const finalPrice = hasDiscount ? Number(course.discount) : Number(course.price || 0);
     const isFree = !course.price || Number(course.price) === 0;
@@ -59,7 +61,7 @@ export default function CourseGridCard({ course }) {
                         src={thumbnail}
                         alt={course.title}
                         className="w-100 h-100 object-fit-cover"
-                        style={{ transition: 'transform 0.4s ease' }}
+                        style={{ objectFit: 'cover', objectPosition: 'center', width: '100%', height: '100%', transition: 'transform 0.4s ease' }}
                         onError={(e) => {
                             e.target.onerror = null;
                             e.target.src = '/frontend/assets/images/courses_img_1.jpg';
@@ -241,12 +243,12 @@ export default function CourseGridCard({ course }) {
                                     marginRight: '6px',
                                 }}
                             >
-                                ${Number(course.price).toFixed(0)}
+                                {formatCurrency(course.price, settings)}
                             </del>
-                            ${finalPrice.toFixed(2)}
+                            {formatCurrency(finalPrice, settings)}
                         </>
                     ) : (
-                        `$${finalPrice.toFixed(2)}`
+                        formatCurrency(finalPrice, settings)
                     )}
                 </p>
             </div>

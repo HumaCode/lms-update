@@ -23,7 +23,7 @@ class CartController extends Controller
         ]);
     }
 
-    function addToCart(int $id) : Response
+    function addToCart(string $id) : Response
     {
 
       if(!Auth::guard('web')->check()){
@@ -56,7 +56,7 @@ class CartController extends Controller
 
     }
 
-    function removeFromCart(int $id) : RedirectResponse
+    function removeFromCart(string $id) : RedirectResponse
     {
         $cart = Cart::where(['id' => $id, 'user_id' => user()->id])->firstOrFail();
         $cart->delete();

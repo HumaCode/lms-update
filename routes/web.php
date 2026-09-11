@@ -58,6 +58,12 @@ use Illuminate\Support\Facades\Route;
  Route::get('razorpay/redirect', [PaymentController::class, 'razorpayRedirect'])->name('razorpay.redirect');
  Route::post('razorpay/payment', [PaymentController::class, 'payWithRazorpay'])->name('razorpay.payment');
 
+ /** Xendit Routes */
+ Route::get('xendit/pay', [PaymentController::class, 'payWithXendit'])->name('xendit.payment')->middleware('auth');
+ Route::get('xendit/success', [PaymentController::class, 'xenditSuccess'])->name('xendit.success');
+ Route::get('xendit/failed', [PaymentController::class, 'xenditFailed'])->name('xendit.failed');
+ Route::post('xendit/webhook', [PaymentController::class, 'xenditWebhook'])->name('xendit.webhook');
+
  Route::get('order-success', [PaymentController::class, 'orderSuccess'])->name('order.success');
  Route::get('order-failed', [PaymentController::class, 'orderFailed'])->name('order.failed');
 

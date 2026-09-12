@@ -91,14 +91,14 @@ export default function AboutSection({ about }) {
                                 {about.button_text || 'Start Free Trial'}
                             </Link>
 
-                            <div className="about_video">
+                            <div className="about_video" style={{ position: 'relative', bottom: 'auto', right: 'auto', marginTop: '30px', zIndex: 2 }}>
                                 <img
                                     src={
                                         about.about_video_image ||
                                         (about.video_image ? `/${about.video_image}` : '/frontend/assets/images/about_3_img_2.jpg')
                                     }
                                     alt="Video"
-                                    className="img-fluid w-100"
+                                    className="img-fluid w-100 h-100 object-fit-cover"
                                     onError={(e) => {
                                         e.target.onerror = null;
                                         e.target.src = '/frontend/assets/images/about_3_img_2.jpg';

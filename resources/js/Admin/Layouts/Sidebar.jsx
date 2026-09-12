@@ -183,7 +183,7 @@ export default function Sidebar() {
                         </li>
 
                         {/* 9. Sections */}
-                        <li className={`nav-item dropdown ${openDropdowns.sections ? 'show' : ''}`}>
+                        <li className={`nav-item dropdown ${openDropdowns.sections ? 'show active' : ''}`}>
                             <a
                                 className="nav-link dropdown-toggle"
                                 href="#"
@@ -198,16 +198,16 @@ export default function Sidebar() {
                                 <span className="nav-link-title">Sections</span>
                             </a>
                             <div className={`dropdown-menu ${openDropdowns.sections ? 'show' : ''}`}>
-                                <Link className="dropdown-item" href={route('admin.hero.index')}>Hero</Link>
-                                <Link className="dropdown-item" href={route('admin.feature.index')}>Features</Link>
-                                <Link className="dropdown-item" href={route('admin.about-section.index')}>About Us</Link>
-                                <Link className="dropdown-item" href={route('admin.latest-courses-section.index')}>Latest Courses</Link>
-                                <Link className="dropdown-item" href={route('admin.become-instructor-section.index')}>Become Instructor</Link>
-                                <Link className="dropdown-item" href={route('admin.video-section.index')}>Video</Link>
-                                <Link className="dropdown-item" href={route('admin.brand-section.index')}>Brand</Link>
-                                <Link className="dropdown-item" href={route('admin.featured-instructor-section.index')}>Featured Instructor</Link>
-                                <Link className="dropdown-item" href={route('admin.testimonial-section.index')}>Testimonial</Link>
-                                <Link className="dropdown-item" href={route('admin.counter-section.index')}>Counter</Link>
+                                <Link className={`dropdown-item ${isActive('/admin/hero') ? 'active' : ''}`} href={route('admin.hero.index')}>Hero</Link>
+                                <Link className={`dropdown-item ${isActive('/admin/feature') ? 'active' : ''}`} href={route('admin.feature.index')}>Features</Link>
+                                <Link className={`dropdown-item ${isActive('/admin/about-section') ? 'active' : ''}`} href={route('admin.about-section.index')}>About Us</Link>
+                                <Link className={`dropdown-item ${isActive('/admin/latest-courses-section') ? 'active' : ''}`} href={route('admin.latest-courses-section.index')}>Latest Courses</Link>
+                                <Link className={`dropdown-item ${isActive('/admin/become-instructor-section') ? 'active' : ''}`} href={route('admin.become-instructor-section.index')}>Become Instructor</Link>
+                                <Link className={`dropdown-item ${isActive('/admin/video-section') ? 'active' : ''}`} href={route('admin.video-section.index')}>Video</Link>
+                                <Link className={`dropdown-item ${isActive('/admin/brand-section') ? 'active' : ''}`} href={route('admin.brand-section.index')}>Brand</Link>
+                                <Link className={`dropdown-item ${isActive('/admin/featured-instructor-section') ? 'active' : ''}`} href={route('admin.featured-instructor-section.index')}>Featured Instructor</Link>
+                                <Link className={`dropdown-item ${isActive('/admin/testimonial-section') ? 'active' : ''}`} href={route('admin.testimonial-section.index')}>Testimonial</Link>
+                                <Link className={`dropdown-item ${isActive('/admin/counter-section') ? 'active' : ''}`} href={route('admin.counter-section.index')}>Counter</Link>
                             </div>
                         </li>
 

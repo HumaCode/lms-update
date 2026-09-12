@@ -16,10 +16,10 @@ class HeroController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index() : View
+    public function index()
     {
         $hero = Hero::first();
-        return view('admin.sections.hero.index', compact('hero'));
+        return \Inertia\Inertia::render('Admin/Sections/Hero/Index', compact('hero'));
     }
 
     /**

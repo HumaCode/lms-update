@@ -3,10 +3,11 @@ import { Head } from '@inertiajs/react';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import Footer from './Footer';
+import ToastContainer from '@/Components/UI/Toast';
 import { useFlashNotification } from '@/Hooks/useFlashNotification';
 
 export default function AdminLayout({ children, title = 'Admin Dashboard' }) {
-    // Automatically display flash notifications (success/error/info/warning) via Notyf
+    // Automatically display flash notifications (success/error/info/warning) via Toast
     useFlashNotification();
 
     useEffect(() => {
@@ -37,6 +38,7 @@ export default function AdminLayout({ children, title = 'Admin Dashboard' }) {
     return (
         <div className="page">
             <Head title={title} />
+            <ToastContainer />
             <Sidebar />
             <Header />
             <div className="page-wrapper">

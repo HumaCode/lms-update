@@ -97,7 +97,20 @@ export default function BestSellingCoursesTable({ courses = [] }) {
                                                 {course.title}
                                             </Link>
                                             <div className="text-muted small">
-                                                <span>Price: <strong>{formatCurrency(course.price, settings)}</strong></span>
+                                                <span>
+                                                    Price:{' '}
+                                                    {course.has_discount ? (
+                                                        <>
+                                                            <del className="text-muted me-1">{formatCurrency(course.price, settings)}</del>
+                                                            <strong className="text-danger me-1">{formatCurrency(course.final_price, settings)}</strong>
+                                                            <span className="badge bg-danger-subtle text-danger px-1 py-0 small">
+                                                                -{Math.round(((course.price - course.final_price) / course.price) * 100)}%
+                                                            </span>
+                                                        </>
+                                                    ) : (
+                                                        <strong>{formatCurrency(course.price, settings)}</strong>
+                                                    )}
+                                                </span>
                                                 {course.reviews_count > 0 && (
                                                     <span className="ms-2">({course.reviews_count} reviews)</span>
                                                 )}
@@ -110,7 +123,7 @@ export default function BestSellingCoursesTable({ courses = [] }) {
                                         </td>
                                         <td className="amount py-3 text-end pe-4">
                                             <div className="fw-bold fs-6 text-success">
-                                                {formatCurrency(course.amount, settings)}
+                                                {formatCurrency(course.earning ?? course.amount, settings)}
                                             </div>
                                             <div className="text-muted small">Total earned</div>
                                         </td>

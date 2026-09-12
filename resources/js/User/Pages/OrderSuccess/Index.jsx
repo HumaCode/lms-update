@@ -268,7 +268,7 @@ export default function OrderSuccess() {
                                             border: '1px solid #a7f3d0',
                                         }}
                                     >
-                                        <i className="bi bi-check-circle-fill me-1"></i> Pembayaran Berhasil & Lunas
+                                        <i className="fas fa-check-circle me-1"></i> Pembayaran Berhasil & Lunas
                                     </span>
                                 </div>
 
@@ -286,7 +286,7 @@ export default function OrderSuccess() {
                                                 className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
                                                 style={{ width: '38px', height: '38px', background: '#e0e7ff', color: '#4338ca' }}
                                             >
-                                                <i className="bi bi-play-btn-fill fs-5"></i>
+                                                <i className="fas fa-play-circle fs-5"></i>
                                             </div>
                                             <div>
                                                 <div className="small text-muted">Akses Kelas</div>
@@ -298,7 +298,7 @@ export default function OrderSuccess() {
                                                 className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
                                                 style={{ width: '38px', height: '38px', background: '#dcfce7', color: '#15803d' }}
                                             >
-                                                <i className="bi bi-infinity fs-5"></i>
+                                                <i className="fas fa-infinity fs-5"></i>
                                             </div>
                                             <div>
                                                 <div className="small text-muted">Masa Berlaku</div>
@@ -310,7 +310,7 @@ export default function OrderSuccess() {
                                                 className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
                                                 style={{ width: '38px', height: '38px', background: '#fef3c7', color: '#b45309' }}
                                             >
-                                                <i className="bi bi-award-fill fs-5"></i>
+                                                <i className="fas fa-certificate fs-5"></i>
                                             </div>
                                             <div>
                                                 <div className="small text-muted">Sertifikat</div>
@@ -326,16 +326,16 @@ export default function OrderSuccess() {
                                         href={route('student.enrolled-courses.index')}
                                         className="btn-success-primary"
                                     >
-                                        <i className="bi bi-journal-bookmark-fill fs-5 text-white"></i>
+                                        <i className="fas fa-book-open me-1 text-white"></i>
                                         <span>Lihat Kursus Saya</span>
-                                        <i className="bi bi-arrow-right text-white"></i>
+                                        <i className="fas fa-arrow-right text-white ms-1"></i>
                                     </Link>
 
                                     <Link
                                         href={route('student.dashboard')}
                                         className="btn-success-secondary"
                                     >
-                                        <i className="bi bi-speedometer2 fs-5"></i>
+                                        <i className="fas fa-tachometer-alt me-1"></i>
                                         <span>Ke Dashboard</span>
                                     </Link>
                                 </div>
@@ -343,7 +343,7 @@ export default function OrderSuccess() {
                                 {/* Tertiary Link */}
                                 <div className="mt-3">
                                     <Link href={route('home')} className="btn-success-tertiary d-inline-flex align-items-center gap-1">
-                                        <i className="bi bi-grid-fill"></i>
+                                        <i className="fas fa-th-large me-1"></i>
                                         <span>Jelajahi Kursus Lainnya</span>
                                     </Link>
                                 </div>
@@ -354,7 +354,7 @@ export default function OrderSuccess() {
                                 <div className="col-md-4">
                                     <div className="card border-0 shadow-sm rounded-3 p-3 text-center h-100 bg-white feature-hover-card">
                                         <div className="text-primary fs-3 mb-2">
-                                            <i className="bi bi-laptop"></i>
+                                            <i className="fas fa-laptop"></i>
                                         </div>
                                         <h6 className="fw-bold mb-1 text-dark">Mulai Belajar</h6>
                                         <p className="small text-muted mb-0">Tonton video tutorial kapan saja & di mana saja.</p>
@@ -363,7 +363,7 @@ export default function OrderSuccess() {
                                 <div className="col-md-4">
                                     <div className="card border-0 shadow-sm rounded-3 p-3 text-center h-100 bg-white feature-hover-card">
                                         <div className="text-success fs-3 mb-2">
-                                            <i className="bi bi-file-earmark-code"></i>
+                                            <i className="fas fa-file-download"></i>
                                         </div>
                                         <h6 className="fw-bold mb-1 text-dark">Modul & File</h6>
                                         <p className="small text-muted mb-0">Unduh bahan pendukung dan file latihan kelas.</p>
@@ -372,7 +372,7 @@ export default function OrderSuccess() {
                                 <div className="col-md-4">
                                     <div className="card border-0 shadow-sm rounded-3 p-3 text-center h-100 bg-white feature-hover-card">
                                         <div className="text-warning fs-3 mb-2">
-                                            <i className="bi bi-patch-check"></i>
+                                            <i className="fas fa-award"></i>
                                         </div>
                                         <h6 className="fw-bold mb-1 text-dark">Sertifikat Kelulusan</h6>
                                         <p className="small text-muted mb-0">Klaim sertifikat setelah menyelesaikan materi.</p>

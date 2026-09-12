@@ -41,7 +41,7 @@ class PaymentSettingController extends Controller
 
         notyf()->success("Xendit Settings Updated Successfully!");
 
-        return redirect()->back();
+        return redirect()->back()->with('success', 'Pengaturan Xendit berhasil diperbarui!');
     }
 
     function paypalSetting(Request $request) : RedirectResponse 
@@ -63,17 +63,17 @@ class PaymentSettingController extends Controller
 
         notyf()->success("Update Successfully!");
 
-        return redirect()->back();
+        return redirect()->back()->with('success', 'Pengaturan PayPal berhasil diperbarui!');
     }
 
     function stripeSetting(Request $request) : RedirectResponse 
     {
         $validatedData = $request->validate([
             'stripe_status' => ['required', 'in:active,inactive'],
-            'stripe_currency' => ['required'],
-            'stripe_rate' => ['required'],
             'stripe_publishable_key' => ['required'],
             'stripe_secret' => ['required'],
+            'stripe_currency' => ['required'],
+            'stripe_rate' => ['required', 'numeric'],
         ]);
         
         foreach($validatedData as $key => $value) {
@@ -84,16 +84,17 @@ class PaymentSettingController extends Controller
 
         notyf()->success("Update Successfully!");
 
-        return redirect()->back();
+        return redirect()->back()->with('success', 'Pengaturan Stripe berhasil diperbarui!');
     }
 
-    function razorpaySetting(Request $request) : RedirectResponse{
+    function razorpaySetting(Request $request) : RedirectResponse 
+    {
         $validatedData = $request->validate([
             'razorpay_status' => ['required', 'in:active,inactive'],
-            'razorpay_currency' => ['required'],
-            'razorpay_rate' => ['required'],
             'razorpay_key' => ['required'],
             'razorpay_secret' => ['required'],
+            'razorpay_currency' => ['required'],
+            'razorpay_rate' => ['required', 'numeric'],
         ]);
         
         foreach($validatedData as $key => $value) {
@@ -104,6 +105,6 @@ class PaymentSettingController extends Controller
 
         notyf()->success("Update Successfully!");
 
-        return redirect()->back();
+        return redirect()->back()->with('success', 'Pengaturan Razorpay berhasil diperbarui!');
     }
 }

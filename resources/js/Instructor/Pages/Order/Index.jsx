@@ -66,7 +66,14 @@ export default function Index({ orderItems }) {
                                             </div>
                                         </td>
                                         <td className="fw-medium">
-                                            {formatCurrency(item.price, item.order?.currency)}
+                                            {item.course?.price > item.price ? (
+                                                <div>
+                                                    <del className="text-muted small me-1">{formatCurrency(item.course.price, item.order?.currency)}</del>
+                                                    <span className="text-danger fw-bold">{formatCurrency(item.price, item.order?.currency)}</span>
+                                                </div>
+                                            ) : (
+                                                <span>{formatCurrency(item.price, item.order?.currency)}</span>
+                                            )}
                                         </td>
                                         <td className="text-muted">
                                             {item.commission_rate ?? 0}%

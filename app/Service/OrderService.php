@@ -35,9 +35,13 @@ class OrderService
             $cart = Cart::where('user_id', $buyer_id);
             $cartItems = $cart->get();
             foreach ($cartItems as $item) {
+                $rawPrice = (float) $item->course->price;
+                $discAmt = (float) $item->course->discount;
+                $finalPrice = ($discAmt > 0 && $discAmt < $rawPrice) ? ($rawPrice - $discAmt) : ($discAmt > 0 ? $discAmt : $rawPrice);
+
                 $orderItem = new OrderItem();
                 $orderItem->order_id = $order->id;
-                $orderItem->price = $item->course->discount > 0 ? $item->course->discount : $item->course->price;
+                $orderItem->price = $finalPrice;
                 $orderItem->course_id = $item->course->id;
                 $orderItem->commission_rate = config('settings.commission_rate');
                 $orderItem->save();
@@ -51,7 +55,7 @@ class OrderService
 
                 /** add commission to instructor wallet */
                 $instructorWallet = $item->course->instructor;
-                $instructorWallet->wallet += calculateCommission($item->course->discount > 0 ? $item->course->discount : $item->course->price, config('settings.commission_rate'));
+                $instructorWallet->wallet += calculateCommission($finalPrice, config('settings.commission_rate'));
                 $instructorWallet->save();
             }
 

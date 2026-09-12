@@ -3,6 +3,7 @@ import { Head, useForm } from '@inertiajs/react';
 import AdminLayout from '@/Admin/Layouts/AdminLayout';
 import PageHeader from '@/Admin/Components/PageHeader';
 import { route } from '@/Utils/routes';
+import { notify } from '@/Utils/notifications';
 
 export default function Index({
     gatewaySettings = {},
@@ -63,22 +64,34 @@ export default function Index({
 
     const handleXenditSubmit = (e) => {
         e.preventDefault();
-        xenditForm.post(route('admin.xendit-setting.update'));
+        xenditForm.post(route('admin.xendit-setting.update'), {
+            onSuccess: () => notify.success('Berhasil Disimpan', 'Pengaturan Xendit berhasil diperbarui.'),
+            onError: () => notify.error('Gagal', 'Terjadi kesalahan saat menyimpan pengaturan Xendit.'),
+        });
     };
 
     const handlePaypalSubmit = (e) => {
         e.preventDefault();
-        paypalForm.post(route('admin.paypal-setting.update'));
+        paypalForm.post(route('admin.paypal-setting.update'), {
+            onSuccess: () => notify.success('Berhasil Disimpan', 'Pengaturan PayPal berhasil diperbarui.'),
+            onError: () => notify.error('Gagal', 'Terjadi kesalahan saat menyimpan pengaturan PayPal.'),
+        });
     };
 
     const handleStripeSubmit = (e) => {
         e.preventDefault();
-        stripeForm.post(route('admin.stripe-setting.update'));
+        stripeForm.post(route('admin.stripe-setting.update'), {
+            onSuccess: () => notify.success('Berhasil Disimpan', 'Pengaturan Stripe berhasil diperbarui.'),
+            onError: () => notify.error('Gagal', 'Terjadi kesalahan saat menyimpan pengaturan Stripe.'),
+        });
     };
 
     const handleRazorpaySubmit = (e) => {
         e.preventDefault();
-        razorpayForm.post(route('admin.razorpay-setting.update'));
+        razorpayForm.post(route('admin.razorpay-setting.update'), {
+            onSuccess: () => notify.success('Berhasil Disimpan', 'Pengaturan Razorpay berhasil diperbarui.'),
+            onError: () => notify.error('Gagal', 'Terjadi kesalahan saat menyimpan pengaturan Razorpay.'),
+        });
     };
 
     return (

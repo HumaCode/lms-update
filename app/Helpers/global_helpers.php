@@ -39,15 +39,14 @@ if(!function_exists('cartCount')) {
 /** calculate cart total */
 if(!function_exists('cartTotal')) {
     function cartTotal() {
+        if (!user()) return 0;
         $total = 0;
 
-        $cart = Cart::where('user_id', user()->id)->get();
+        $cart = Cart::where('user_id', user()->id)->with('course')->get();
 
         foreach($cart as $item) {
-            if($item->course->discount > 0) {
-                $total += $item->course->discount;
-            }else {
-                $total += $item->course->price;
+            if ($item->course) {
+                $total += (float) $item->course->final_price;
             }
         }
 

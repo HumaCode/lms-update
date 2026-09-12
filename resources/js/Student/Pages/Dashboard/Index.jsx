@@ -1,6 +1,7 @@
 import React from 'react';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import StudentDashboardLayout from '@/Student/Layouts/StudentDashboardLayout';
+import { formatCurrency } from '@/Utils/formatters';
 
 export default function StudentDashboard({
     userCourses = 0,
@@ -8,6 +9,9 @@ export default function StudentDashboard({
     orderCount = 0,
     orders = []
 }) {
+    const { props } = usePage();
+    const settings = props?.settings || {};
+
     return (
         <StudentDashboardLayout title="Student Dashboard" subtitle="Overview">
             <Head title="Student Dashboard - EduCore" />
@@ -78,7 +82,7 @@ export default function StudentDashboard({
                                     <tr key={ord.id}>
                                         <td className="fw-bold text-dark">#{ord.invoice_id}</td>
                                         <td>{new Date(ord.created_at).toLocaleDateString()}</td>
-                                        <td className="fw-bold text-primary">${Number(ord.total_amount || 0).toFixed(2)}</td>
+                                        <td className="fw-bold text-primary">{formatCurrency(ord.total_amount, settings)}</td>
                                         <td className="text-capitalize">{ord.payment_method}</td>
                                         <td>
                                             <span className={`badge ${ord.status === 'completed' ? 'bg-success' : 'bg-warning'}`}>

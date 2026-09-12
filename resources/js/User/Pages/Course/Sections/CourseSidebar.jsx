@@ -7,14 +7,19 @@ export default function CourseSidebar({
     onPlayVideo,
     handleAddToCart,
     handleEnrollFree,
+    handleBuyNowDirectly,
     addingToCart,
     isEnrolled = false,
 }) {
     const { props } = usePage();
     const settings = props?.settings || {};
-    const hasDiscount = course.discount && Number(course.discount) > 0;
-    const finalPrice = hasDiscount ? Number(course.discount) : Number(course.price || 0);
-    const isFree = !course.price || Number(course.price) === 0;
+    const numPrice = Number(course.price || 0);
+    const numDiscount = Number(course.discount || 0);
+    const finalPrice = course.final_price !== undefined ? Number(course.final_price) : (
+        numDiscount > 0 && numDiscount < numPrice ? (numPrice - numDiscount) : (numDiscount > 0 ? numDiscount : numPrice)
+    );
+    const hasDiscount = numDiscount > 0 && finalPrice < numPrice;
+    const isFree = numPrice === 0;
 
     const thumbnail = getImageUrl(course.thumbnail, '/frontend/assets/images/courses_img_1.jpg');
     const instructorImg = getImageUrl(course.instructor?.image, '/default-files/avatar.png');
@@ -234,17 +239,21 @@ export default function CourseSidebar({
             {/* Buy Now / Checkout shortcut (Only for paid courses and when not enrolled) */}
             {!isFree && !isEnrolled && (
                 <div className="wsus__courses_sidebar_share_btn d-flex flex-wrap justify-content-between mt-3">
-                    <Link
-                        href={route('checkout.index')}
+                    <button
+                        type="button"
+                        onClick={handleBuyNowDirectly}
                         className="common_btn w-100"
                         style={{
                             background: '#1F2937',
                             color: '#fff',
                             textAlign: 'center',
+                            border: 'none',
+                            cursor: 'pointer',
                         }}
+                        disabled={addingToCart}
                     >
-                        <i className="fas fa-shopping-bag me-2"></i> Buy Now Directly
-                    </Link>
+                        <i className="fas fa-shopping-bag me-2"></i> {addingToCart ? 'Processing...' : 'Buy Now Directly'}
+                    </button>
                 </div>
             )}
 

@@ -22,8 +22,6 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Paginator::useBootstrapFive();
-
-
-        
+        \App\Models\Withdraw::observe(\App\Observers\WithdrawObserver::class);
     }
 }

@@ -70,6 +70,27 @@ export default function CourseShow({ course, reviews, isEnrolled }) {
         }
     };
 
+    const handleBuyNowDirectly = async () => {
+        if (!user) {
+            router.get(route('login'));
+            return;
+        }
+        const notyf = new Notyf({ duration: 3000, position: { x: 'right', y: 'top' } });
+        setAddingToCart(true);
+        try {
+            await axios.post(route('add-to-cart', course.id));
+            router.visit(route('checkout.index'));
+        } catch (err) {
+            if (err.response?.status === 401 && err.response?.data?.message === 'Already Added!') {
+                router.visit(route('checkout.index'));
+            } else {
+                const msg = err.response?.data?.message || 'Failed to proceed to checkout';
+                notyf.error(msg);
+                setAddingToCart(false);
+            }
+        }
+    };
+
     const handleReviewSubmit = (e) => {
         e.preventDefault();
         setSubmittingReview(true);
@@ -219,6 +240,7 @@ export default function CourseShow({ course, reviews, isEnrolled }) {
                                 onPlayVideo={(url) => setPreviewVideoUrl(url)}
                                 handleAddToCart={handleAddToCart}
                                 handleEnrollFree={handleEnrollFree}
+                                handleBuyNowDirectly={handleBuyNowDirectly}
                                 addingToCart={addingToCart}
                                 isEnrolled={isEnrolled}
                             />

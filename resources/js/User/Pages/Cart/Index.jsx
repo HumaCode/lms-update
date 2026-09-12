@@ -8,12 +8,19 @@ export default function CartPage({ cart }) {
     const settings = props?.settings || {};
     const cartItems = cart?.data || [];
 
+    const getCourseFinalPrice = (course) => {
+        if (!course) return 0;
+        const numPrice = Number(course.price || 0);
+        const numDiscount = Number(course.discount || 0);
+        if (course.final_price !== undefined) return Number(course.final_price);
+        if (numDiscount > 0 && numDiscount < numPrice) return numPrice - numDiscount;
+        if (numDiscount > 0) return numDiscount;
+        return numPrice;
+    };
+
     const calculateSubtotal = () => {
         return cartItems.reduce((acc, item) => {
-            const course = item.course;
-            if (!course) return acc;
-            const price = course.discount && course.discount > 0 ? course.discount : (course.price || 0);
-            return acc + Number(price);
+            return acc + getCourseFinalPrice(item.course);
         }, 0);
     };
 
@@ -71,8 +78,10 @@ export default function CartPage({ cart }) {
                                         {cartItems.map((item) => {
                                             const course = item.course;
                                             if (!course) return null;
-                                            const hasDiscount = course.discount && course.discount > 0;
-                                            const price = hasDiscount ? course.discount : course.price;
+                                            const numPrice = Number(course.price || 0);
+                                            const numDiscount = Number(course.discount || 0);
+                                            const finalPrice = getCourseFinalPrice(course);
+                                            const hasDiscount = numDiscount > 0 && finalPrice < numPrice;
 
                                             return (
                                                 <div
@@ -112,7 +121,7 @@ export default function CartPage({ cart }) {
                                                             ) : (
                                                                 <>
                                                                     <div className="fw-bold text-primary fs-5">
-                                                                        {formatCurrency(price || 0, settings)}
+                                                                        {formatCurrency(finalPrice, settings)}
                                                                     </div>
                                                                     {hasDiscount && (
                                                                         <span className="text-muted text-decoration-line-through small">

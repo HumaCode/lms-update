@@ -5,6 +5,7 @@ import PageHeader from '@/Admin/Components/PageHeader';
 import StatusBadge from '@/Admin/Components/StatusBadge';
 import { formatCurrency, formatDate, getImageUrl } from '@/Utils/formatters';
 import { route } from '@/Utils/routes';
+import { notify } from '@/Utils/notifications';
 
 import Swal from 'sweetalert2';
 
@@ -42,6 +43,17 @@ export default function Show({ withdraw, settings, payoutMode = 'manual' }) {
             if (result.isConfirmed) {
                 router.post(route('admin.withdraw-request.status.update', withdraw.id), {
                     status: selectedStatus,
+                }, {
+                    onSuccess: (page) => {
+                        if (page.props.flash?.error) {
+                            notify.error('Gagal Memproses Penarikan', page.props.flash.error);
+                        } else {
+                            notify.success('Berhasil Disimpan', page.props.flash?.success || `Status pengajuan penarikan berhasil diubah menjadi ${selectedStatus.toUpperCase()}.`);
+                        }
+                    },
+                    onError: (errs) => {
+                        notify.error('Gagal', Object.values(errs)[0] || 'Terjadi kesalahan saat memproses status penarikan.');
+                    }
                 });
             }
         });

@@ -112,9 +112,23 @@ export default function Index({ courses }) {
                                         </td>
                                         <td>
                                             {course.price > 0 ? (
-                                                <span className="fw-semibold text-dark">
-                                                    {formatCurrency(course.discount_price || course.price, settings)}
-                                                </span>
+                                                course.discount > 0 && Number(course.discount) < Number(course.price) ? (
+                                                    <div>
+                                                        <del className="text-muted small me-1">
+                                                            {formatCurrency(course.price, settings)}
+                                                        </del>
+                                                        <span className="fw-bold text-danger me-1">
+                                                            {formatCurrency(course.price - course.discount, settings)}
+                                                        </span>
+                                                        <span className="badge bg-danger-subtle text-danger px-1 py-0 extra-small">
+                                                            -{Math.round((course.discount / course.price) * 100)}%
+                                                        </span>
+                                                    </div>
+                                                ) : (
+                                                    <span className="fw-semibold text-dark">
+                                                        {formatCurrency(course.price, settings)}
+                                                    </span>
+                                                )
                                             ) : (
                                                 <span className="badge bg-success">Free</span>
                                             )}

@@ -5,9 +5,13 @@ import { getImageUrl, formatCurrency } from '@/Utils/formatters';
 export default function CourseGridCard({ course }) {
     const { props } = usePage();
     const settings = props?.settings || {};
-    const hasDiscount = course.discount && Number(course.discount) > 0;
-    const finalPrice = hasDiscount ? Number(course.discount) : Number(course.price || 0);
-    const isFree = !course.price || Number(course.price) === 0;
+    const numPrice = Number(course.price || 0);
+    const numDiscount = Number(course.discount || 0);
+    const finalPrice = course.final_price !== undefined ? Number(course.final_price) : (
+        numDiscount > 0 && numDiscount < numPrice ? (numPrice - numDiscount) : (numDiscount > 0 ? numDiscount : numPrice)
+    );
+    const hasDiscount = numDiscount > 0 && finalPrice < numPrice;
+    const isFree = numPrice === 0;
 
     const thumbnail = getImageUrl(course.thumbnail, '/frontend/assets/images/courses_img_1.jpg');
     const instructorImg = getImageUrl(course.instructor?.image, '/frontend/assets/images/course_instructor_img.jpg');

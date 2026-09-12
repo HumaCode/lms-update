@@ -42,17 +42,12 @@ class WithdrawRequestController extends Controller
         $payoutMode = config('gateway_settings.xendit_payout_mode', 'manual');
 
         if ($request->status === 'approved') {
-            if ($withdraw->instructor->wallet < $withdraw->amount) {
-                notyf()->error("Instructor has insufficient wallet balance!");
-                return redirect()->back();
-            }
-
             if ($payoutMode === 'automatic') {
                 try {
-                    $secretKey = config('xendit.secret_key');
+                    $secretKey = config('gateway_settings.xendit_secret_key');
                     if (empty($secretKey)) {
                         notyf()->error("Xendit Secret Key is missing in payment settings!");
-                        return redirect()->back();
+                        return redirect()->back()->with('error', "Xendit Secret Key is missing in payment settings!");
                     }
 
                     \Xendit\Configuration::setXenditKey($secretKey);
@@ -75,40 +70,45 @@ class WithdrawRequestController extends Controller
                         elseif (str_contains($infoLower, 'gopay')) $channelCode = 'ID_GOPAY';
                     }
 
+                    $rawAccountInfo = $withdraw->payout_account_info ?? ($gatewayInfo->information ?? '');
+                    preg_match('/(?:Nomor HP|Nomor Rekening|Rekening|HP|No|Account)?\s*:?\s*([0-9]{8,16})/', $rawAccountInfo, $matches);
+                    $accountNumber = isset($matches[1]) && !empty($matches[1]) ? $matches[1] : (preg_replace('/[^0-9]/', '', $rawAccountInfo) ?: '0000000000');
+
+                    $channelProperties = new \Xendit\Payout\DigitalPayoutChannelProperties([
+                        'account_number' => $accountNumber,
+                        'account_holder_name' => $withdraw->instructor->name ?? 'Instructor',
+                    ]);
+
                     $createPayoutRequest = new \Xendit\Payout\CreatePayoutRequest([
                         'reference_id' => $referenceId,
                         'channel_code' => $channelCode,
-                        'channel_properties' => [
-                            'account_number' => $withdraw->payout_account_info ?? ($gatewayInfo->information ?? '0000000000'),
-                            'account_holder_name' => $withdraw->instructor->name ?? 'Instructor',
-                        ],
+                        'channel_properties' => $channelProperties,
                         'amount' => (float)$withdraw->amount,
                         'currency' => 'IDR',
                     ]);
 
-                    $response = $apiInstance->createPayout($createPayoutRequest);
+                    // Signature: createPayout($idempotency_key, $for_user_id = null, $create_payout_request = null)
+                    $response = $apiInstance->createPayout($referenceId, null, $createPayoutRequest);
 
-                    if (isset($response['id'])) {
+                    if (is_object($response) && method_exists($response, 'getId')) {
+                        $withdraw->transaction_id = $response->getId();
+                    } elseif (isset($response['id'])) {
                         $withdraw->transaction_id = $response['id'];
                     }
                 } catch (\Throwable $e) {
                     // Log error and notify admin
                     \Illuminate\Support\Facades\Log::error('Xendit Payout Failed: ' . $e->getMessage());
                     notyf()->error("Xendit Payout Error: " . $e->getMessage());
-                    return redirect()->back();
+                    return redirect()->back()->with('error', "Xendit Payout Error: " . $e->getMessage());
                 }
             }
-
-            // Deduct wallet and approve
-            $withdraw->instructor->wallet = ($withdraw->instructor->wallet - $withdraw->amount);
-            $withdraw->instructor->save();
         }
 
         $withdraw->status = $request->status;
         $withdraw->save();
 
         notyf()->success("Withdrawal request updated successfully!");
-        return redirect()->route('admin.withdraw-request.index');
+        return redirect()->route('admin.withdraw-request.index')->with('success', 'Status pengajuan penarikan berhasil diperbarui!');
     }
 }
 

@@ -47,28 +47,37 @@ class WithdrawController extends Controller
 
         if(user()->wallet < $request->amount) {
             notyf()->error("Insufficient Balance!");
-            return redirect()->back();
+            return redirect()->back()->with('error', 'Insufficient Balance!');
         }
 
         if(Withdraw::where('instructor_id', user()->id)->where('status', 'pending')->exists()) {
             notyf()->error("Withdraw Request Already Pending!");
-            return redirect()->back();
+            return redirect()->back()->with('error', 'Withdraw Request Already Pending!');
         }
 
-        $withdraw = new Withdraw();
-        $withdraw->instructor_id = user()->id;
-        $withdraw->amount = $request->amount;
-        $withdraw->save();
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            $withdraw = new Withdraw();
+            $withdraw->instructor_id = user()->id;
+            $withdraw->amount = $request->amount;
+            $withdraw->save();
 
-        // Create Admin Notification
-        \App\Models\AdminNotification::create([
-            'title' => 'Pengajuan Penarikan Dana Baru',
-            'message' => 'Instruktur ' . (user()->name ?? 'Instruktur') . ' mengajukan penarikan dana sebesar ' . formatCurrency($withdraw->amount, config('settings')),
-            'url' => route('admin.withdraw-request.show', $withdraw->id),
-            'is_read' => false,
-        ]);
+            // Create Admin Notification
+            \App\Models\AdminNotification::create([
+                'title' => 'Pengajuan Penarikan Dana Baru',
+                'message' => 'Instruktur ' . (user()->name ?? 'Instruktur') . ' mengajukan penarikan dana sebesar Rp ' . number_format($withdraw->amount, 0, ',', '.'),
+                'url' => route('admin.withdraw-request.show', $withdraw->id),
+                'is_read' => false,
+            ]);
 
-        notyf()->success("Withdraw Request Sent!");
-        return redirect()->back();
+            \Illuminate\Support\Facades\DB::commit();
+
+            notyf()->success("Withdraw Request Sent!");
+            return redirect()->back()->with('success', 'Withdraw Request Sent!');
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            notyf()->error($e->getMessage() ?: "Gagal mengajukan penarikan dana.");
+            return redirect()->back()->with('error', $e->getMessage() ?: "Gagal mengajukan penarikan dana.");
+        }
     }
 }

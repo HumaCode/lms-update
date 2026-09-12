@@ -5,6 +5,8 @@ import StatCard from '@/Instructor/Components/StatCard';
 import { formatCurrency, formatPriceInput, parseRawPrice } from '@/Utils/formatters';
 import { route } from '@/Utils/routes';
 
+import { notify } from '@/Utils/notifications';
+
 export default function RequestPayout({
     currentBalance = 0,
     pendingBalance = 0,
@@ -22,7 +24,15 @@ export default function RequestPayout({
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        post(route('instructor.withdraw.request-payout.create'));
+        post(route('instructor.withdraw.request-payout.create'), {
+            onSuccess: () => {
+                notify.success('Pengajuan Berhasil', 'Pengajuan penarikan dana Anda telah berhasil dikirim ke admin.');
+                setData('amount', '');
+            },
+            onError: (errs) => {
+                notify.error('Pengajuan Gagal', errs.amount || errs.message || 'Gagal mengajukan penarikan dana.');
+            }
+        });
     };
 
     const handleChangeAmount = (e) => {

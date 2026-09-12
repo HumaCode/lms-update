@@ -136,8 +136,14 @@ class InstructorDashboardService extends BaseService implements InstructorDashbo
 
         return $courses->map(function ($course) {
             $sales = (int) $course->sales_count;
-            $price = (float) ($course->discount > 0 ? $course->discount : $course->price);
-            $totalAmount = $sales * $price;
+            $rawPrice = (float) $course->price;
+            $discountPrice = (float) $course->discount;
+            $hasDiscount = $discountPrice > 0 && $discountPrice < $rawPrice;
+            $finalPrice = $hasDiscount ? ($rawPrice - $discountPrice) : ($discountPrice > 0 ? $discountPrice : $rawPrice);
+
+            $commissionRate = (float) config('settings.commission_rate', 70);
+            $totalSalesGross = $sales * $finalPrice;
+            $totalEarning = $sales * calculateCommission($finalPrice, $commissionRate);
             $rating = $course->reviews->count() > 0 ? round((float) $course->reviews->avg('rating'), 1) : 5.0;
 
             $mainCat = $course->category?->parentCategory?->name ?? $course->category?->name ?? 'General';
@@ -153,8 +159,12 @@ class InstructorDashboardService extends BaseService implements InstructorDashbo
                 'rating' => $rating,
                 'reviews_count' => $course->reviews->count(),
                 'sales_count' => $sales,
-                'amount' => $totalAmount,
-                'price' => $price,
+                'price' => $rawPrice,
+                'discount' => $discountPrice,
+                'has_discount' => $hasDiscount,
+                'final_price' => $finalPrice,
+                'amount' => $totalSalesGross,
+                'earning' => $totalEarning,
             ];
         })->toArray();
     }

@@ -48,15 +48,15 @@ class HeroController extends Controller
             'round_text' => $request->rounded_text,
         ];
 
-        if($request->hasFile('image')) {
-            $image = $this->uploadFile($request->file('image'));
-            $this->deleteFile($request->old_image);
-            $data['image'] = $image;
+        $hero = Hero::updateOrCreate(['id' => 1], $data);
+
+        if ($request->hasFile('image')) {
+            $hero->clearMediaCollection('hero_image');
+            $hero->addMediaFromRequest('image')
+                ->toMediaCollection('hero_image', 'private');
         }
 
-       Hero::updateOrCreate(['id' => 1], $data);
-
-       notyf()->success('Updated Successfully');
+        notyf()->success('Updated Successfully');
 
        return redirect()->back();
 

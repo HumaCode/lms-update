@@ -17,11 +17,10 @@ export default function Index({ hero }) {
         banner_item_subtitle: hero?.banner_item_subtitle || '',
         rounded_text: hero?.round_text || '',
         image: null,
-        old_image: hero?.image || '',
     });
 
     const [imagePreview, setImagePreview] = useState(
-        hero?.image ? (hero.image.startsWith('/') ? hero.image : '/' + hero.image) : ''
+        hero?.hero_image || ''
     );
 
     const handleImageChange = (e) => {

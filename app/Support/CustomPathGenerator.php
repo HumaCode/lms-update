@@ -24,6 +24,10 @@ class CustomPathGenerator implements PathGenerator
             return 'course/video/' . $media->id . '/';
         }
 
+        if ($media->model_type === 'App\Models\Hero' || $media->collection_name === 'hero' || $media->collection_name === 'hero_image') {
+            return 'section/hero/';
+        }
+
         return 'course/' . $media->collection_name . '/' . $media->id . '/';
     }
 

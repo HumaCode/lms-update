@@ -18,7 +18,7 @@ class FeatureController extends Controller
     public function index()
     {
         $feature = Feature::first();
-        return view('admin.sections.feature.index', compact('feature'));
+        return inertia('Admin/Sections/Feature/Index', compact('feature'));
     }
 
     /**

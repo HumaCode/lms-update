@@ -1,9 +1,64 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from '@inertiajs/react';
 
 export default function HeroSection({ hero, feature }) {
     const title = hero?.title || 'Premier E-Learning Courses From EduCore';
     const hasEduCore = title.includes('EduCore');
+
+    const [showVideoModal, setShowVideoModal] = useState(false);
+
+    const videoUrl = hero?.video_button_url || 'https://www.youtube.com/embed/sVPYIRF9RCQ?autoplay=1';
+
+    const getEmbedUrl = (url) => {
+        if (!url || typeof url !== 'string' || url.trim() === '') {
+            return 'https://www.youtube.com/embed/sVPYIRF9RCQ?autoplay=1';
+        }
+        let cleanUrl = url.trim();
+
+        // 1. YouTube watch URL
+        if (cleanUrl.includes('youtube.com/watch')) {
+            try {
+                const urlObj = new URL(cleanUrl);
+                const videoId = urlObj.searchParams.get('v');
+                if (videoId) {
+                    return `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+                }
+            } catch (e) {
+                // ignore URL parse error and fallback to regex
+            }
+        }
+
+        // 2. YouTube short URL (youtu.be)
+        if (cleanUrl.includes('youtu.be/')) {
+            const parts = cleanUrl.split('youtu.be/')[1];
+            const videoId = parts ? parts.split('?')[0].split('/')[0] : null;
+            if (videoId) {
+                return `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+            }
+        }
+
+        // 3. YouTube embed URL directly
+        if (cleanUrl.includes('youtube.com/embed/')) {
+            return cleanUrl.includes('?') ? `${cleanUrl}&autoplay=1` : `${cleanUrl}?autoplay=1`;
+        }
+
+        // 4. Vimeo
+        if (cleanUrl.includes('vimeo.com/')) {
+            const parts = cleanUrl.split('vimeo.com/')[1];
+            const videoId = parts ? parts.split('?')[0].split('/')[0] : null;
+            if (videoId) {
+                return `https://player.vimeo.com/video/${videoId}?autoplay=1`;
+            }
+        }
+
+        // Default fallback if URL is raw link or custom video
+        return cleanUrl;
+    };
+
+    const handlePlayClick = (e) => {
+        e.preventDefault();
+        setShowVideoModal(true);
+    };
 
     return (
         <section
@@ -39,9 +94,9 @@ export default function HeroSection({ hero, feature }) {
                             <div className="play_btn_area">
                                 <a
                                     className="play_btn"
-                                    href={hero?.video_button_url || 'https://youtu.be/sVPYIRF9RCQ?si=labNkx-xlyOWtptr'}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+                                    href="#"
+                                    onClick={handlePlayClick}
+                                    style={{ cursor: 'pointer' }}
                                 >
                                     <img
                                         src="/frontend/assets/images/play_icon.png"
@@ -49,7 +104,12 @@ export default function HeroSection({ hero, feature }) {
                                         className="img-fluid"
                                     />
                                 </a>
-                                <h4>{hero?.video_button_text || 'See Our Lesson Showcase'}</h4>
+                                <h4
+                                    onClick={handlePlayClick}
+                                    style={{ cursor: 'pointer' }}
+                                >
+                                    {hero?.video_button_text || 'See Our Lesson Showcase'}
+                                </h4>
                             </div>
                         </div>
                     </div>
@@ -59,9 +119,8 @@ export default function HeroSection({ hero, feature }) {
                         <div className="img">
                             <img
                                 src={
-                                    hero?.image
-                                        ? `/${hero.image}`
-                                        : '/frontend/assets/images/banner_3_img_1.png'
+                                    hero?.hero_image ||
+                                    (hero?.image ? `/${hero.image}` : '/frontend/assets/images/banner_3_img_1.png')
                                 }
                                 alt="Banner"
                                 className="img-fluid"
@@ -169,6 +228,63 @@ export default function HeroSection({ hero, feature }) {
                     </div>
                 </li>
             </ul>
+
+            {/* Interactive Clean Video Modal */}
+            {showVideoModal && (
+                <div
+                    className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center p-3"
+                    style={{
+                        backgroundColor: 'rgba(0, 0, 0, 0.75)',
+                        backdropFilter: 'blur(6px)',
+                        zIndex: 999999,
+                    }}
+                    onClick={() => setShowVideoModal(false)}
+                >
+                    <div
+                        className="position-relative w-100 rounded-3 overflow-visible shadow-2xl"
+                        style={{ maxWidth: '800px' }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Circular Close Button at Top-Right */}
+                        <button
+                            type="button"
+                            onClick={() => setShowVideoModal(false)}
+                            aria-label="Close"
+                            className="position-absolute d-flex align-items-center justify-content-center border-0 rounded-circle shadow-lg"
+                            style={{
+                                top: '-18px',
+                                right: '-18px',
+                                width: '38px',
+                                height: '38px',
+                                backgroundColor: '#ffffff',
+                                color: '#1e293b',
+                                zIndex: 10,
+                                cursor: 'pointer',
+                                transition: 'transform 0.2s ease, background-color 0.2s ease',
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.1)')}
+                            onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+                        >
+                            <i className="fas fa-times fs-5"></i>
+                        </button>
+
+                        {/* Frameless Aspect 16:9 Video Box */}
+                        <div
+                            className="w-100 rounded-3 overflow-hidden shadow-2xl bg-black position-relative"
+                            style={{ paddingTop: '56.25%', border: '2px solid rgba(255, 255, 255, 0.15)' }}
+                        >
+                            <iframe
+                                src={getEmbedUrl(hero?.video_button_url)}
+                                title={hero?.video_button_text || 'Video Showcase'}
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                                className="position-absolute top-0 start-0 w-100 h-100"
+                                style={{ border: 0 }}
+                            ></iframe>
+                        </div>
+                    </div>
+                </div>
+            )}
         </section>
     );
 }

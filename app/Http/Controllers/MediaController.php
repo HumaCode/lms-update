@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Course;
+use App\Models\Hero;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -80,6 +81,20 @@ class MediaController extends Controller
         if (file_exists($defaultPath)) {
             return response()->file($defaultPath, [
                 'Content-Type' => 'image/png',
+            ]);
+        }
+
+        abort(404);
+    }
+
+    public function heroImage(Hero $hero): BinaryFileResponse
+    {
+        $media = $hero->getFirstMedia('hero_image');
+
+        if ($media && file_exists($media->getPath())) {
+            return response()->file($media->getPath(), [
+                'Content-Type' => $media->mime_type ?? 'image/png',
+                'Cache-Control' => 'public, max-age=86400',
             ]);
         }
 

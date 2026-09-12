@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AboutUsSection;
 use App\Models\BecomeInstructorSection;
+use App\Models\Brand;
 use App\Models\Course;
 use App\Models\Feature;
 use App\Models\Hero;
@@ -13,6 +14,19 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class MediaController extends Controller
 {
+    public function brandImage(Brand $brand): BinaryFileResponse
+    {
+        $media = $brand->getFirstMedia('brand_image');
+
+        if ($media && file_exists($media->getPath())) {
+            return response()->file($media->getPath(), [
+                'Content-Type' => $media->mime_type ?? 'image/png',
+                'Cache-Control' => 'public, max-age=86400',
+            ]);
+        }
+
+        abort(404);
+    }
     public function videoBackground(VideoSection $section): BinaryFileResponse
     {
         $media = $section->getFirstMedia('video_background');

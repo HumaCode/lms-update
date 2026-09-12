@@ -20,7 +20,7 @@ export default function BrandSection({ brands = [] }) {
                                                 rel="noopener noreferrer"
                                             >
                                                 <img
-                                                    src={`/${brand.image}`}
+                                                    src={brand.brand_image || (brand.image ? (brand.image.startsWith('http') ? brand.image : `/${brand.image}`) : '')}
                                                     alt={brand.name || 'brand'}
                                                     className="img-fluid w-100"
                                                     style={{ maxHeight: '45px', objectFit: 'contain' }}

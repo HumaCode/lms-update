@@ -40,6 +40,10 @@ class CustomPathGenerator implements PathGenerator
             return 'section/video_sections/';
         }
 
+        if ($media->model_type === 'App\Models\Brand' || $media->collection_name === 'brand_image') {
+            return 'section/brands/';
+        }
+
         if ($media->model_type === 'App\Models\Feature' || str_starts_with($media->collection_name, 'feature_')) {
             return 'section/feature/';
         }

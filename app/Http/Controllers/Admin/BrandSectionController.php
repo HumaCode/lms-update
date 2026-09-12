@@ -4,29 +4,25 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Brand;
-use App\Traits\FileUpload;
-use Exception;
-use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
 class BrandSectionController extends Controller
 {
-    use FileUpload;
     /**
      * Display a listing of the resource.
      */
-    public function index() : View
+    public function index()
     {
         $brands = Brand::all();
-        return view('admin.sections.brand.index', compact('brands'));
+        return inertia('Admin/Sections/Brand/Index', compact('brands'));
     }
 
     /**
      * Show the form for creating a new resource.
      */
-    public function create() : View
+    public function create()
     {
-        return view('admin.sections.brand.create');
+        return inertia('Admin/Sections/Brand/Create');
     }
 
     /**
@@ -40,13 +36,15 @@ class BrandSectionController extends Controller
             'status' => ['required', 'boolean'],
         ]);
 
-        $imagePath = $this->uploadFile($request->file('image'));
-
         $brand = new Brand();
-        $brand->image = $imagePath;
         $brand->url = $request->url;
         $brand->status = $request->status;
         $brand->save();
+
+        if ($request->hasFile('image')) {
+            $brand->addMediaFromRequest('image')
+                ->toMediaCollection('brand_image', 'private');
+        }
 
         notyf()->success("Created Successfully!");
 
@@ -59,7 +57,7 @@ class BrandSectionController extends Controller
     public function edit(Brand $brand_section)
     {
         $brand = $brand_section;
-        return view('admin.sections.brand.edit', compact('brand'));
+        return inertia('Admin/Sections/Brand/Edit', compact('brand'));
     }
 
     /**
@@ -74,15 +72,15 @@ class BrandSectionController extends Controller
         ]);
 
         $brand = Brand::findOrFail($id);
-
-        if($request->hasFile('image')) {
-            $imagePath = $this->uploadFile($request->file('image'));
-            $brand->image = $imagePath;
-        }
-
         $brand->url = $request->url;
         $brand->status = $request->status;
         $brand->save();
+
+        if ($request->hasFile('image')) {
+            $brand->clearMediaCollection('brand_image');
+            $brand->addMediaFromRequest('image')
+                ->toMediaCollection('brand_image', 'private');
+        }
 
         notyf()->success("Update Successfully!");
 
@@ -95,13 +93,13 @@ class BrandSectionController extends Controller
     public function destroy(Brand $brand_section)
     {
         try {
-            $this->deleteFile($brand_section->image);
+            $brand_section->clearMediaCollection('brand_image');
             $brand_section->delete();
             notyf()->success('Deleted Successfully!');
-            return response(['message' => 'Deleted Successfully!'], 200);
-        }catch(Exception $e) {
-            logger("Course Language Error >> ".$e);
-            return response(['message' => 'Something went wrong!'], 500);
+            return redirect()->back();
+        } catch (\Exception $e) {
+            notyf()->error('Something went wrong!');
+            return redirect()->back();
         }
     }
 }

@@ -12,9 +12,8 @@ export default function AboutSection({ about }) {
                         <div className="wsus__about_3_img">
                             <img
                                 src={
-                                    about.image
-                                        ? `/${about.image}`
-                                        : '/frontend/assets/images/about_3_img_1.png'
+                                    about.about_image ||
+                                    (about.image ? `/${about.image}` : '/frontend/assets/images/about_3_img_1.png')
                                 }
                                 alt="About us"
                                 className="about_3_large img-fluid w-100"
@@ -31,9 +30,8 @@ export default function AboutSection({ about }) {
                                 </h4>
                                 <img
                                     src={
-                                        about.lerner_image
-                                            ? `/${about.lerner_image}`
-                                            : '/frontend/assets/images/banner_2_photo_list.png'
+                                        about.about_lerner_image ||
+                                        (about.lerner_image ? `/${about.lerner_image}` : '/frontend/assets/images/banner_2_photo_list.png')
                                     }
                                     alt="Photo"
                                     className="img-fluid"
@@ -96,9 +94,8 @@ export default function AboutSection({ about }) {
                             <div className="about_video">
                                 <img
                                     src={
-                                        about.video_image
-                                            ? `/${about.video_image}`
-                                            : '/frontend/assets/images/about_3_img_2.jpg'
+                                        about.about_video_image ||
+                                        (about.video_image ? `/${about.video_image}` : '/frontend/assets/images/about_3_img_2.jpg')
                                     }
                                     alt="Video"
                                     className="img-fluid w-100"

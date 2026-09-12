@@ -20,16 +20,7 @@ class AboutController extends Controller
     {
         $about = AboutUsSection::first();
 
-        $counter = Counter::first() ?? (object) [
-            'counter_one' => '745k+',
-            'title_one' => 'LEARNERS & COUNTING',
-            'counter_two' => '578+',
-            'title_two' => 'COURSES & VIDEO',
-            'counter_three' => '2457+',
-            'title_three' => 'CERTIFIED STUDENTS',
-            'counter_four' => '378k',
-            'title_four' => 'Best Professors',
-        ];
+        $counter = Counter::first();
 
         $testimonials = Testimonial::all();
 

@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
 /**
  * @property string $id
@@ -18,9 +20,6 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $button_text
  * @property string|null $button_url
  * @property string|null $video_url
- * @property string|null $image
- * @property string|null $lerner_image
- * @property string|null $video_image
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -33,11 +32,64 @@ use Illuminate\Database\Eloquent\Model;
     'button_text',
     'button_url',
     'video_url',
-    'image',
-    'lerner_image',
-    'video_image',
 ])]
-class AboutUsSection extends Model
+class AboutUsSection extends Model implements HasMedia
 {
-    use HasFactory, HasUlids;
+    use HasFactory, HasUlids, InteractsWithMedia;
+
+    protected $appends = ['about_image', 'about_lerner_image', 'about_video_image'];
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('about_image')
+            ->useDisk('private')
+            ->singleFile();
+
+        $this->addMediaCollection('about_lerner_image')
+            ->useDisk('private')
+            ->singleFile();
+
+        $this->addMediaCollection('about_video_image')
+            ->useDisk('private')
+            ->singleFile();
+    }
+
+    public function getAboutImageAttribute(): ?string
+    {
+        $media = $this->getFirstMedia('about_image');
+        if ($media) {
+            return route('media.about-image', [
+                'about' => $this->id,
+                'type' => 'image',
+                'v' => $media->updated_at?->timestamp ?? time(),
+            ]);
+        }
+        return null;
+    }
+
+    public function getAboutLernerImageAttribute(): ?string
+    {
+        $media = $this->getFirstMedia('about_lerner_image');
+        if ($media) {
+            return route('media.about-image', [
+                'about' => $this->id,
+                'type' => 'lerner',
+                'v' => $media->updated_at?->timestamp ?? time(),
+            ]);
+        }
+        return null;
+    }
+
+    public function getAboutVideoImageAttribute(): ?string
+    {
+        $media = $this->getFirstMedia('about_video_image');
+        if ($media) {
+            return route('media.about-image', [
+                'about' => $this->id,
+                'type' => 'video',
+                'v' => $media->updated_at?->timestamp ?? time(),
+            ]);
+        }
+        return null;
+    }
 }

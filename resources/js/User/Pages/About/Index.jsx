@@ -129,7 +129,7 @@ export default function AboutIndex({
                         <div className="col-xxl-6 col-lg-5 wow fadeInLeft">
                             <div className="wsus__about_3_img">
                                 <img
-                                    src={formatImagePath(about?.image, '/frontend/assets/images/about_3_img_1.png')}
+                                    src={about?.about_image || formatImagePath(about?.image, '/frontend/assets/images/about_3_img_1.png')}
                                     alt="About us"
                                     className="about_3_large img-fluid w-100"
                                     onError={(e) => {
@@ -144,7 +144,7 @@ export default function AboutIndex({
                                         {about?.lerner_count_text || 'Enrolled Learners'}
                                     </h4>
                                     <img
-                                        src={formatImagePath(
+                                        src={about?.about_lerner_image || formatImagePath(
                                             about?.lerner_image,
                                             '/frontend/assets/images/banner_2_photo_list.png'
                                         )}
@@ -204,27 +204,27 @@ export default function AboutIndex({
                                     </>
                                 )}
 
-                                <div className="mt-4 mb-4">
+                                {about?.button_text && (
                                     <Link
-                                        className="common_btn"
+                                        className="common_btn mt-3"
                                         href={
                                             about?.button_url && about.button_url !== '#'
                                                 ? about.button_url
                                                 : route('courses.index')
                                         }
                                     >
-                                        {about?.button_text || 'Start Free Trial'}
+                                        {about.button_text}
                                     </Link>
-                                </div>
+                                )}
 
-                                <div className="about_video">
+                                <div className="about_video" style={{ position: 'relative', bottom: 'auto', right: 'auto', marginTop: '30px', zIndex: 2 }}>
                                     <img
-                                        src={formatImagePath(
+                                        src={about?.about_video_image || formatImagePath(
                                             about?.video_image,
                                             '/frontend/assets/images/about_3_img_2.jpg'
                                         )}
                                         alt="Video preview"
-                                        className="img-fluid w-100"
+                                        className="img-fluid w-100 h-100 object-fit-cover"
                                         onError={(e) => {
                                             e.target.onerror = null;
                                             e.target.src = '/frontend/assets/images/about_3_img_2.jpg';
@@ -239,7 +239,7 @@ export default function AboutIndex({
                                         style={{ background: 'transparent', cursor: 'pointer' }}
                                     >
                                         <img
-                                            src="/frontend/assets/images/play_icon.png"
+                                            src="/frontend/assets/images/play_icon_white.png"
                                             alt="Play"
                                             className="img-fluid"
                                         />
@@ -251,156 +251,66 @@ export default function AboutIndex({
                 </div>
             </section>
 
-            {/* CALL TO ACTION 4 */}
-            <section className="wsus__call_to_action_4 pt_140 xs_pt_100">
-                <ul className="d-flex flex-wrap wow fadeInUp list-unstyled mb-0">
-                    <li>
-                        <div className="img">
-                            <img
-                                src="/frontend/assets/images/call_to_action_4_img_1.jpg"
-                                alt="Proficient Coach"
-                                className="img-fluid w-100"
-                            />
-                        </div>
-                        <div className="text">
-                            <h4>Proficient Coach - Engage in Live Learning Experiences!</h4>
-                            <Link href={route('courses.index')} className="common_btn">
-                                Take Our Service
-                            </Link>
-                        </div>
-                    </li>
-                    <li>
-                        <div className="img">
-                            <img
-                                src="/frontend/assets/images/call_to_action_4_img_2.jpg"
-                                alt="Realize Your Goals"
-                                className="img-fluid w-100"
-                            />
-                        </div>
-                        <div className="text">
-                            <h4>Successfully Realize Your Goals with EduCore Education.</h4>
-                            <Link href={route('courses.index')} className="common_btn">
-                                Let’s Discover
-                            </Link>
-                        </div>
-                    </li>
-                    <li>
-                        <div className="img">
-                            <img
-                                src="/frontend/assets/images/call_to_action_4_img_3.jpg"
-                                alt="Become Educator"
-                                className="img-fluid w-100"
-                            />
-                        </div>
-                        <div className="text">
-                            <h4>Take on the Role of an Educator & Start Generating Income.</h4>
-                            <Link href={route('student.become-instructor')} className="common_btn">
-                                Join now
-                            </Link>
-                        </div>
-                    </li>
-                </ul>
-            </section>
 
-            {/* FEATURES 3 */}
-            <section className="wsus__features_3 wsus__features pt_120 xs_pt_100">
-                <div className="container">
-                    <div className="row">
-                        <div className="col-xl-6 m-auto wow fadeInUp">
-                            <div className="wsus__section_heading mb_25 text-center">
-                                <h5>High-Quality Courses</h5>
-                                <h2>Remote Education Degrees To Online Classes.</h2>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="row g-4">
-                        {featureConfig.map((cfg, idx) => {
-                            const cat = features && features[idx] ? features[idx] : null;
-                            const title = cat?.name || cfg.defaultTitle;
-                            const countText = cat
-                                ? `${cat.courses_count || 0} Courses`
-                                : cfg.defaultCount;
-                            const linkHref = cat
-                                ? route('courses.index', { category: cat.id })
-                                : route('courses.index');
 
-                            return (
-                                <div className="col-xl-3 col-md-6 col-lg-4 wow fadeInUp" key={idx}>
-                                    <div className={`wsus__features_item_3 ${cfg.color} h-100`}>
-                                        <div className="icon">
-                                            <img
-                                                src={cfg.icon}
-                                                alt={title}
-                                                className="img-fluid"
-                                            />
-                                        </div>
-                                        <Link href={linkHref} className="title">
-                                            {title}
-                                        </Link>
-                                        <p>{cfg.defaultDesc}</p>
-                                        <span>{countText}</span>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            </section>
+
 
             {/* COUNTER */}
-            <section className="wsus__about_counter wsus__counter mt_120 xs_mt_100">
-                <div className="container">
-                    <div
-                        className="wsus__counter_bg"
-                        style={{
-                            background: 'url(/frontend/assets/images/counter_bg.jpg) no-repeat center/cover',
-                        }}
-                    >
-                        <div className="row">
-                            <div className="col-lg-3 col-md-6 wow fadeInUp">
-                                <div className="wsus__single_counter">
-                                    <h2>
-                                        <span className="counter">
-                                            {counter?.counter_one || '745k+'}
-                                        </span>
-                                    </h2>
-                                    <p>{counter?.title_one || 'LEARNERS & COUNTING'}</p>
+            {counter && (
+                <section className="wsus__about_counter wsus__counter mt_120 xs_mt_100">
+                    <div className="container">
+                        <div
+                            className="wsus__counter_bg"
+                            style={{
+                                background: 'url(/frontend/assets/images/counter_bg.jpg) no-repeat center/cover',
+                            }}
+                        >
+                            <div className="row">
+                                <div className="col-lg-3 col-md-6 wow fadeInUp">
+                                    <div className="wsus__single_counter">
+                                        <h2>
+                                            <span className="counter">
+                                                {counter.counter_one}
+                                            </span>
+                                        </h2>
+                                        <p>{counter.title_one}</p>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="col-lg-3 col-md-6 wow fadeInUp">
-                                <div className="wsus__single_counter">
-                                    <h2>
-                                        <span className="counter">
-                                            {counter?.counter_two || '578+'}
-                                        </span>
-                                    </h2>
-                                    <p>{counter?.title_two || 'COURSES & VIDEO'}</p>
+                                <div className="col-lg-3 col-md-6 wow fadeInUp">
+                                    <div className="wsus__single_counter">
+                                        <h2>
+                                            <span className="counter">
+                                                {counter.counter_two}
+                                            </span>
+                                        </h2>
+                                        <p>{counter.title_two}</p>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="col-lg-3 col-md-6 wow fadeInUp">
-                                <div className="wsus__single_counter">
-                                    <h2>
-                                        <span className="counter">
-                                            {counter?.counter_three || '2457+'}
-                                        </span>
-                                    </h2>
-                                    <p>{counter?.title_three || 'CERTIFIED STUDENTS'}</p>
+                                <div className="col-lg-3 col-md-6 wow fadeInUp">
+                                    <div className="wsus__single_counter">
+                                        <h2>
+                                            <span className="counter">
+                                                {counter.counter_three}
+                                            </span>
+                                        </h2>
+                                        <p>{counter.title_three}</p>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="col-lg-3 col-md-6 wow fadeInUp">
-                                <div className="wsus__single_counter">
-                                    <h2>
-                                        <span className="counter">
-                                            {counter?.counter_four || '378k'}
-                                        </span>
-                                    </h2>
-                                    <p>{counter?.title_four || 'Best Professors'}</p>
+                                <div className="col-lg-3 col-md-6 wow fadeInUp">
+                                    <div className="wsus__single_counter">
+                                        <h2>
+                                            <span className="counter">
+                                                {counter.counter_four}
+                                            </span>
+                                        </h2>
+                                        <p>{counter.title_four}</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            </section>
+                </section>
+            )}
 
             {/* TESTIMONIALS */}
             <section className="wsus__testimonial pt_120 xs_pt_80">

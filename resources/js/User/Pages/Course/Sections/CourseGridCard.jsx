@@ -230,27 +230,48 @@ export default function CourseGridCard({ course }) {
                     Enroll <i className="fas fa-arrow-right" style={{ fontSize: '11px' }}></i>
                 </Link>
 
-                <p className="mb-0" style={{ fontSize: '16px', fontWeight: 700, color: '#0F172A' }}>
+                <div className="d-flex flex-column align-items-end text-end ms-auto">
                     {isFree ? (
-                        <span style={{ color: '#16A34A' }}>FREE</span>
+                        <span style={{ color: '#16A34A', fontWeight: 700, fontSize: '16px' }}>FREE</span>
                     ) : hasDiscount ? (
                         <>
                             <del
                                 style={{
                                     color: '#94A3B8',
                                     fontWeight: 400,
-                                    fontSize: '14px',
-                                    marginRight: '6px',
+                                    fontSize: '12px',
+                                    lineHeight: '1.2',
+                                    display: 'block',
                                 }}
                             >
                                 {formatCurrency(course.price, settings)}
                             </del>
-                            {formatCurrency(finalPrice, settings)}
+                            <span
+                                style={{
+                                    color: '#0F172A',
+                                    fontWeight: 700,
+                                    fontSize: '16px',
+                                    lineHeight: '1.2',
+                                    display: 'block',
+                                }}
+                            >
+                                {formatCurrency(finalPrice, settings)}
+                            </span>
                         </>
                     ) : (
-                        formatCurrency(finalPrice, settings)
+                        <span
+                            style={{
+                                color: '#0F172A',
+                                fontWeight: 700,
+                                fontSize: '16px',
+                                lineHeight: '1.2',
+                                display: 'block',
+                            }}
+                        >
+                            {formatCurrency(finalPrice, settings)}
+                        </span>
                     )}
-                </p>
+                </div>
             </div>
         </div>
     );

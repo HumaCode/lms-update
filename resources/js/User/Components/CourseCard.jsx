@@ -1,9 +1,21 @@
 import React, { useState } from 'react';
-import { Link, router } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { notifySuccess, notifyError } from '@/Utils/notifications';
+import { formatCurrency } from '@/Utils/formatters';
 
 export default function CourseCard({ course }) {
+    const { props } = usePage();
+    const settings = props?.settings || {};
+
     const [adding, setAdding] = useState(false);
+
+    const numPrice = Number(course.price || 0);
+    const numDiscount = Number(course.discount || 0);
+    const finalPrice = course.final_price !== undefined ? Number(course.final_price) : (
+        numDiscount > 0 && numDiscount < numPrice ? (numPrice - numDiscount) : (numDiscount > 0 ? numDiscount : numPrice)
+    );
+    const hasDiscount = numDiscount > 0 && finalPrice < numPrice;
+    const isFree = numPrice === 0;
 
     const handleAddToCart = (e) => {
         e.preventDefault();
@@ -34,7 +46,6 @@ export default function CourseCard({ course }) {
 
     const hasRating = course.reviews_avg_rating !== null && course.reviews_avg_rating !== undefined && Number(course.reviews_avg_rating) > 0;
     const avgRating = hasRating ? Math.round(Number(course.reviews_avg_rating)) : 0;
-    const isFree = !course.price || Number(course.price) === 0;
 
     const getImageUrl = (url, defaultImg = '/frontend/assets/images/courses_img_1.jpg') => {
         if (!url) return defaultImg;
@@ -95,7 +106,7 @@ export default function CourseCard({ course }) {
                     <h4>{course.instructor?.name || 'Instructor'}</h4>
                 </div>
             </div>
-            <div className="wsus__single_courses_3_footer">
+            <div className="wsus__single_courses_3_footer align-items-center">
                 {isFree ? (
                     <Link
                         className="common_btn"
@@ -114,15 +125,48 @@ export default function CourseCard({ course }) {
                         <i className="fas fa-arrow-right"></i>
                     </a>
                 )}
-                <p>
-                    {course.discount > 0 ? (
+                <div className="d-flex flex-column align-items-end text-end ms-auto">
+                    {isFree ? (
+                        <span style={{ color: '#16A34A', fontWeight: 700, fontSize: '16px' }}>FREE</span>
+                    ) : hasDiscount ? (
                         <>
-                            <del>${course.price}</del> ${course.discount}
+                            <del
+                                style={{
+                                    color: '#94A3B8',
+                                    fontWeight: 400,
+                                    fontSize: '12px',
+                                    lineHeight: '1.2',
+                                    display: 'block',
+                                }}
+                            >
+                                {formatCurrency(numPrice, settings)}
+                            </del>
+                            <span
+                                style={{
+                                    color: '#0F172A',
+                                    fontWeight: 700,
+                                    fontSize: '16px',
+                                    lineHeight: '1.2',
+                                    display: 'block',
+                                }}
+                            >
+                                {formatCurrency(finalPrice, settings)}
+                            </span>
                         </>
                     ) : (
-                        course.price > 0 ? `$${course.price}` : 'Free'
+                        <span
+                            style={{
+                                color: '#0F172A',
+                                fontWeight: 700,
+                                fontSize: '16px',
+                                lineHeight: '1.2',
+                                display: 'block',
+                            }}
+                        >
+                            {formatCurrency(finalPrice, settings)}
+                        </span>
                     )}
-                </p>
+                </div>
             </div>
         </div>
     );

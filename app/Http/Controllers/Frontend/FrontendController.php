@@ -56,6 +56,23 @@ class FrontendController extends Controller
             $latestCourses?->category_five,
         ]);
 
+        if (empty($latestCategoryIds)) {
+            $latestCategoryIds = CourseCategory::whereNull('parent_id')
+                ->where(function($query) {
+                    $query->whereHas('courses', function($q) {
+                        $q->where(['is_approved' => 'approved', 'status' => 'active']);
+                    })->orWhereHas('subCategories.courses', function($q) {
+                        $q->where(['is_approved' => 'approved', 'status' => 'active']);
+                    });
+                })
+                ->pluck('id')
+                ->toArray();
+
+            if (empty($latestCategoryIds)) {
+                $latestCategoryIds = CourseCategory::whereNull('parent_id')->limit(5)->pluck('id')->toArray();
+            }
+        }
+
         $latestCourseCategories = CourseCategory::whereIn('id', $latestCategoryIds)
             ->with(['courses' => function($query) {
                 $query->where(['is_approved' => 'approved', 'status' => 'active'])
@@ -75,9 +92,10 @@ class FrontendController extends Controller
             ->get();
 
         $latestCourseCategories->transform(function ($category) {
-            if ($category->courses->isEmpty() && $category->subCategories->isNotEmpty()) {
-                $category->setRelation('courses', $category->subCategories->pluck('courses')->flatten());
-            }
+            $mainCourses = $category->courses;
+            $subCourses = $category->subCategories ? $category->subCategories->pluck('courses')->flatten() : collect();
+            $merged = $mainCourses->concat($subCourses)->unique('id')->values();
+            $category->setRelation('courses', $merged);
             return $category;
         });
 

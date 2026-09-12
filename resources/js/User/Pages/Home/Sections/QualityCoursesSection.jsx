@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
+import { formatCurrency } from '@/Utils/formatters';
 
 const fallbackCourses = [
     {
@@ -53,6 +54,8 @@ const fallbackCourses = [
 ];
 
 export default function QualityCoursesSection({ featuredInstructor, courses = [] }) {
+    const { props } = usePage();
+    const settings = props?.settings || {};
     // Combine real featured courses with demo fallbacks so the slider can always cycle
     const courseList = courses && courses.length > 0
         ? [...courses, ...fallbackCourses.slice(0, Math.max(0, 3 - courses.length))]
@@ -406,45 +409,63 @@ export default function QualityCoursesSection({ featuredInstructor, courses = []
                                                             </div>
 
                                                             {/* Course Footer */}
-                                                            <div className="wsus__single_courses_3_footer">
-                                                                <Link
-                                                                    className="common_btn"
-                                                                    href={courseUrl}
-                                                                    style={{
-                                                                        padding: '7px 18px',
-                                                                        display: 'inline-flex',
-                                                                        alignItems: 'center',
-                                                                        gap: '6px',
-                                                                    }}
-                                                                >
-                                                                    Enroll
-                                                                    <svg
-                                                                        width="13"
-                                                                        height="13"
-                                                                        viewBox="0 0 24 24"
-                                                                        fill="none"
-                                                                        stroke="currentColor"
-                                                                        strokeWidth="2.5"
-                                                                        strokeLinecap="round"
-                                                                        strokeLinejoin="round"
-                                                                    >
-                                                                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                                                                        <polyline points="12 5 19 12 12 19"></polyline>
-                                                                    </svg>
-                                                                </Link>
-                                                                <p style={{ margin: 0, fontWeight: '700', fontSize: '18px' }}>
-                                                                    {course.discount ? (
-                                                                        <del style={{ color: 'var(--paraColor, #888)', marginRight: '6px' }}>
-                                                                            ${course.price}
-                                                                        </del>
-                                                                    ) : (course.price > 160 ? (
-                                                                        <del style={{ color: 'var(--paraColor, #888)', marginRight: '6px' }}>
-                                                                            ${course.price}
-                                                                        </del>
-                                                                    ) : null)}
-                                                                    ${course.discount || course.price || '156.00'}
-                                                                </p>
-                                                            </div>
+                                                             <div className="wsus__single_courses_3_footer align-items-center">
+                                                                 <Link
+                                                                     className="common_btn"
+                                                                     href={courseUrl}
+                                                                     style={{
+                                                                         padding: '7px 18px',
+                                                                         display: 'inline-flex',
+                                                                         alignItems: 'center',
+                                                                         gap: '6px',
+                                                                     }}
+                                                                 >
+                                                                     Enroll
+                                                                     <svg
+                                                                         width="13"
+                                                                         height="13"
+                                                                         viewBox="0 0 24 24"
+                                                                         fill="none"
+                                                                         stroke="currentColor"
+                                                                         strokeWidth="2.5"
+                                                                         strokeLinecap="round"
+                                                                         strokeLinejoin="round"
+                                                                     >
+                                                                         <line x1="5" y1="12" x2="19" y2="12"></line>
+                                                                         <polyline points="12 5 19 12 12 19"></polyline>
+                                                                     </svg>
+                                                                 </Link>
+                                                                 <div className="d-flex flex-column align-items-end text-end ms-auto">
+                                                                     {(() => {
+                                                                         const numPrice = Number(course.price || 0);
+                                                                         const numDiscount = Number(course.discount || 0);
+                                                                         const finalPrice = course.final_price !== undefined ? Number(course.final_price) : (
+                                                                             numDiscount > 0 && numDiscount < numPrice ? (numPrice - numDiscount) : (numDiscount > 0 ? numDiscount : numPrice)
+                                                                         );
+                                                                         const hasDiscount = numDiscount > 0 && finalPrice < numPrice;
+                                                                         const isFree = numPrice === 0;
+
+                                                                         if (isFree) return <span style={{ color: '#16A34A', fontWeight: 700, fontSize: '16px' }}>FREE</span>;
+                                                                         if (hasDiscount) {
+                                                                             return (
+                                                                                 <>
+                                                                                     <del style={{ color: '#94A3B8', fontWeight: 400, fontSize: '12px', lineHeight: '1.2', display: 'block' }}>
+                                                                                         {formatCurrency(numPrice, settings)}
+                                                                                     </del>
+                                                                                     <span style={{ color: '#0F172A', fontWeight: 700, fontSize: '16px', lineHeight: '1.2', display: 'block' }}>
+                                                                                         {formatCurrency(finalPrice, settings)}
+                                                                                     </span>
+                                                                                 </>
+                                                                             );
+                                                                         }
+                                                                         return (
+                                                                             <span style={{ color: '#0F172A', fontWeight: 700, fontSize: '16px', lineHeight: '1.2', display: 'block' }}>
+                                                                                 {formatCurrency(finalPrice, settings)}
+                                                                             </span>
+                                                                         );
+                                                                     })()}
+                                                                 </div>
+                                                             </div>
                                                         </div>
                                                     </div>
                                                 );

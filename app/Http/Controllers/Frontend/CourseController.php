@@ -55,14 +55,6 @@ class CourseController extends Controller
         $course->instructor_id = Auth::guard('web')->user()->id;
         $course->save();
 
-        // Create Admin Notification for new course draft created
-        \App\Models\AdminNotification::create([
-            'title' => 'Kursus Baru Dibuat',
-            'message' => 'Instruktur ' . (Auth::user()->name ?? 'Instruktur') . ' membuat kursus baru "' . $course->title . '"',
-            'url' => route('admin.courses.index'),
-            'is_read' => false,
-        ]);
-
         if ($request->hasFile('thumbnail')) {
             $course->addMediaFromRequest('thumbnail')
                 ->toMediaCollection('thumbnail');

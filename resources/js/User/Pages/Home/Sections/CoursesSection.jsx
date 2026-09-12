@@ -1,12 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from '@inertiajs/react';
 import CourseCard from '@/User/Components/CourseCard';
 
 export default function CoursesSection({ latestCourseCategories = [] }) {
-    if (!latestCourseCategories || latestCourseCategories.length === 0) return null;
+    const [activeCatId, setActiveCatId] = useState('all');
 
-    const [activeCatId, setActiveCatId] = useState(latestCourseCategories[0]?.id);
-    const activeCategory = latestCourseCategories.find((c) => c.id === activeCatId) || latestCourseCategories[0];
+    const allCourses = useMemo(() => {
+        const coursesMap = new Map();
+        (latestCourseCategories || []).forEach((cat) => {
+            (cat.courses || []).forEach((course) => {
+                if (!coursesMap.has(course.id)) {
+                    coursesMap.set(course.id, course);
+                }
+            });
+        });
+        return Array.from(coursesMap.values());
+    }, [latestCourseCategories]);
+
+    const activeCategory = (latestCourseCategories || []).find((c) => String(c.id) === String(activeCatId));
+    const displayedCourses = activeCatId === 'all' 
+        ? allCourses 
+        : (activeCategory?.courses || []);
+
+    if ((!latestCourseCategories || latestCourseCategories.length === 0) && allCourses.length === 0) {
+        return null;
+    }
 
     return (
         <section className="wsus__courses_3 pt_120 xs_pt_100 mt_120 xs_mt_90 pb_120 xs_pb_100">
@@ -24,10 +42,19 @@ export default function CoursesSection({ latestCourseCategories = [] }) {
                     <div className="col-12 text-center">
                         <div className="wsus__filter_area mb_30">
                             <ul className="nav nav-pills justify-content-center" role="tablist">
-                                {latestCourseCategories.map((cat) => (
+                                <li className="nav-item" role="presentation">
+                                    <button
+                                        className={`nav-link ${activeCatId === 'all' ? 'active' : ''}`}
+                                        type="button"
+                                        onClick={() => setActiveCatId('all')}
+                                    >
+                                        All Courses
+                                    </button>
+                                </li>
+                                {(latestCourseCategories || []).map((cat) => (
                                     <li className="nav-item" role="presentation" key={cat.id}>
                                         <button
-                                            className={`nav-link ${activeCatId === cat.id ? 'active' : ''}`}
+                                            className={`nav-link ${String(activeCatId) === String(cat.id) ? 'active' : ''}`}
                                             type="button"
                                             onClick={() => setActiveCatId(cat.id)}
                                         >
@@ -43,8 +70,8 @@ export default function CoursesSection({ latestCourseCategories = [] }) {
                 <div className="tab-content">
                     <div className="tab-pane fade show active">
                         <div className="row">
-                            {activeCategory?.courses && activeCategory.courses.length > 0 ? (
-                                activeCategory.courses.map((course) => (
+                            {displayedCourses && displayedCourses.length > 0 ? (
+                                displayedCourses.map((course) => (
                                     <div className="col-xl-3 col-md-6 col-lg-4 mt-4" key={course.id}>
                                         <CourseCard course={course} />
                                     </div>
@@ -80,7 +107,9 @@ export default function CoursesSection({ latestCourseCategories = [] }) {
                                         </h5>
                                         <p className="text-muted mb-0" style={{ fontSize: '14px', lineHeight: '1.6' }}>
                                             We couldn't find any courses under{' '}
-                                            <strong className="text-dark">{activeCategory?.name || 'this category'}</strong>{' '}
+                                            <strong className="text-dark">
+                                                {activeCatId === 'all' ? 'All Courses' : (activeCategory?.name || 'this category')}
+                                            </strong>{' '}
                                             at the moment. Check back soon or explore other categories!
                                         </p>
                                     </div>

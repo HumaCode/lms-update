@@ -23,5 +23,6 @@ class AppServiceProvider extends ServiceProvider
     {
         Paginator::useBootstrapFive();
         \App\Models\Withdraw::observe(\App\Observers\WithdrawObserver::class);
+        \App\Models\CourseChapterLession::observe(\App\Observers\CourseChapterLessionObserver::class);
     }
 }

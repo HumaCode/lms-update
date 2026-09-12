@@ -45,14 +45,53 @@ class CourseContentController extends Controller
 
     function storeLesson(Request $request): RedirectResponse
     {
+        $lessonType = $request->input('lesson_type', 'video');
+        if ($lessonType === 'resource') {
+            $request->validate([
+                'title' => ['required', 'string', 'max:255'],
+                'resources' => ['nullable', 'array'],
+                'resources.*' => ['nullable', 'file', 'mimes:jpg,jpeg,png,gif,webp,zip,pdf', 'max:204800'],
+            ]);
+
+            $lesson = new CourseChapterLession();
+            $lesson->title = $request->title;
+            $lesson->slug = \Str::slug($request->title);
+            $lesson->storage = 'upload';
+            $lesson->file_path = '';
+            $lesson->file_type = 'file';
+            $lesson->duration = 0;
+            $lesson->is_preview = 0;
+            $lesson->downloadable = 1;
+            $lesson->description = $request->description ?? '';
+            $lesson->instructor_id = Auth::user()->id;
+            $lesson->course_id = $request->course_id;
+            $lesson->chapter_id = $request->chapter_id;
+            $lesson->lesson_type = 'resource';
+            $lesson->order = CourseChapterLession::where('chapter_id', $request->chapter_id)->count() + 1;
+            $lesson->save();
+
+            if ($request->hasFile('resources')) {
+                foreach ($request->file('resources') as $file) {
+                    if ($file && $file->isValid()) {
+                        $lesson->addMedia($file)->toMediaCollection('resources', 'course_chapter_lessions');
+                    }
+                }
+            }
+
+            notyf()->success('Lesson resource berhasil dibuat!');
+            return redirect()->back();
+        }
+
         $rules = [
             'title' => ['required', 'string', 'max:255'],
             'source' => ['required', 'string'],
             'file_type' => ['required', 'in:video,audio,file,pdf,doc'],
             'duration' => ['required'],
-            'is_preview' => ['nullable', 'boolean'],
-            'downloadable' => ['nullable', 'boolean'],
-            'description' => ['required']
+            'is_preview' => ['nullable'],
+            'downloadable' => ['nullable'],
+            'description' => ['nullable'],
+            'resources' => ['nullable', 'array'],
+            'resources.*' => ['nullable', 'file', 'mimes:jpg,jpeg,png,gif,webp,zip,pdf', 'max:204800'],
         ];
         if ($request->filled('file')) {
             $rules['file'] = ['required'];
@@ -70,16 +109,23 @@ class CourseContentController extends Controller
         $lesson->duration = $request->duration;
         $lesson->is_preview = filter_var($request->is_preview, FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
         $lesson->downloadable = filter_var($request->downloadable, FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
-        $lesson->description = $request->description;
+        $lesson->description = $request->description ?? '';
         $lesson->instructor_id = Auth::user()->id;
         $lesson->course_id = $request->course_id;
         $lesson->chapter_id = $request->chapter_id;
-        $lesson->lesson_type = $request->input('lesson_type', 'lesson');
+        $lesson->lesson_type = 'video';
         $lesson->order = CourseChapterLession::where('chapter_id', $request->chapter_id)->count() + 1;
         $lesson->save();
 
-        notyf()->success('Created Success fully');
+        if ($request->hasFile('resources')) {
+            foreach ($request->file('resources') as $file) {
+                if ($file && $file->isValid()) {
+                    $lesson->addMedia($file)->toMediaCollection('resources', 'course_chapter_lessions');
+                }
+            }
+        }
 
+        notyf()->success('Lesson video berhasil dibuat!');
         return redirect()->back();
     }
 
@@ -141,14 +187,56 @@ class CourseContentController extends Controller
 
     function updateLesson(Request $request, string $id): RedirectResponse
     {
+        $lesson = CourseChapterLession::where('instructor_id', Auth::user()->id)->findOrFail($id);
+        $lessonType = $request->input('lesson_type', $lesson->lesson_type ?? 'video');
+
+        if ($lessonType === 'resource') {
+            $request->validate([
+                'title' => ['required', 'string', 'max:255'],
+                'resources' => ['nullable', 'array'],
+                'resources.*' => ['nullable', 'file', 'mimes:jpg,jpeg,png,gif,webp,zip,pdf', 'max:204800'],
+            ]);
+
+            $lesson->title = $request->title;
+            $lesson->slug = \Str::slug($request->title);
+            $lesson->storage = 'upload';
+            $lesson->file_type = 'file';
+            $lesson->duration = 0;
+            $lesson->is_preview = 0;
+            $lesson->downloadable = 1;
+            $lesson->description = $request->description ?? '';
+            $lesson->lesson_type = 'resource';
+            $lesson->save();
+
+            if ($request->hasFile('resources')) {
+                foreach ($request->file('resources') as $file) {
+                    if ($file && $file->isValid()) {
+                        $lesson->addMedia($file)->toMediaCollection('resources', 'course_chapter_lessions');
+                    }
+                }
+            }
+
+            if ($request->filled('deleted_resources')) {
+                $deletedIds = is_array($request->deleted_resources) ? $request->deleted_resources : json_decode($request->deleted_resources, true);
+                if (!empty($deletedIds)) {
+                    $lesson->media()->whereIn('id', $deletedIds)->delete();
+                }
+            }
+
+            notyf()->success('Lesson resource berhasil diperbarui!');
+            return redirect()->back();
+        }
+
         $rules = [
             'title' => ['required', 'string', 'max:255'],
             'source' => ['required', 'string'],
             'file_type' => ['required', 'in:video,audio,file,pdf,doc'],
             'duration' => ['required'],
-            'is_preview' => ['nullable', 'boolean'],
-            'downloadable' => ['nullable', 'boolean'],
-            'description' => ['required']
+            'is_preview' => ['nullable'],
+            'downloadable' => ['nullable'],
+            'description' => ['nullable'],
+            'resources' => ['nullable', 'array'],
+            'resources.*' => ['nullable', 'file', 'mimes:jpg,jpeg,png,gif,webp,zip,pdf', 'max:204800'],
         ];
         if ($request->filled('file')) {
             $rules['file'] = ['required'];
@@ -157,7 +245,6 @@ class CourseContentController extends Controller
         }
         $request->validate($rules);
 
-        $lesson = CourseChapterLession::findOrFail($id);
         $lesson->title = $request->title;
         $lesson->slug = \Str::slug($request->title);
         $lesson->storage = $request->source;
@@ -166,17 +253,50 @@ class CourseContentController extends Controller
         $lesson->duration = $request->duration;
         $lesson->is_preview = filter_var($request->is_preview, FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
         $lesson->downloadable = filter_var($request->downloadable, FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
-        $lesson->description = $request->description;
-        $lesson->instructor_id = Auth::user()->id;
-        $lesson->course_id = $request->course_id;
-        $lesson->chapter_id = $request->chapter_id;
-        if (!$lesson->lesson_type) {
-            $lesson->lesson_type = $request->input('lesson_type', 'lesson');
-        }
+        $lesson->description = $request->description ?? '';
+        $lesson->lesson_type = 'video';
         $lesson->save();
 
-        notyf()->success('Lesson updated successfully!');
+        if ($request->hasFile('resources')) {
+            foreach ($request->file('resources') as $file) {
+                if ($file && $file->isValid()) {
+                    $lesson->addMedia($file)->toMediaCollection('resources', 'course_chapter_lessions');
+                }
+            }
+        }
 
+        if ($request->filled('deleted_resources')) {
+            $deletedIds = is_array($request->deleted_resources) ? $request->deleted_resources : json_decode($request->deleted_resources, true);
+            if (!empty($deletedIds)) {
+                $lesson->media()->whereIn('id', $deletedIds)->delete();
+            }
+        }
+
+        notyf()->success('Lesson video berhasil diperbarui!');
+        return redirect()->back();
+    }
+
+    public function downloadResource(string $mediaId)
+    {
+        $media = \Spatie\MediaLibrary\MediaCollections\Models\Media::findOrFail($mediaId);
+        $user = Auth::user();
+        if (!$user) {
+            abort(403, 'Unauthorized');
+        }
+
+        return response()->download($media->getPath(), $media->file_name);
+    }
+
+    public function deleteResourceMedia(string $mediaId): RedirectResponse
+    {
+        $media = \Spatie\MediaLibrary\MediaCollections\Models\Media::findOrFail($mediaId);
+        $lesson = $media->model;
+        if ($lesson && $lesson->instructor_id == Auth::user()->id) {
+            $media->delete();
+            notyf()->success('Resource file berhasil dihapus!');
+        } else {
+            notyf()->error('Unauthorized');
+        }
         return redirect()->back();
     }
 

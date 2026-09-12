@@ -118,6 +118,7 @@ export default function Edit({
         features: course.features || '',
         qna: course.qna ? 1 : 0,
         certificate: course.certificate ? 1 : 0,
+        show_faq: course.show_faq !== undefined && course.show_faq !== null ? (course.show_faq ? 1 : 0) : 1,
     });
 
     const categorySelectOptions = (categories || []).map((cat) => {
@@ -172,6 +173,7 @@ export default function Edit({
     const [detectingDuration, setDetectingDuration] = useState(false);
     const [lessonForm, setLessonForm] = useState({
         title: '',
+        lesson_type: 'video',
         source: 'youtube',
         file_type: 'video',
         url: '',
@@ -180,12 +182,16 @@ export default function Edit({
         downloadable: 0,
         description: '',
     });
+    const [resourceFiles, setResourceFiles] = useState([null]);
+    const [existingResources, setExistingResources] = useState([]);
+    const [deletedResourceIds, setDeletedResourceIds] = useState([]);
 
     const handleAddLessonModal = (chapterId) => {
         setEditingLesson(null);
         setActiveChapterId(chapterId);
         setLessonForm({
             title: '',
+            lesson_type: 'video',
             source: 'youtube',
             file_type: 'video',
             url: '',
@@ -194,6 +200,9 @@ export default function Edit({
             downloadable: 0,
             description: '',
         });
+        setResourceFiles([null]);
+        setExistingResources([]);
+        setDeletedResourceIds([]);
         setShowLessonModal(true);
     };
 
@@ -202,6 +211,7 @@ export default function Edit({
         setActiveChapterId(chapterId);
         setLessonForm({
             title: lesson.title || '',
+            lesson_type: lesson.lesson_type || (lesson.storage === 'file' && !lesson.file_path ? 'resource' : 'video'),
             source: lesson.storage || 'youtube',
             file_type: lesson.file_type || 'video',
             url: lesson.file_path || '',
@@ -210,7 +220,31 @@ export default function Edit({
             downloadable: lesson.downloadable ? 1 : 0,
             description: lesson.description || '',
         });
+        setResourceFiles([null]);
+        setExistingResources(lesson.resources_list || []);
+        setDeletedResourceIds([]);
         setShowLessonModal(true);
+    };
+
+    const handleAddResourceInput = () => {
+        setResourceFiles((prev) => [...prev, null]);
+    };
+
+    const handleRemoveResourceInput = (index) => {
+        setResourceFiles((prev) => prev.filter((_, i) => i !== index));
+    };
+
+    const handleResourceFileChange = (index, file) => {
+        setResourceFiles((prev) => {
+            const updated = [...prev];
+            updated[index] = file;
+            return updated;
+        });
+    };
+
+    const handleRemoveExistingResource = (mediaId) => {
+        setExistingResources((prev) => prev.filter((r) => r.id !== mediaId));
+        setDeletedResourceIds((prev) => [...prev, mediaId]);
     };
 
     const extractYouTubeId = (url) => {
@@ -390,58 +424,66 @@ export default function Edit({
         e.preventDefault();
         setSavingLesson(true);
 
-        if (editingLesson) {
-            router.post(route('instructor.course-content.update-lesson', editingLesson.id), {
-                course_id: course.id,
-                chapter_id: activeChapterId,
-                ...lessonForm,
-            }, {
-                onSuccess: () => {
-                    setShowLessonModal(false);
-                    setEditingLesson(null);
-                    setLessonForm({
-                        title: '',
-                        source: 'youtube',
-                        file_type: 'video',
-                        url: '',
-                        duration: '',
-                        is_preview: 0,
-                        downloadable: 0,
-                        description: '',
-                    });
-                    notify.success('Berhasil Disimpan', 'Lesson berhasil diperbarui.');
-                },
-                onError: () => {
-                    notify.error('Gagal Perbarui Lesson', 'Silakan periksa data inputan lesson.');
-                },
-                onFinish: () => setSavingLesson(false),
-            });
+        const formData = new FormData();
+        formData.append('course_id', course.id);
+        formData.append('chapter_id', activeChapterId);
+        formData.append('title', lessonForm.title || '');
+        formData.append('lesson_type', lessonForm.lesson_type || 'video');
+
+        if (lessonForm.lesson_type === 'video') {
+            formData.append('source', lessonForm.source || 'youtube');
+            formData.append('file_type', lessonForm.file_type || 'video');
+            formData.append('url', lessonForm.url || '');
+            formData.append('duration', lessonForm.duration || 0);
+            formData.append('is_preview', lessonForm.is_preview ? 1 : 0);
+            formData.append('downloadable', lessonForm.downloadable ? 1 : 0);
+            formData.append('description', lessonForm.description || '');
         } else {
-            router.post(route('instructor.course-content.store-lesson'), {
-                course_id: course.id,
-                chapter_id: activeChapterId,
-                ...lessonForm,
-            }, {
-                onSuccess: () => {
-                    setShowLessonModal(false);
-                    setLessonForm({
-                        title: '',
-                        source: 'youtube',
-                        file_type: 'video',
-                        url: '',
-                        duration: '',
-                        is_preview: 0,
-                        downloadable: 0,
-                        description: '',
-                    });
-                    notify.success('Berhasil Disimpan', 'Lesson baru telah berhasil ditambahkan.');
-                },
-                onError: () => {
-                    notify.error('Gagal Menyimpan Lesson', 'Silakan periksa data inputan lesson.');
-                },
-                onFinish: () => setSavingLesson(false),
-            });
+            formData.append('source', 'upload');
+            formData.append('file_type', 'file');
+            formData.append('duration', 0);
+            formData.append('description', lessonForm.description || '');
         }
+
+        resourceFiles.forEach((file) => {
+            if (file) {
+                formData.append('resources[]', file);
+            }
+        });
+
+        deletedResourceIds.forEach((id) => {
+            formData.append('deleted_resources[]', id);
+        });
+
+        const targetUrl = editingLesson
+            ? route('instructor.course-content.update-lesson', editingLesson.id)
+            : route('instructor.course-content.store-lesson');
+
+        router.post(targetUrl, formData, {
+            onSuccess: () => {
+                setShowLessonModal(false);
+                setEditingLesson(null);
+                setResourceFiles([null]);
+                setExistingResources([]);
+                setDeletedResourceIds([]);
+                setLessonForm({
+                    title: '',
+                    lesson_type: 'video',
+                    source: 'youtube',
+                    file_type: 'video',
+                    url: '',
+                    duration: '',
+                    is_preview: 0,
+                    downloadable: 0,
+                    description: '',
+                });
+                notify.success('Berhasil Disimpan', editingLesson ? 'Lesson berhasil diperbarui.' : 'Lesson baru telah berhasil ditambahkan.');
+            },
+            onError: () => {
+                notify.error('Gagal Menyimpan Lesson', 'Silakan periksa data inputan lesson.');
+            },
+            onFinish: () => setSavingLesson(false),
+        });
     };
 
     const handleDeleteLesson = (lessonId, title) => {
@@ -484,13 +526,19 @@ export default function Edit({
         });
     };
 
-    const steps = [
-        { num: 1, label: 'Basic Information' },
-        { num: 2, label: 'Course Details' },
-        { num: 3, label: 'Announcements' },
-        { num: 4, label: 'Curriculum & Lessons' },
-        { num: 5, label: 'Review & Publish' },
+    const rawSteps = [
+        { key: 'basic', label: 'Basic Information' },
+        { key: 'details', label: 'Course Details' },
+        { key: 'announcements', label: 'Announcements' },
+        ...(step2Form.data.show_faq === 1 ? [{ key: 'faqs', label: 'Course FAQs' }] : []),
+        { key: 'curriculum', label: 'Curriculum & Lessons' },
+        { key: 'review', label: 'Review & Publish' },
     ];
+
+    const steps = rawSteps.map((s, idx) => ({
+        ...s,
+        num: idx + 1,
+    }));
 
     // Announcement state for Step 3
     const [announcementsList, setAnnouncementsList] = useState([]);
@@ -499,9 +547,18 @@ export default function Edit({
     const [newAnnouncement, setNewAnnouncement] = useState({ title: '', content: '' });
     const [savingAnnouncement, setSavingAnnouncement] = useState(false);
 
+    // FAQ state for Step 4
+    const [faqsList, setFaqsList] = useState(course.faqs || []);
+    const [loadingFaqs, setLoadingFaqs] = useState(false);
+    const [showFaqModal, setShowFaqModal] = useState(false);
+    const [editingFaq, setEditingFaq] = useState(null);
+    const [faqForm, setFaqForm] = useState({ question: '', answer: '' });
+    const [savingFaq, setSavingFaq] = useState(false);
+
     useEffect(() => {
         if (course?.id) {
             fetchAnnouncements();
+            fetchFaqs();
         }
     }, [course?.id]);
 
@@ -517,6 +574,92 @@ export default function Edit({
         } finally {
             setLoadingAnnouncements(false);
         }
+    };
+
+    const fetchFaqs = async () => {
+        setLoadingFaqs(true);
+        try {
+            const res = await axios.get(route('instructor.courses.faqs', course.id));
+            if (res.data.status === 'success') {
+                setFaqsList(res.data.faqs || []);
+            }
+        } catch (err) {
+            console.error('Failed to fetch faqs:', err);
+        } finally {
+            setLoadingFaqs(false);
+        }
+    };
+
+    const handleOpenAddFaq = () => {
+        setEditingFaq(null);
+        setFaqForm({ question: '', answer: '' });
+        setShowFaqModal(true);
+    };
+
+    const handleOpenEditFaq = (faq) => {
+        setEditingFaq(faq);
+        setFaqForm({ question: faq.question, answer: faq.answer });
+        setShowFaqModal(true);
+    };
+
+    const handleSaveFaq = async (e) => {
+        e.preventDefault();
+        if (!faqForm.question.trim() || !faqForm.answer.trim() || savingFaq) return;
+
+        setSavingFaq(true);
+        try {
+            if (editingFaq) {
+                const res = await axios.post(route('instructor.courses.faqs.update', editingFaq.id), {
+                    question: faqForm.question,
+                    answer: faqForm.answer,
+                });
+                if (res.data.status === 'success') {
+                    notify.success('Berhasil', 'FAQ berhasil diperbarui!');
+                    setFaqsList((prev) => prev.map((f) => (f.id === editingFaq.id ? res.data.faq : f)));
+                    setShowFaqModal(false);
+                }
+            } else {
+                const res = await axios.post(route('instructor.courses.faqs.store'), {
+                    course_id: course.id,
+                    question: faqForm.question,
+                    answer: faqForm.answer,
+                });
+                if (res.data.status === 'success') {
+                    notify.success('Berhasil', 'FAQ berhasil ditambahkan!');
+                    setFaqsList((prev) => [...prev, res.data.faq]);
+                    setShowFaqModal(false);
+                }
+            }
+        } catch (err) {
+            notify.error('Gagal', 'Gagal menyimpan FAQ.');
+        } finally {
+            setSavingFaq(false);
+        }
+    };
+
+    const handleDeleteFaq = (id, qText) => {
+        confirmDelete({
+            title: 'Hapus FAQ?',
+            text: `Apakah Anda yakin ingin menghapus pertanyaan "${qText}"?`,
+            confirmButtonText: 'Ya, Hapus FAQ',
+            cancelButtonText: 'Batal',
+            onConfirm: async (resolve, reject) => {
+                try {
+                    const res = await axios.delete(route('instructor.courses.faqs.delete', id));
+                    if (res.data.status === 'success') {
+                        notify.success('Berhasil', 'FAQ berhasil dihapus.');
+                        setFaqsList((prev) => prev.filter((f) => f.id !== id));
+                        resolve();
+                    } else {
+                        notify.error('Gagal', 'Gagal menghapus FAQ.');
+                        reject();
+                    }
+                } catch (err) {
+                    notify.error('Gagal', 'Gagal menghapus FAQ.');
+                    reject();
+                }
+            },
+        });
     };
 
     const handleCreateAnnouncement = async (e) => {
@@ -975,18 +1118,20 @@ export default function Edit({
                                 </div>
 
                                 <div className="col-md-6">
-                                    <label className="form-label required fw-semibold">Total Duration (Minutes)</label>
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        className={`form-control ${step2Form.errors.duration ? 'is-invalid' : ''}`}
-                                        placeholder="e.g. 180"
-                                        value={step2Form.data.duration}
-                                        onChange={(e) => step2Form.setData('duration', e.target.value)}
-                                    />
-                                    {step2Form.errors.duration && (
-                                        <div className="invalid-feedback">{step2Form.errors.duration}</div>
-                                    )}
+                                    <label className="form-label fw-semibold">Total Duration (Minutes)</label>
+                                    <div className="input-group">
+                                        <span className="input-group-text bg-light"><i className="far fa-clock text-primary"></i></span>
+                                        <input
+                                            type="text"
+                                            className="form-control bg-light"
+                                            value={`${course.duration || 0} Menit`}
+                                            disabled
+                                            readOnly
+                                        />
+                                    </div>
+                                    <div className="form-text text-muted small">
+                                        <i className="fas fa-info-circle me-1 text-info"></i> Durasi dihitung otomatis dari total durasi seluruh video pembelajaran (Kurikulum).
+                                    </div>
                                 </div>
 
                                 <div className="col-md-6">
@@ -1017,7 +1162,7 @@ export default function Edit({
                                     )}
                                 </div>
 
-                                <div className="col-md-6">
+                                <div className="col-md-4">
                                     <div className="card p-3 border rounded-3 bg-light-subtle h-100 shadow-none">
                                         <div className="d-flex align-items-center justify-content-between">
                                             <div className="me-3">
@@ -1025,7 +1170,7 @@ export default function Edit({
                                                     Enable Student Q&A Forum
                                                 </label>
                                                 <small className="text-muted d-block" style={{ fontSize: '0.85rem' }}>
-                                                    Allow students to post questions and discuss lessons.
+                                                    Allow students to post questions and discuss.
                                                 </small>
                                             </div>
                                             <div className="form-check form-switch p-0 m-0">
@@ -1045,7 +1190,7 @@ export default function Edit({
                                     </div>
                                 </div>
 
-                                <div className="col-md-6">
+                                <div className="col-md-4">
                                     <div className="card p-3 border rounded-3 bg-light-subtle h-100 shadow-none">
                                         <div className="d-flex align-items-center justify-content-between">
                                             <div className="me-3">
@@ -1053,7 +1198,7 @@ export default function Edit({
                                                     Offer Completion Certificate
                                                 </label>
                                                 <small className="text-muted d-block" style={{ fontSize: '0.85rem' }}>
-                                                    Generate verified certificates upon course completion.
+                                                    Generate verified certificates on completion.
                                                 </small>
                                             </div>
                                             <div className="form-check form-switch p-0 m-0">
@@ -1066,6 +1211,34 @@ export default function Edit({
                                                     checked={step2Form.data.certificate === 1}
                                                     onChange={(e) =>
                                                         step2Form.setData('certificate', e.target.checked ? 1 : 0)
+                                                    }
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="col-md-4">
+                                    <div className="card p-3 border rounded-3 bg-light-subtle h-100 shadow-none">
+                                        <div className="d-flex align-items-center justify-content-between">
+                                            <div className="me-3">
+                                                <label htmlFor="faq-switch" className="fw-semibold d-block mb-1 cursor-pointer text-dark">
+                                                    Enable Course FAQ Section
+                                                </label>
+                                                <small className="text-muted d-block" style={{ fontSize: '0.85rem' }}>
+                                                    Display custom FAQ tab on student course page.
+                                                </small>
+                                            </div>
+                                            <div className="form-check form-switch p-0 m-0">
+                                                <input
+                                                    id="faq-switch"
+                                                    className="form-check-input cursor-pointer m-0 ms-2"
+                                                    style={{ width: '2.5rem', height: '1.35rem' }}
+                                                    type="checkbox"
+                                                    role="switch"
+                                                    checked={step2Form.data.show_faq === 1}
+                                                    onChange={(e) =>
+                                                        step2Form.setData('show_faq', e.target.checked ? 1 : 0)
                                                     }
                                                 />
                                             </div>
@@ -1103,7 +1276,7 @@ export default function Edit({
             )}
 
             {/* STEP 3: ANNOUNCEMENTS */}
-            {activeStep === 3 && (
+            {((step2Form.data.show_faq === 1 && activeStep === 3) || (step2Form.data.show_faq === 0 && activeStep === 3)) && (
                 <div className="card border-0 shadow-sm rounded-3">
                     <div className="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
                         <div>
@@ -1176,7 +1349,104 @@ export default function Edit({
                         </button>
                         <button
                             type="button"
-                            onClick={() => setActiveStep(4)}
+                            onClick={() => setActiveStep(step2Form.data.show_faq === 1 ? 4 : 4)}
+                            className="btn btn-primary px-4"
+                        >
+                            {step2Form.data.show_faq === 1 ? (
+                                <>Proceed to Course FAQs <i className="fas fa-arrow-right ms-1"></i></>
+                            ) : (
+                                <>Proceed to Curriculum & Lessons <i className="fas fa-arrow-right ms-1"></i></>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* STEP: COURSE FAQS BUILDER (Only if show_faq enabled) */}
+            {step2Form.data.show_faq === 1 && activeStep === 4 && (
+                <div className="card border-0 shadow-sm rounded-3">
+                    <div className="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 className="fw-bold mb-0 text-dark">Step 4: Course FAQs</h5>
+                            <p className="text-muted small mb-0">Kelola pertanyaan umum (FAQ) yang sering ditanyakan siswa mengenai kursus ini</p>
+                        </div>
+                        <button
+                            type="button"
+                            className="btn btn-primary btn-sm px-3"
+                            onClick={handleOpenAddFaq}
+                        >
+                            <i className="fas fa-plus me-1"></i> Tambah FAQ Baru
+                        </button>
+                    </div>
+
+                    <div className="card-body p-4">
+                        {loadingFaqs ? (
+                            <div className="text-center py-5">
+                                <div className="spinner-border text-primary" role="status"></div>
+                                <p className="text-muted small mt-2">Memuat FAQ...</p>
+                            </div>
+                        ) : faqsList.length > 0 ? (
+                            <div className="vstack gap-3">
+                                {faqsList.map((faq, idx) => (
+                                    <div key={faq.id || idx} className="card border p-3 rounded-3 shadow-xs">
+                                        <div className="d-flex justify-content-between align-items-start mb-2">
+                                            <div className="pe-3">
+                                                <h6 className="fw-bold text-dark mb-2">
+                                                    <i className="fas fa-question-circle text-primary me-2"></i>
+                                                    {faq.question}
+                                                </h6>
+                                                <p className="text-secondary small mb-0" style={{ whiteSpace: 'pre-line' }}>
+                                                    {faq.answer}
+                                                </p>
+                                            </div>
+                                            <div className="d-flex align-items-center gap-2">
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-sm btn-outline-primary px-2 py-1 d-inline-flex align-items-center justify-content-center"
+                                                    onClick={() => handleOpenEditFaq(faq)}
+                                                    title="Edit FAQ"
+                                                >
+                                                    <i className="fas fa-edit"></i>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-sm btn-outline-danger px-2 py-1 d-inline-flex align-items-center justify-content-center"
+                                                    onClick={() => handleDeleteFaq(faq.id, faq.question)}
+                                                    title="Hapus FAQ"
+                                                >
+                                                    <i className="far fa-trash-alt"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-5 border rounded-3 bg-light">
+                                <i className="fas fa-question-circle text-primary display-5 mb-3 d-block opacity-50"></i>
+                                <h6 className="fw-bold text-dark fs-5 mb-1">Belum Ada FAQ</h6>
+                                <p className="text-muted small mb-3">Buat pertanyaan dan jawaban umum untuk membantu calon siswa memahami kursus ini.</p>
+                                <button
+                                    className="btn btn-sm btn-primary"
+                                    onClick={handleOpenAddFaq}
+                                >
+                                    <i className="fas fa-plus me-1"></i> Tambah FAQ Pertama
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="card-footer bg-white border-top py-3 d-flex justify-content-between">
+                        <button
+                            type="button"
+                            onClick={() => setActiveStep(3)}
+                            className="btn btn-outline-secondary"
+                        >
+                            <i className="fas fa-arrow-left me-1"></i> Back
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setActiveStep(5)}
                             className="btn btn-primary px-4"
                         >
                             Proceed to Curriculum & Lessons <i className="fas fa-arrow-right ms-1"></i>
@@ -1185,12 +1455,12 @@ export default function Edit({
                 </div>
             )}
 
-            {/* STEP 4: CURRICULUM & LESSON BUILDER */}
-            {activeStep === 4 && (
+            {/* STEP: CURRICULUM & LESSON BUILDER */}
+            {((step2Form.data.show_faq === 1 && activeStep === 5) || (step2Form.data.show_faq === 0 && activeStep === 4)) && (
                 <div className="card border-0 shadow-sm rounded-3">
                     <div className="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
                         <div>
-                            <h5 className="fw-bold mb-0 text-dark">Step 4: Curriculum Builder</h5>
+                            <h5 className="fw-bold mb-0 text-dark">Step {step2Form.data.show_faq === 1 ? 5 : 4}: Curriculum Builder</h5>
                             <p className="text-muted small mb-0">Organize your course into chapters and video lessons</p>
                         </div>
                         <button
@@ -1256,14 +1526,20 @@ export default function Edit({
                                                         className="list-group-item d-flex justify-content-between align-items-center px-2 py-2 border-0 bg-light rounded mb-1"
                                                     >
                                                         <div className="d-flex align-items-center gap-3">
-                                                            <i className="fas fa-play-circle text-primary fs-5"></i>
+                                                            <i className={`fas ${lesson.lesson_type === 'resource' ? 'fa-file-archive text-info' : 'fa-play-circle text-primary'} fs-5`}></i>
                                                             <div>
                                                                 <span className="fw-medium text-dark">
                                                                     {lIdx + 1}. {lesson.title}
                                                                 </span>
-                                                                <span className="badge bg-secondary-subtle text-secondary ms-2 small">
-                                                                    {lesson.duration} mins
-                                                                </span>
+                                                                {lesson.lesson_type === 'resource' ? (
+                                                                    <span className="badge bg-info-subtle text-info ms-2 small">
+                                                                        Resource File ({lesson.resources_list ? lesson.resources_list.length : 0})
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="badge bg-secondary-subtle text-secondary ms-2 small">
+                                                                        {lesson.duration} mins
+                                                                    </span>
+                                                                )}
                                                                 {lesson.is_preview === 1 && (
                                                                     <span className="badge bg-success-subtle text-success ms-1 small">
                                                                         Free Preview
@@ -1323,14 +1599,14 @@ export default function Edit({
                     <div className="card-footer bg-white border-top py-3 d-flex justify-content-between">
                         <button
                             type="button"
-                            onClick={() => setActiveStep(3)}
+                            onClick={() => setActiveStep(step2Form.data.show_faq === 1 ? 4 : 3)}
                             className="btn btn-outline-secondary"
                         >
                             <i className="fas fa-arrow-left me-1"></i> Back
                         </button>
                         <button
                             type="button"
-                            onClick={() => setActiveStep(5)}
+                            onClick={() => setActiveStep(step2Form.data.show_faq === 1 ? 6 : 5)}
                             className="btn btn-primary px-4"
                         >
                             Proceed to Review & Publish <i className="fas fa-arrow-right ms-1"></i>
@@ -1339,11 +1615,11 @@ export default function Edit({
                 </div>
             )}
 
-            {/* STEP 5: REVIEW & PUBLISH */}
-            {activeStep === 5 && (
+            {/* STEP: REVIEW & PUBLISH */}
+            {((step2Form.data.show_faq === 1 && activeStep === 6) || (step2Form.data.show_faq === 0 && activeStep === 5)) && (
                 <div className="card border-0 shadow-sm rounded-3">
                     <div className="card-header bg-white border-bottom py-3">
-                        <h5 className="fw-bold mb-0 text-dark">Step 5: Review & Publish Course</h5>
+                        <h5 className="fw-bold mb-0 text-dark">Step {step2Form.data.show_faq === 1 ? 6 : 5}: Review & Publish Course</h5>
                     </div>
                     <form onSubmit={handleStep4Submit}>
                         <div className="card-body p-4">
@@ -1470,7 +1746,7 @@ export default function Edit({
                         <div className="card-footer bg-white border-top py-3 d-flex justify-content-between">
                             <button
                                 type="button"
-                                onClick={() => setActiveStep(4)}
+                                onClick={() => setActiveStep(step2Form.data.show_faq === 1 ? 5 : 4)}
                                 className="btn btn-outline-secondary"
                             >
                                 <i className="fas fa-arrow-left me-1"></i> Back
@@ -1565,6 +1841,75 @@ export default function Edit({
                 </div>
             )}
 
+            {/* FAQ MODAL */}
+            {showFaqModal && (
+                <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1055 }}>
+                    <div className="modal-dialog modal-dialog-centered modal-lg">
+                        <div className="modal-content border-0 shadow rounded-3">
+                            <div className="modal-header border-bottom">
+                                <h5 className="modal-title fw-bold">
+                                    {editingFaq ? 'Edit Pertanyaan FAQ' : 'Tambah Pertanyaan FAQ Baru'}
+                                </h5>
+                                <button
+                                    type="button"
+                                    className="btn-close"
+                                    onClick={() => setShowFaqModal(false)}
+                                ></button>
+                            </div>
+                            <form onSubmit={handleSaveFaq}>
+                                <div className="modal-body">
+                                    <div className="mb-3">
+                                        <label className="form-label required fw-semibold">Pertanyaan (Question)</label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            placeholder="misal: Berapa lama saya bisa mengakses materi kursus ini?"
+                                            value={faqForm.question}
+                                            onChange={(e) => setFaqForm({ ...faqForm, question: e.target.value })}
+                                            required
+                                        />
+                                    </div>
+                                    <div className="mb-3">
+                                        <label className="form-label required fw-semibold">Jawaban (Answer)</label>
+                                        <textarea
+                                            className="form-control"
+                                            rows="4"
+                                            placeholder="Tuliskan jawaban yang jelas dan lengkap..."
+                                            value={faqForm.answer}
+                                            onChange={(e) => setFaqForm({ ...faqForm, answer: e.target.value })}
+                                            required
+                                        ></textarea>
+                                    </div>
+                                </div>
+                                <div className="modal-footer border-top">
+                                    <button
+                                        type="button"
+                                        className="btn btn-light"
+                                        onClick={() => setShowFaqModal(false)}
+                                    >
+                                        Batal
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="btn btn-primary px-4"
+                                        disabled={savingFaq}
+                                    >
+                                        {savingFaq ? (
+                                            <>
+                                                <i className="fas fa-spinner fa-spin me-2 text-white"></i>
+                                                Menyimpan...
+                                            </>
+                                        ) : (
+                                            'Simpan FAQ'
+                                        )}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* CHAPTER MODAL */}
             {showChapterModal && (
                 <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
@@ -1636,6 +1981,51 @@ export default function Edit({
                             <form onSubmit={handleSaveLesson}>
                                 <div className="modal-body">
                                     <div className="row g-3">
+                                        {/* LESSON TYPE SELECTION */}
+                                        <div className="col-12">
+                                            <label className="form-label required fw-semibold d-block mb-2">Tipe Lesson</label>
+                                            <div className="row g-2">
+                                                <div className="col-6">
+                                                    <button
+                                                        type="button"
+                                                        className={`w-100 btn p-3 text-start border rounded-3 transition-all ${
+                                                            lessonForm.lesson_type === 'video'
+                                                                ? 'border-primary bg-primary-subtle text-primary fw-bold shadow-xs'
+                                                                : 'border-light-subtle bg-light text-secondary'
+                                                        }`}
+                                                        onClick={() => setLessonForm({ ...lessonForm, lesson_type: 'video' })}
+                                                    >
+                                                        <div className="d-flex align-items-center gap-2">
+                                                            <i className={`fas fa-video fs-5 ${lessonForm.lesson_type === 'video' ? 'text-primary' : 'text-muted'}`}></i>
+                                                            <div>
+                                                                <div className="fw-bold fs-6 text-dark">Dengan Video</div>
+                                                                <div className="small text-muted fw-normal" style={{ fontSize: '0.78rem' }}>Video YouTube, Vimeo, atau File</div>
+                                                            </div>
+                                                        </div>
+                                                    </button>
+                                                </div>
+                                                <div className="col-6">
+                                                    <button
+                                                        type="button"
+                                                        className={`w-100 btn p-3 text-start border rounded-3 transition-all ${
+                                                            lessonForm.lesson_type === 'resource'
+                                                                ? 'border-info bg-info-subtle text-info fw-bold shadow-xs'
+                                                                : 'border-light-subtle bg-light text-secondary'
+                                                        }`}
+                                                        onClick={() => setLessonForm({ ...lessonForm, lesson_type: 'resource' })}
+                                                    >
+                                                        <div className="d-flex align-items-center gap-2">
+                                                            <i className={`fas fa-file-archive fs-5 ${lessonForm.lesson_type === 'resource' ? 'text-info' : 'text-muted'}`}></i>
+                                                            <div>
+                                                                <div className="fw-bold fs-6 text-dark">Hanya Resource</div>
+                                                                <div className="small text-muted fw-normal" style={{ fontSize: '0.78rem' }}>Dokumen, Gambar atau file ZIP</div>
+                                                            </div>
+                                                        </div>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         <div className="col-12">
                                             <label className="form-label required fw-semibold">Lesson Title</label>
                                             <input
@@ -1650,97 +2040,169 @@ export default function Edit({
                                             />
                                         </div>
 
-                                        <div className="col-md-6">
-                                            <label className="form-label required fw-semibold">Source Provider</label>
-                                            <select
-                                                className="form-select"
-                                                value={lessonForm.source}
-                                                onChange={(e) =>
-                                                    setLessonForm({ ...lessonForm, source: e.target.value })
-                                                }
-                                            >
-                                                <option value="youtube">YouTube</option>
-                                                <option value="vimeo">Vimeo</option>
-                                                <option value="external_link">External URL</option>
-                                            </select>
-                                        </div>
+                                        {/* VIDEO LESSON INPUTS */}
+                                        {lessonForm.lesson_type === 'video' ? (
+                                            <>
+                                                <div className="col-md-6">
+                                                    <label className="form-label required fw-semibold">Source Provider</label>
+                                                    <select
+                                                        className="form-select"
+                                                        value={lessonForm.source}
+                                                        onChange={(e) =>
+                                                            setLessonForm({ ...lessonForm, source: e.target.value })
+                                                        }
+                                                    >
+                                                        <option value="youtube">YouTube</option>
+                                                        <option value="vimeo">Vimeo</option>
+                                                        <option value="external_link">External URL</option>
+                                                    </select>
+                                                </div>
 
-                                        <div className="col-md-6">
-                                            <label className="form-label required fw-semibold">Lesson URL</label>
-                                            <input
-                                                type="url"
-                                                className="form-control"
-                                                placeholder="https://www.youtube.com/watch?v=..."
-                                                value={lessonForm.url}
-                                                onChange={(e) => handleLessonUrlChange(e.target.value)}
-                                                required
-                                            />
-                                        </div>
+                                                <div className="col-md-6">
+                                                    <label className="form-label required fw-semibold">Lesson URL</label>
+                                                    <input
+                                                        type="url"
+                                                        className="form-control"
+                                                        placeholder="https://www.youtube.com/watch?v=..."
+                                                        value={lessonForm.url}
+                                                        onChange={(e) => handleLessonUrlChange(e.target.value)}
+                                                        required
+                                                    />
+                                                </div>
 
-                                        <div className="col-md-6">
-                                            <label className="form-label required fw-semibold d-flex justify-content-between align-items-center">
-                                                <span>Duration (Minutes)</span>
-                                                {detectingDuration && (
-                                                    <span className="text-primary small fw-normal">
-                                                        <i className="fas fa-spinner fa-spin me-1"></i> Auto-detecting...
-                                                    </span>
-                                                )}
-                                            </label>
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                className="form-control"
-                                                placeholder="15"
-                                                value={lessonForm.duration}
-                                                onChange={(e) =>
-                                                    setLessonForm({ ...lessonForm, duration: e.target.value })
-                                                }
-                                                required
-                                            />
-                                        </div>
+                                                <div className="col-md-6">
+                                                    <label className="form-label required fw-semibold d-flex justify-content-between align-items-center">
+                                                        <span>Duration (Minutes)</span>
+                                                        {detectingDuration && (
+                                                            <span className="text-primary small fw-normal">
+                                                                <i className="fas fa-spinner fa-spin me-1"></i> Auto-detecting...
+                                                            </span>
+                                                        )}
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        className="form-control"
+                                                        placeholder="15"
+                                                        value={lessonForm.duration}
+                                                        onChange={(e) =>
+                                                            setLessonForm({ ...lessonForm, duration: e.target.value })
+                                                        }
+                                                        required
+                                                    />
+                                                </div>
 
-                                        <div className="col-12">
-                                            <div className="card p-3 border rounded-3 bg-light-subtle shadow-none">
-                                                <div className="d-flex align-items-center justify-content-between">
-                                                    <div className="me-3">
-                                                        <label htmlFor="modal-is-preview" className="fw-semibold d-block mb-1 cursor-pointer text-dark">
-                                                            Allow Free Preview (Sample Lesson)
-                                                        </label>
-                                                        <small className="text-muted d-block" style={{ fontSize: '0.85rem' }}>
-                                                            Non-enrolled students can watch this lesson preview for free.
-                                                        </small>
-                                                    </div>
-                                                    <div className="form-check form-switch p-0 m-0">
-                                                        <input
-                                                            id="modal-is-preview"
-                                                            className="form-check-input cursor-pointer m-0 ms-2"
-                                                            style={{ width: '2.5rem', height: '1.35rem' }}
-                                                            type="checkbox"
-                                                            role="switch"
-                                                            checked={lessonForm.is_preview === 1}
-                                                            onChange={(e) =>
-                                                                setLessonForm({
-                                                                    ...lessonForm,
-                                                                    is_preview: e.target.checked ? 1 : 0,
-                                                                })
-                                                            }
-                                                        />
+                                                <div className="col-12">
+                                                    <div className="card p-3 border rounded-3 bg-light-subtle shadow-none">
+                                                        <div className="d-flex align-items-center justify-content-between">
+                                                            <div className="me-3">
+                                                                <label htmlFor="modal-is-preview" className="fw-semibold d-block mb-1 cursor-pointer text-dark">
+                                                                    Allow Free Preview (Sample Lesson)
+                                                                </label>
+                                                                <small className="text-muted d-block" style={{ fontSize: '0.85rem' }}>
+                                                                    Non-enrolled students can watch this lesson preview for free.
+                                                                </small>
+                                                            </div>
+                                                            <div className="form-check form-switch p-0 m-0">
+                                                                <input
+                                                                    id="modal-is-preview"
+                                                                    className="form-check-input cursor-pointer m-0 ms-2"
+                                                                    style={{ width: '2.5rem', height: '1.35rem' }}
+                                                                    type="checkbox"
+                                                                    role="switch"
+                                                                    checked={lessonForm.is_preview === 1}
+                                                                    onChange={(e) =>
+                                                                        setLessonForm({
+                                                                            ...lessonForm,
+                                                                            is_preview: e.target.checked ? 1 : 0,
+                                                                        })
+                                                                    }
+                                                                />
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
+                                            </>
+                                        ) : (
+                                            /* RESOURCE LESSON INPUTS */
+                                            <div className="col-12">
+                                                <label className="form-label fw-semibold text-dark">Upload File Resource</label>
+                                                <p className="text-muted small mb-2">
+                                                    Dapat berupa file Gambar (.jpg, .png, .webp, .gif), file .PDF, atau file .ZIP (Maksimal 200 MB per file).
+                                                </p>
+
+                                                <div className="vstack gap-2 mb-2">
+                                                    {resourceFiles.map((fileObj, idx) => (
+                                                        <div key={idx} className="d-flex align-items-center gap-2">
+                                                            <input
+                                                                type="file"
+                                                                className="form-control"
+                                                                accept="image/*,.zip,.pdf"
+                                                                onChange={(e) => handleResourceFileChange(idx, e.target.files[0])}
+                                                            />
+                                                            {resourceFiles.length > 1 && (
+                                                                <button
+                                                                    type="button"
+                                                                    className="btn btn-outline-danger btn-sm px-3"
+                                                                    onClick={() => handleRemoveResourceInput(idx)}
+                                                                    title="Hapus Input"
+                                                                >
+                                                                    <i className="fas fa-minus"></i>
+                                                                </button>
+                                                            )}
+                                                            {idx === resourceFiles.length - 1 && (
+                                                                <button
+                                                                    type="button"
+                                                                    className="btn btn-outline-primary btn-sm px-3"
+                                                                    onClick={handleAddResourceInput}
+                                                                    title="Tambah File"
+                                                                >
+                                                                    <i className="fas fa-plus"></i>
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+
+                                                {existingResources.length > 0 && (
+                                                    <div className="mt-3">
+                                                        <label className="form-label fw-semibold small text-dark mb-1">File Resource Terupload:</label>
+                                                        <div className="list-group rounded-3">
+                                                            {existingResources.map((res) => (
+                                                                <div key={res.id} className="list-group-item d-flex justify-content-between align-items-center py-2 bg-light">
+                                                                    <div className="small">
+                                                                        <i className="fas fa-file-archive text-info me-2 fs-6"></i>
+                                                                        <a href={res.download_url} target="_blank" rel="noreferrer" className="fw-bold text-dark me-2">
+                                                                            {res.file_name}
+                                                                        </a>
+                                                                        <span className="badge bg-secondary-subtle text-secondary">{res.human_size}</span>
+                                                                    </div>
+                                                                    <button
+                                                                        type="button"
+                                                                        className="btn btn-xs btn-outline-danger"
+                                                                        onClick={() => handleRemoveExistingResource(res.id)}
+                                                                        title="Hapus File"
+                                                                    >
+                                                                        <i className="fas fa-trash-alt me-1"></i> Hapus
+                                                                    </button>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
-                                        </div>
+                                        )}
 
                                         <div className="col-12">
-                                            <label className="form-label required fw-semibold">Lesson Notes / Summary</label>
+                                            <label className="form-label fw-semibold">Lesson Notes / Summary</label>
                                             <textarea
                                                 className="form-control"
                                                 rows="3"
-                                                placeholder="Brief summary or lecture notes..."
+                                                placeholder="Catatan ringkas atau deskripsi materi/resource..."
                                                 value={lessonForm.description}
                                                 onChange={(e) =>
                                                     setLessonForm({ ...lessonForm, description: e.target.value })
                                                 }
-                                                required
                                             ></textarea>
                                         </div>
                                     </div>

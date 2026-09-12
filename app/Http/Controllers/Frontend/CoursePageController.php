@@ -125,7 +125,7 @@ class CoursePageController extends Controller
 
     function show(string $slug)
     {
-        $course = Course::with(['category', 'level', 'language', 'instructor', 'chapters.lessons'])
+        $course = Course::with(['category', 'level', 'language', 'instructor', 'chapters.lessons', 'faqs'])
             ->withAvg('reviews', 'rating')
             ->withCount('enrollments')
             ->where('slug', $slug)

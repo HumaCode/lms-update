@@ -178,7 +178,7 @@ class CourseController extends Controller
                 // validation
                 $request->validate([
                     'capacity' => ['nullable', 'numeric'],
-                    'duration' => ['required', 'numeric'],
+                    'duration' => ['nullable', 'numeric'],
                     'qna' => ['nullable', 'boolean'],
                     'certificate' => ['nullable', 'boolean'],
                     'category' => ['required', 'string'],
@@ -189,7 +189,10 @@ class CourseController extends Controller
                 // update course data
                 $course = Course::findOrFail($request->id);
                 $course->capacity = $request->capacity;
-                $course->duration = $request->duration;
+
+                $totalLessonDuration = (int) \App\Models\CourseChapterLession::where('course_id', $course->id)->sum('duration');
+                $course->duration = $totalLessonDuration > 0 ? $totalLessonDuration : ($request->duration ?? $course->duration ?? 0);
+
                 $course->qna = $request->qna ? 1 : 0;
                 $course->certificate = $request->certificate ? 1 : 0;
                 $course->category_id = $request->category;

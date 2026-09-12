@@ -77,7 +77,7 @@ class CourseController extends Controller
     function edit(Request $request, ?string $id = null)
     {
         $courseId = $id ?? $request->id;
-        $course = Course::with(['category', 'level', 'language', 'chapters.lessons'])
+        $course = Course::with(['category', 'level', 'language', 'chapters.lessons', 'faqs'])
             ->where('instructor_id', Auth::user()->id)
             ->findOrFail($courseId);
 
@@ -148,10 +148,11 @@ class CourseController extends Controller
             case '2':
                 $request->validate([
                     'capacity' => ['nullable', 'numeric'],
-                    'duration' => ['required', 'numeric'],
+                    'duration' => ['nullable', 'numeric'],
                     'features' => ['nullable', 'string', 'max:500'],
                     'qna' => ['nullable', 'boolean'],
                     'certificate' => ['nullable', 'boolean'],
+                    'show_faq' => ['nullable', 'boolean'],
                     'category' => ['required', 'string'],
                     'level' => ['required', 'string'],
                     'language' => ['required', 'string'],
@@ -159,10 +160,12 @@ class CourseController extends Controller
 
                 $course = Course::where('instructor_id', Auth::user()->id)->findOrFail($request->id);
                 $course->capacity = $request->capacity;
-                $course->duration = $request->duration;
+                $totalLessonDuration = (int) \App\Models\CourseChapterLession::where('course_id', $course->id)->sum('duration');
+                $course->duration = $totalLessonDuration;
                 $course->features = $request->features;
                 $course->qna = $request->qna ? 1 : 0;
                 $course->certificate = $request->certificate ? 1 : 0;
+                $course->show_faq = $request->show_faq ? 1 : 0;
                 $course->category_id = $request->category;
                 $course->course_level_id = $request->level;
                 $course->course_language_id = $request->language;
@@ -400,6 +403,79 @@ class CourseController extends Controller
             'status' => 'success',
             'course' => $course,
             'reviews' => $reviews,
+        ]);
+    }
+
+    function getFaqs(Request $request, $courseId)
+    {
+        $course = Course::where('id', $courseId)->where('instructor_id', Auth::user()->id)->firstOrFail();
+        $faqs = \App\Models\CourseFaq::where('course_id', $course->id)->orderBy('order', 'asc')->get();
+
+        return response()->json([
+            'status' => 'success',
+            'faqs' => $faqs,
+        ]);
+    }
+
+    function storeFaq(Request $request)
+    {
+        $request->validate([
+            'course_id' => 'required|string',
+            'question' => 'required|string|max:1000',
+            'answer' => 'required|string',
+        ]);
+
+        $course = Course::where('id', $request->course_id)->where('instructor_id', Auth::user()->id)->firstOrFail();
+        $maxOrder = \App\Models\CourseFaq::where('course_id', $course->id)->max('order') ?? 0;
+
+        $faq = \App\Models\CourseFaq::create([
+            'course_id' => $course->id,
+            'question' => $request->question,
+            'answer' => $request->answer,
+            'order' => $maxOrder + 1,
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'FAQ berhasil ditambahkan.',
+            'faq' => $faq,
+        ]);
+    }
+
+    function updateFaq(Request $request, $id)
+    {
+        $request->validate([
+            'question' => 'required|string|max:1000',
+            'answer' => 'required|string',
+        ]);
+
+        $faq = \App\Models\CourseFaq::whereHas('course', function ($q) {
+            $q->where('instructor_id', Auth::user()->id);
+        })->findOrFail($id);
+
+        $faq->update([
+            'question' => $request->question,
+            'answer' => $request->answer,
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'FAQ berhasil diperbarui.',
+            'faq' => $faq,
+        ]);
+    }
+
+    function deleteFaq(Request $request, $id)
+    {
+        $faq = \App\Models\CourseFaq::whereHas('course', function ($q) {
+            $q->where('instructor_id', Auth::user()->id);
+        })->findOrFail($id);
+
+        $faq->delete();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'FAQ berhasil dihapus.',
         ]);
     }
 }

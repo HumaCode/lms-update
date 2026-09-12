@@ -17,6 +17,13 @@ export default function CurriculumSidebar({
 
     // Single active open chapter ID (Exclusive Accordion UX recommendation)
     const [openChapterId, setOpenChapterId] = useState(getInitialChapterId);
+    const [openResourceLessonId, setOpenResourceLessonId] = useState(null);
+
+    useEffect(() => {
+        const handleOutsideClick = () => setOpenResourceLessonId(null);
+        document.addEventListener('click', handleOutsideClick);
+        return () => document.removeEventListener('click', handleOutsideClick);
+    }, []);
 
     // Auto-expand chapter when active lesson changes
     useEffect(() => {
@@ -135,21 +142,75 @@ export default function CurriculumSidebar({
                                                         marginLeft: '-1.8rem'
                                                     }}
                                                 />
-                                                <label
-                                                    className={`form-check-label d-block ${isActive ? 'fw-bold text-primary' : 'text-dark'}`}
-                                                    htmlFor={`lesson_check_${les.id}`}
-                                                    style={{ cursor: 'pointer', fontSize: '14px', lineHeight: '1.4', width: '100%' }}
-                                                >
-                                                    <div className="text-break">{les.title}</div>
-                                                    <span className="d-flex align-items-center gap-1 text-muted mt-1" style={{ fontSize: '12px', fontWeight: 500 }}>
-                                                        <img
-                                                            src="/frontend/assets/images/video_icon_black_2.png"
-                                                            alt="video"
-                                                            style={{ width: '13px', height: '13px', objectFit: 'contain' }}
-                                                        />
-                                                        {formatDuration(les.duration)}
-                                                    </span>
-                                                </label>
+                                                <div className="w-100">
+                                                    <label
+                                                        className={`form-check-label d-block ${isActive ? 'fw-bold text-primary' : 'text-dark'}`}
+                                                        htmlFor={`lesson_check_${les.id}`}
+                                                        style={{ cursor: 'pointer', fontSize: '14px', lineHeight: '1.4', width: '100%' }}
+                                                    >
+                                                        <div className="text-break">{les.title}</div>
+                                                        {les.resources_list && les.resources_list.length > 0 ? (
+                                                            <div className="dropdown mt-1.5" onClick={(e) => e.stopPropagation()}>
+                                                                <button
+                                                                    className="btn btn-sm btn-light border py-1 px-2.5 d-inline-flex align-items-center gap-1 shadow-xs text-dark"
+                                                                    type="button"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setOpenResourceLessonId((prev) => (prev === les.id ? null : les.id));
+                                                                    }}
+                                                                    style={{ fontSize: '12px', fontWeight: 600, borderRadius: '6px' }}
+                                                                >
+                                                                    <i className="fas fa-folder-open text-warning me-1"></i> Resources ({les.resources_list.length})
+                                                                </button>
+                                                                <ul
+                                                                    className={`dropdown-menu shadow-lg border rounded-3 mt-2 py-2 px-3 ${
+                                                                        openResourceLessonId === les.id ? 'show d-block' : ''
+                                                                    }`}
+                                                                    style={{
+                                                                        zIndex: 1050,
+                                                                        minWidth: '260px',
+                                                                        maxWidth: '320px',
+                                                                        right: 0,
+                                                                        left: 'auto',
+                                                                        backgroundColor: '#ffffff'
+                                                                    }}
+                                                                >
+                                                                    {les.resources_list.map((res) => (
+                                                                        <li key={res.id} style={{ listStyle: 'none' }}>
+                                                                            <a
+                                                                                className="d-flex align-items-center justify-content-between gap-2 py-2 px-2 rounded-2 text-dark text-decoration-none resource-download-item"
+                                                                                href={res.download_url}
+                                                                                download={res.file_name}
+                                                                                style={{ fontSize: '13px', transition: 'background-color 0.2s', paddingLeft: '8px', paddingRight: '8px' }}
+                                                                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
+                                                                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                                            >
+                                                                                <div className="d-flex align-items-center gap-2 overflow-hidden me-2">
+                                                                                    <i className="fas fa-file-download text-primary flex-shrink-0" style={{ fontSize: '14px' }}></i>
+                                                                                    <span className="fw-semibold text-truncate text-dark">{res.file_name}</span>
+                                                                                </div>
+                                                                                <span className="text-muted small flex-shrink-0" style={{ fontSize: '11px' }}>({res.human_size})</span>
+                                                                            </a>
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
+                                                            </div>
+                                                        ) : les.lesson_type === 'resource' ? (
+                                                            <span className="d-flex align-items-center gap-1 text-info mt-1" style={{ fontSize: '12px', fontWeight: 500 }}>
+                                                                <i className="fas fa-file-archive me-1"></i> Resource File
+                                                            </span>
+                                                        ) : (
+                                                            <span className="d-flex align-items-center gap-1 text-muted mt-1" style={{ fontSize: '12px', fontWeight: 500 }}>
+                                                                <img
+                                                                    src="/frontend/assets/images/video_icon_black_2.png"
+                                                                    alt="video"
+                                                                    style={{ width: '13px', height: '13px', objectFit: 'contain' }}
+                                                                />
+                                                                {formatDuration(les.duration)}
+                                                            </span>
+                                                        )}
+                                                    </label>
+                                                </div>
                                             </div>
                                         );
                                     })}

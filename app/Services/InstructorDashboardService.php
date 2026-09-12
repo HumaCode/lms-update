@@ -189,16 +189,7 @@ class InstructorDashboardService extends BaseService implements InstructorDashbo
             ];
         }
 
-        // Fallback demo items if instructor has no courses yet
-        if (empty($progress)) {
-            $progress = [
-                ['title' => 'Course Creation', 'percentage' => 75, 'color' => 'orrange'],
-                ['title' => 'Curriculum Design', 'percentage' => 60, 'color' => 'default'],
-                ['title' => 'Student Engagement', 'percentage' => 50, 'color' => 'megenda'],
-                ['title' => 'Market Readiness', 'percentage' => 40, 'color' => 'merun'],
-            ];
-        }
-
+        // Return empty array if instructor has no courses yet
         return $progress;
     }
 }

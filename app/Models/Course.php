@@ -57,6 +57,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
     'discount',
     'certificate',
     'qna',
+    'show_faq',
     'message_for_reviewer',
     'is_approved',
     'status',
@@ -65,9 +66,12 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 ])]
 class Course extends Model implements HasMedia
 {
-    use HasUlids;
+    use HasFactory, HasUlids, InteractsWithMedia;
 
-    use HasFactory, InteractsWithMedia;
+    public function faqs(): HasMany
+    {
+        return $this->hasMany(CourseFaq::class, 'course_id', 'id')->orderBy('order', 'asc');
+    }
 
     protected $appends = ['final_price', 'thumbnail'];
 

@@ -172,15 +172,17 @@ export default function CourseShow({ course, reviews, isEnrolled }) {
                                             Instructor
                                         </button>
                                     </li>
-                                    <li className="nav-item" role="presentation">
-                                        <button
-                                            className={`nav-link ${activeTab === 'faqs' ? 'active' : ''}`}
-                                            type="button"
-                                            onClick={() => setActiveTab('faqs')}
-                                        >
-                                            FAQs
-                                        </button>
-                                    </li>
+                                    {(course.show_faq === 1 || course.show_faq === '1' || course.show_faq === true) && (
+                                        <li className="nav-item" role="presentation">
+                                            <button
+                                                className={`nav-link ${activeTab === 'faqs' ? 'active' : ''}`}
+                                                type="button"
+                                                onClick={() => setActiveTab('faqs')}
+                                            >
+                                                FAQs
+                                            </button>
+                                        </li>
+                                    )}
                                     <li className="nav-item" role="presentation">
                                         <button
                                             className={`nav-link ${activeTab === 'reviews' ? 'active' : ''}`}
@@ -214,7 +216,9 @@ export default function CourseShow({ course, reviews, isEnrolled }) {
                                         />
                                     )}
 
-                                    {activeTab === 'faqs' && <CourseFaqTab />}
+                                    {activeTab === 'faqs' && (course.show_faq === 1 || course.show_faq === '1' || course.show_faq === true) && (
+                                        <CourseFaqTab course={course} />
+                                    )}
 
                                     {activeTab === 'reviews' && (
                                         <CourseReviewTab

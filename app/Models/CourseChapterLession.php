@@ -7,15 +7,17 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
 /**
  * @property string $id
  * @property string $title
  * @property string $slug
  * @property string|null $description
- * @property int $instructor_id
- * @property int $course_id
- * @property int $chapter_id
+ * @property string $instructor_id
+ * @property string $course_id
+ * @property string $chapter_id
  * @property string $file_path
  * @property string $storage
  * @property string|null $volume
@@ -47,11 +49,34 @@ use Illuminate\Database\Eloquent\Model;
     'status',
     'lesson_type',
 ])]
-class CourseChapterLession extends Model
+class CourseChapterLession extends Model implements HasMedia
 {
-    use HasFactory, HasUlids;
+    use HasFactory, HasUlids, InteractsWithMedia;
 
     protected $attributes = [
-        'lesson_type' => 'lesson',
+        'lesson_type' => 'video',
     ];
+
+    protected $appends = ['resources_list'];
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('resources')
+            ->useDisk('course_chapter_lessions');
+    }
+
+    public function getResourcesListAttribute(): array
+    {
+        return $this->getMedia('resources')->map(function ($media) {
+            return [
+                'id' => $media->id,
+                'name' => $media->name,
+                'file_name' => $media->file_name,
+                'mime_type' => $media->mime_type,
+                'size' => $media->size,
+                'human_size' => $media->human_readable_size,
+                'download_url' => route('instructor.course-content.download-resource', $media->id),
+            ];
+        })->toArray();
+    }
 }

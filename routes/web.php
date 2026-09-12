@@ -127,8 +127,11 @@ Route::group(['middleware' => ['auth:web', 'verified', 'check_role:student'], 'p
 
    Route::get('orders', [StudentOrderController::class, 'index'])->name('orders.index');
    Route::get('orders/{order}', [StudentOrderController::class, 'show'])->name('orders.show');
-
 });
+
+Route::get('course-content/media/{media}/download', [CourseContentController::class, 'downloadResource'])
+    ->middleware(['auth'])
+    ->name('instructor.course-content.download-resource');
 
 /**
  * ------------------------------------------------------
@@ -158,6 +161,10 @@ Route::group(['middleware' => ['auth:web', 'verified', 'check_role:instructor'],
     Route::get('courses/{id}/announcements', [CourseController::class, 'getAnnouncements'])->name('courses.announcements');
     Route::post('courses/announcements/store', [CourseController::class, 'storeAnnouncement'])->name('courses.announcements.store');
     Route::delete('courses/announcements/{id}', [CourseController::class, 'deleteAnnouncement'])->name('courses.announcements.delete');
+    Route::get('courses/{id}/faqs', [CourseController::class, 'getFaqs'])->name('courses.faqs');
+    Route::post('courses/faqs/store', [CourseController::class, 'storeFaq'])->name('courses.faqs.store');
+    Route::post('courses/faqs/{id}/update', [CourseController::class, 'updateFaq'])->name('courses.faqs.update');
+    Route::delete('courses/faqs/{id}', [CourseController::class, 'deleteFaq'])->name('courses.faqs.delete');
     Route::get('courses/{id}/reviews', [CourseController::class, 'getReviews'])->name('courses.reviews');
 
    Route::get('course-content/{course}/create-chapter', [CourseContentController::class, 'createChapterModal'])->name('course-content.create-chapter');
@@ -172,6 +179,7 @@ Route::group(['middleware' => ['auth:web', 'verified', 'check_role:instructor'],
    Route::get('course-content/edit-lesson', [CourseContentController::class, 'editLesson'])->name('course-content.edit-lesson');
    Route::post('course-content/{id}/update-lesson', [CourseContentController::class, 'updateLesson'])->name('course-content.update-lesson');
    Route::delete('course-content/{id}/lesson', [CourseContentController::class, 'destroyLesson'])->name('course-content.destroy-lesson');
+   Route::delete('course-content/media/{media}', [CourseContentController::class, 'deleteResourceMedia'])->name('course-content.delete-resource');
 
    Route::post('course-chapter/{chapter}/sort-lesson', [CourseContentController::class, 'sortLesson'])->name('course-chapter.sort-lesson');
    Route::get('course-content/{course}/sort-chapter', [CourseContentController::class, 'sortChapter'])->name('course-content.sort-chpater');

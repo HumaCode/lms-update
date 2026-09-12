@@ -15,6 +15,7 @@ export default function VideoDisplay({ activeLesson, isTheaterMode = false, togg
         );
     }
 
+    const isResourceLesson = activeLesson.lesson_type === 'resource';
     const rawPath = activeLesson.file_path || activeLesson.url || '';
     const storage = activeLesson.storage || '';
     const fileType = activeLesson.file_type || 'video';
@@ -49,8 +50,9 @@ export default function VideoDisplay({ activeLesson, isTheaterMode = false, togg
             className="video_holder bg-black overflow-hidden position-relative"
             style={{
                 width: '100%',
-                height: isTheaterMode ? 'min(82vh, 760px)' : '520px',
-                minHeight: isTheaterMode ? '540px' : '400px',
+                height: isResourceLesson ? 'auto' : (isTheaterMode ? 'min(82vh, 760px)' : '520px'),
+                minHeight: isResourceLesson ? '320px' : (isTheaterMode ? '540px' : '400px'),
+                padding: isResourceLesson ? '3rem 1rem' : 0,
                 transition: 'height 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
             }}
         >
@@ -81,7 +83,36 @@ export default function VideoDisplay({ activeLesson, isTheaterMode = false, togg
                     <span className="d-none d-sm-inline">{isTheaterMode ? 'Mode Standar' : 'Mode Teater'}</span>
                 </button>
             )}
-            {fileType === 'video' || isYouTube || isVimeo ? (
+            {activeLesson.lesson_type === 'resource' ? (
+                <div className="d-flex flex-column align-items-center justify-content-center h-100 text-white p-4 text-center">
+                    <div className="rounded-circle bg-info bg-opacity-25 p-4 mb-3">
+                        <i className="fas fa-folder-open text-info display-4"></i>
+                    </div>
+                    <h4 className="fw-bold text-white mb-2">{activeLesson.title}</h4>
+                    <p className="text-white-50 small mb-4" style={{ maxWidth: '500px' }}>
+                        {activeLesson.description || 'Materi ini berisi file resource yang dapat diunduh untuk pembelajaran.'}
+                    </p>
+
+                    {activeLesson.resources_list && activeLesson.resources_list.length > 0 ? (
+                        <div className="d-flex flex-wrap justify-content-center gap-2" style={{ maxWidth: '650px' }}>
+                            {activeLesson.resources_list.map((res) => (
+                                <a
+                                    key={res.id}
+                                    href={res.download_url}
+                                    download={res.file_name}
+                                    className="btn btn-primary px-3 py-2 d-inline-flex align-items-center gap-2 shadow-sm rounded-3 text-white text-decoration-none"
+                                >
+                                    <i className="fas fa-download text-white"></i>
+                                    <span className="text-white fw-medium">{res.file_name}</span>
+                                    <span className="badge bg-white text-primary small ms-1 fw-bold">{res.human_size}</span>
+                                </a>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-white-50 small fst-italic">Belum ada file resource yang dilampirkan.</p>
+                    )}
+                </div>
+            ) : (fileType === 'video' || isYouTube || isVimeo) ? (
                 isYouTube ? (
                     <iframe
                         src={getYouTubeEmbedUrl(rawPath)}

@@ -42,6 +42,12 @@ return [
             'throw' => false,
         ],
 
+        'course_chapter_lessions' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private/course/course_chapter_lessions'),
+            'throw' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => public_path('/'),

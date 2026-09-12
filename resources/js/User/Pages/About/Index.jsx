@@ -353,7 +353,7 @@ export default function AboutIndex({
                                             <div className="img">
                                                 <img
                                                     src={formatImagePath(
-                                                        item.user_image,
+                                                        item.testimonial_user_image || item.user_image,
                                                         `/frontend/assets/images/testimonial_user_${
                                                             (idx % 4) + 1
                                                         }.png`

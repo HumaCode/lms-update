@@ -18,7 +18,7 @@ export default function Sidebar() {
         setOpenDropdowns((prev) => ({ ...prev, [key]: !prev[key] }));
     };
 
-    const isActive = (path) => url.startsWith(path);
+    const isActive = (path) => url === path || url.startsWith(path + '/') || url.startsWith(path + '?');
 
     return (
         <aside className="navbar navbar-vertical navbar-expand-lg" data-bs-theme="dark">

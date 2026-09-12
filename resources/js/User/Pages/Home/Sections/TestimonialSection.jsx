@@ -38,10 +38,11 @@ export default function TestimonialSection({ testimonials = [] }) {
                                     <div className="img">
                                         <img
                                             src={
-                                                testimonial.user_image
-                                                    ? `/${testimonial.user_image}`
-                                                    : '/frontend/assets/images/testimonial_user_1.png'
-                                        }
+                                                testimonial.testimonial_user_image ||
+                                                (testimonial.user_image
+                                                    ? (testimonial.user_image.startsWith('http') ? testimonial.user_image : `/${testimonial.user_image}`)
+                                                    : '/frontend/assets/images/testimonial_user_1.png')
+                                            }
                                         alt="user"
                                         className="img-fluid"
                                         onError={(e) => {

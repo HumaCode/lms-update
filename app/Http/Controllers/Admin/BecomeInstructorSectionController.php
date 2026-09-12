@@ -4,23 +4,18 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\BecomeInstructorSection;
-use App\Traits\FileUpload;
-use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
 class BecomeInstructorSectionController extends Controller
 {
-
-    use FileUpload;
     /**
      * Display a listing of the resource.
      */
-    public function index() : View
+    public function index()
     {
         $becomeInstructor = BecomeInstructorSection::first();
-        return view('admin.sections.become-instructor.index', compact('becomeInstructor'));
+        return inertia('Admin/Sections/BecomeInstructor/Index', compact('becomeInstructor'));
     }
-
 
     /**
      * Store a newly created resource in storage.
@@ -35,13 +30,28 @@ class BecomeInstructorSectionController extends Controller
             'image' => ['nullable', 'image', 'max:3000'],
         ]);
 
-        if($request->hasFile('image')) {
-            $image = $this->uploadFile($request->file('image'));
-            $this->deleteFile($request->old_image);
-            $validateData['image'] = $image;
+        $becomeInstructor = BecomeInstructorSection::first();
+        if ($becomeInstructor) {
+            $becomeInstructor->update([
+                'title' => $validateData['title'] ?? null,
+                'subtitle' => $validateData['subtitle'] ?? null,
+                'button_text' => $validateData['button_text'] ?? null,
+                'button_url' => $validateData['button_url'] ?? null,
+            ]);
+        } else {
+            $becomeInstructor = BecomeInstructorSection::create([
+                'title' => $validateData['title'] ?? null,
+                'subtitle' => $validateData['subtitle'] ?? null,
+                'button_text' => $validateData['button_text'] ?? null,
+                'button_url' => $validateData['button_url'] ?? null,
+            ]);
         }
 
-        BecomeInstructorSection::updateOrCreate(['id' => 1], $validateData);
+        if ($request->hasFile('image')) {
+            $becomeInstructor->clearMediaCollection('become_instructor_image');
+            $becomeInstructor->addMediaFromRequest('image')
+                ->toMediaCollection('become_instructor_image', 'private');
+        }
 
         notyf()->success('Update Successfully!');
         return redirect()->back();

@@ -34,6 +34,7 @@ use Illuminate\Support\Facades\Route;
  Route::get('/media/course-demo-video/{course}', [\App\Http\Controllers\MediaController::class, 'courseDemoVideo'])->name('media.course-demo-video');
  Route::get('/media/hero-image/{hero}', [\App\Http\Controllers\MediaController::class, 'heroImage'])->name('media.hero-image');
  Route::get('/media/about-image/{about}/{type?}', [\App\Http\Controllers\MediaController::class, 'aboutImage'])->name('media.about-image');
+ Route::get('/media/become-instructor-image/{section}', [\App\Http\Controllers\MediaController::class, 'becomeInstructorImage'])->name('media.become-instructor-image');
  Route::get('/media/feature-image/{feature}/{item?}', [\App\Http\Controllers\MediaController::class, 'featureImage'])->name('media.feature-image');
  Route::get('/media/user/{media_id}/{filename?}', [\App\Http\Controllers\MediaController::class, 'userMediaFile'])->name('media.user-file');
  Route::get('/user/{media_id}/{filename?}', [\App\Http\Controllers\MediaController::class, 'userMediaFile']);

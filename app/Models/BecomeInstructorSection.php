@@ -7,10 +7,11 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
 /**
  * @property string $id
- * @property string|null $image
  * @property string|null $title
  * @property string|null $subtitle
  * @property string|null $button_text
@@ -19,13 +20,33 @@ use Illuminate\Database\Eloquent\Model;
  * @property Carbon|null $updated_at
  */
 #[Fillable([
-    'image',
     'title',
     'subtitle',
     'button_text',
     'button_url',
 ])]
-class BecomeInstructorSection extends Model
+class BecomeInstructorSection extends Model implements HasMedia
 {
-    use HasFactory, HasUlids;
+    use HasFactory, HasUlids, InteractsWithMedia;
+
+    protected $appends = ['become_instructor_image'];
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('become_instructor_image')
+            ->useDisk('private')
+            ->singleFile();
+    }
+
+    public function getBecomeInstructorImageAttribute(): ?string
+    {
+        $media = $this->getFirstMedia('become_instructor_image');
+        if ($media) {
+            return route('media.become-instructor-image', [
+                'section' => $this->id,
+                'v' => $media->updated_at?->timestamp ?? time(),
+            ]);
+        }
+        return null;
+    }
 }

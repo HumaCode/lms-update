@@ -34,15 +34,15 @@ export default function BecomeInstructorSection({ becomeInstructorBanner }) {
                         </div>
                     </div>
                     <div className="col-xl-5 col-md-6 wow fadeInRight">
-                        <div className="wsus__become_instructor_img">
+                        <div className="wsus__become_instructor_img" style={{ height: 'auto' }}>
                             <img
                                 src={
-                                    becomeInstructorBanner.image
-                                        ? `/${becomeInstructorBanner.image}`
-                                        : '/frontend/assets/images/become_instructor_img.png'
+                                    becomeInstructorBanner.become_instructor_image ||
+                                    (becomeInstructorBanner.image ? `/${becomeInstructorBanner.image}` : '/frontend/assets/images/become_instructor_img.png')
                                 }
                                 alt="Instructor"
                                 className="img-fluid w-100"
+                                style={{ maxHeight: '490px', objectFit: 'contain' }}
                                 onError={(e) => {
                                     e.target.onerror = null;
                                     e.target.src = '/frontend/assets/images/become_instructor_img.png';

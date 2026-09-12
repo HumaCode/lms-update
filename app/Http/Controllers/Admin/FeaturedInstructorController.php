@@ -6,13 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\FeaturedInstructor;
 use App\Models\User;
-use App\Traits\FileUpload;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
 class FeaturedInstructorController extends Controller
 {
-    use FileUpload;
     /**
      * Display a listing of the resource.
      */
@@ -20,24 +18,18 @@ class FeaturedInstructorController extends Controller
     {
         $instructors = User::where('role', 'instructor')->where('approve_status', 'approved')->get();
         $featuredInstructor = FeaturedInstructor::first();
-        $selectedCourses = json_decode($featuredInstructor?->featured_courses);
-        
+        $selectedCourses = json_decode($featuredInstructor?->featured_courses) ?? [];
+
         $selectedInstructorCourses = Course::select(['id', 'title'])->where('instructor_id', $featuredInstructor?->instructor_id)->get();
-        return view('admin.sections.featured-instructor.index', compact('instructors', 'featuredInstructor', 'selectedCourses', 'selectedInstructorCourses'));
+
+        return inertia('Admin/Sections/FeaturedInstructor/Index', compact('instructors', 'featuredInstructor', 'selectedCourses', 'selectedInstructorCourses'));
     }
 
-    function getInstructorCourses(string $id) : Response {
+    public function getInstructorCourses(string $id): Response
+    {
         $courses = Course::select(['id', 'title'])->where('instructor_id', $id)->where('is_approved', 'approved')->get();
 
         return response(['courses' => $courses]);
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
     }
 
     /**
@@ -56,52 +48,29 @@ class FeaturedInstructorController extends Controller
             'instructor_image' => ['nullable', 'image', 'max:3000'],
         ]);
 
-        $validatedData['featured_courses'] = json_encode($validatedData['featured_courses']);
+        $featuredInstructor = FeaturedInstructor::first();
+        $dataToSave = [
+            'title' => $validatedData['title'],
+            'subtitle' => $validatedData['subtitle'],
+            'button_text' => $validatedData['button_text'],
+            'button_url' => $validatedData['button_url'],
+            'instructor_id' => $validatedData['instructor_id'],
+            'featured_courses' => json_encode($validatedData['featured_courses']),
+        ];
 
-        if($request->hasFile('instructor_image')) {
-            $image = $this->uploadFile($request->file('instructor_image'));
-            $this->deleteFile($request->old_instructor_image);
-            $validatedData['instructor_image'] = $image;
+        if ($featuredInstructor) {
+            $featuredInstructor->update($dataToSave);
+        } else {
+            $featuredInstructor = FeaturedInstructor::create($dataToSave);
         }
 
-        FeaturedInstructor::updateOrCreate(
-            ['id' => 1],
-            $validatedData
-        );
+        if ($request->hasFile('instructor_image')) {
+            $featuredInstructor->clearMediaCollection('featured_instructor_image');
+            $featuredInstructor->addMediaFromRequest('instructor_image')
+                ->toMediaCollection('featured_instructor_image', 'private');
+        }
 
         notyf()->success('Update Successfully!');
         return redirect()->back();
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
     }
 }

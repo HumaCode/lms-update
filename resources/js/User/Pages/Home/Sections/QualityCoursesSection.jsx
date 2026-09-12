@@ -144,7 +144,10 @@ export default function QualityCoursesSection({ featuredInstructor, courses = []
                             <div className="col-xxl-4 col-xl-4 col-md-6 col-lg-6 d-none d-xl-block wow fadeInUp">
                                 <div className="wsus__quality_courses_img">
                                     <img
-                                        src="/frontend/assets/images/quality_courses_img.png"
+                                        src={
+                                            featuredInstructor?.featured_instructor_image ||
+                                            (featuredInstructor?.instructor_image ? (featuredInstructor.instructor_image.startsWith('http') ? featuredInstructor.instructor_image : `/${featuredInstructor.instructor_image}`) : '/frontend/assets/images/quality_courses_img.png')
+                                        }
                                         alt="Quality Courses"
                                         className="img-fluid w-100"
                                         onError={(e) => {

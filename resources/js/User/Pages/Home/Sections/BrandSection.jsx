@@ -9,7 +9,6 @@ export default function BrandSection({ brands = [] }) {
                 <div className="row">
                     <div className="col-12">
                         <div className="wsus__brand_slider_area wow fadeInUp">
-                            <h6>Trusted by Over 24,758 Outstanding Teams</h6>
                             <div className="marquee_animi">
                                 <ul className="d-flex flex-wrap align-items-center justify-content-center gap-4">
                                     {brands.map((brand) => (

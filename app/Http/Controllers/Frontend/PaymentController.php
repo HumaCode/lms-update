@@ -135,7 +135,7 @@ class PaymentController extends Controller
 
     function orderFailed()
     {
-        return view('frontend.pages.order-failed');
+        return \Inertia\Inertia::render('User/OrderFailed/Index');
     }
 
     function paypalConfig(): array

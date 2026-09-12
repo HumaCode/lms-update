@@ -3,8 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Course;
+use App\Models\Feature;
 use App\Models\Hero;
-use Illuminate\Http\Request;
+use App\Models\Media;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class MediaController extends Controller
@@ -49,7 +50,7 @@ class MediaController extends Controller
     public function userMediaFile(string $mediaId, ?string $filename = null): BinaryFileResponse
     {
         // 1. Check if media exists in database via Spatie Media model
-        $media = \App\Models\Media::find($mediaId);
+        $media = Media::find($mediaId);
         if ($media && file_exists($media->getPath())) {
             return response()->file($media->getPath(), [
                 'Content-Type' => $media->mime_type ?? (mime_content_type($media->getPath()) ?: 'image/png'),
@@ -64,11 +65,12 @@ class MediaController extends Controller
                 $path = "{$baseDir}/{$filename}";
             } else {
                 $files = glob("{$baseDir}/*");
-                $path = !empty($files) ? $files[0] : null;
+                $path = ! empty($files) ? $files[0] : null;
             }
 
-            if ($path && file_exists($path) && !is_dir($path)) {
+            if ($path && file_exists($path) && ! is_dir($path)) {
                 $mime = mime_content_type($path) ?: 'image/png';
+
                 return response()->file($path, [
                     'Content-Type' => $mime,
                     'Cache-Control' => 'public, max-age=86400',
@@ -90,6 +92,27 @@ class MediaController extends Controller
     public function heroImage(Hero $hero): BinaryFileResponse
     {
         $media = $hero->getFirstMedia('hero_image');
+
+        if ($media && file_exists($media->getPath())) {
+            return response()->file($media->getPath(), [
+                'Content-Type' => $media->mime_type ?? 'image/png',
+                'Cache-Control' => 'public, max-age=86400',
+            ]);
+        }
+
+        abort(404);
+    }
+
+    public function featureImage(Feature $feature, int $item = 1): BinaryFileResponse
+    {
+        $collectionMap = [
+            1 => 'feature_image_one',
+            2 => 'feature_image_two',
+            3 => 'feature_image_three',
+        ];
+
+        $collection = $collectionMap[$item] ?? 'feature_image_one';
+        $media = $feature->getFirstMedia($collection);
 
         if ($media && file_exists($media->getPath())) {
             return response()->file($media->getPath(), [

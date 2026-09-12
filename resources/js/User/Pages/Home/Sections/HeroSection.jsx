@@ -159,9 +159,8 @@ export default function HeroSection({ hero, feature }) {
                     <div className="icon">
                         <img
                             src={
-                                feature?.image_one
-                                    ? `/${feature.image_one}`
-                                    : '/frontend/assets/images/banner_feature_icon_1.png'
+                                feature?.feature_image_one ||
+                                (feature?.image_one ? `/${feature.image_one}` : '/frontend/assets/images/banner_feature_icon_1.png')
                             }
                             alt="Features"
                             className="img-fluid"
@@ -183,9 +182,8 @@ export default function HeroSection({ hero, feature }) {
                     <div className="icon">
                         <img
                             src={
-                                feature?.image_two
-                                    ? `/${feature.image_two}`
-                                    : '/frontend/assets/images/banner_feature_icon_2.png'
+                                feature?.feature_image_two ||
+                                (feature?.image_two ? `/${feature.image_two}` : '/frontend/assets/images/banner_feature_icon_2.png')
                             }
                             alt="Features"
                             className="img-fluid"
@@ -207,9 +205,8 @@ export default function HeroSection({ hero, feature }) {
                     <div className="icon">
                         <img
                             src={
-                                feature?.image_three
-                                    ? `/${feature.image_three}`
-                                    : '/frontend/assets/images/banner_feature_icon_3.png'
+                                feature?.feature_image_three ||
+                                (feature?.image_three ? `/${feature.image_three}` : '/frontend/assets/images/banner_feature_icon_3.png')
                             }
                             alt="Features"
                             className="img-fluid"

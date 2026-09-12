@@ -28,6 +28,10 @@ class CustomPathGenerator implements PathGenerator
             return 'section/hero/';
         }
 
+        if ($media->model_type === 'App\Models\Feature' || str_starts_with($media->collection_name, 'feature_')) {
+            return 'section/feature/';
+        }
+
         return 'course/' . $media->collection_name . '/' . $media->id . '/';
     }
 

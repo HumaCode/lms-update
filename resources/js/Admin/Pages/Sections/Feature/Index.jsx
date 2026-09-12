@@ -15,19 +15,16 @@ export default function Index({ feature }) {
         image_one: null,
         image_two: null,
         image_three: null,
-        old_image_one: feature?.image_one || '',
-        old_image_two: feature?.image_two || '',
-        old_image_three: feature?.image_three || '',
     });
 
     const [previewOne, setPreviewOne] = useState(
-        feature?.image_one ? (feature.image_one.startsWith('/') ? feature.image_one : '/' + feature.image_one) : ''
+        feature?.feature_image_one || ''
     );
     const [previewTwo, setPreviewTwo] = useState(
-        feature?.image_two ? (feature.image_two.startsWith('/') ? feature.image_two : '/' + feature.image_two) : ''
+        feature?.feature_image_two || ''
     );
     const [previewThree, setPreviewThree] = useState(
-        feature?.image_three ? (feature.image_three.startsWith('/') ? feature.image_three : '/' + feature.image_three) : ''
+        feature?.feature_image_three || ''
     );
 
     const handleFileChange = (field, setPreview, e) => {
@@ -43,14 +40,15 @@ export default function Index({ feature }) {
         post(route('admin.feature.store'), {
             forceFormData: true,
             preserveScroll: true,
+            preserveState: true,
             onSuccess: () => {
                 if (window.toast) {
-                    window.toast.success('Feature Section Berhasil Diperbarui', 'Data feature section telah berhasil disimpan.');
+                    window.toast.success('Features Section Berhasil Diperbarui', 'Data feature section telah disimpan ke database.');
                 }
             },
             onError: () => {
                 if (window.toast) {
-                    window.toast.danger('Gagal Memperbarui Feature Section', 'Silakan periksa kembali form input.');
+                    window.toast.danger('Gagal Memperbarui Features Section', 'Silakan periksa kembali kelengkapan form input.');
                 }
             },
         });

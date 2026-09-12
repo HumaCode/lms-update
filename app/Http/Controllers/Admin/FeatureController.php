@@ -43,32 +43,34 @@ class FeatureController extends Controller
             'subtitle_three' => $request->subtitle_three,
         ];
 
-        if($request->hasFile('image_one')) {
-            $image = $this->uploadFile($request->file('image_one'));
-            $this->deleteFile($request->old_image_one);
-            $data['image_one'] = $image;
+        $feature = Feature::first();
+        if ($feature) {
+            $feature->update($data);
+        } else {
+            $feature = Feature::create($data);
         }
 
-        if($request->hasFile('image_two')) {
-            $image = $this->uploadFile($request->file('image_two'));
-            $this->deleteFile($request->old_image_two);
-            $data['image_two'] = $image;
+        if ($request->hasFile('image_one')) {
+            $feature->clearMediaCollection('feature_image_one');
+            $feature->addMediaFromRequest('image_one')
+                ->toMediaCollection('feature_image_one', 'private');
         }
 
-        if($request->hasFile('image_three')) {
-            $image = $this->uploadFile($request->file('image_three'));
-            $this->deleteFile($request->old_image_three);
-            $data['image_three'] = $image;
+        if ($request->hasFile('image_two')) {
+            $feature->clearMediaCollection('feature_image_two');
+            $feature->addMediaFromRequest('image_two')
+                ->toMediaCollection('feature_image_two', 'private');
         }
 
-       Feature::updateOrCreate(
-        ['id' => 1],
-        $data
-       );
+        if ($request->hasFile('image_three')) {
+            $feature->clearMediaCollection('feature_image_three');
+            $feature->addMediaFromRequest('image_three')
+                ->toMediaCollection('feature_image_three', 'private');
+        }
 
-       notyf()->success('Updated Successfully');
+        notyf()->success('Updated Successfully');
 
-       return redirect()->back();
+        return redirect()->back();
     }
 
     /**

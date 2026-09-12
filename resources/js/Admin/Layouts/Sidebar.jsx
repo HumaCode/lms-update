@@ -35,21 +35,31 @@ export default function Sidebar() {
                     <span className="navbar-toggler-icon"></span>
                 </button>
 
-                <h1 className="navbar-brand navbar-brand-autodark">
-                    <Link href={route('admin.dashboard')}>
-                        <img
-                            src={settings?.site_logo || '/default-files/logo.png'}
-                            width="110"
-                            height="32"
-                            alt="Logo"
-                            className="navbar-brand-image"
-                            onError={(e) => {
-                                e.target.onerror = null;
-                                e.target.src = '/default-files/logo.png';
-                            }}
-                        />
-                    </Link>
-                </h1>
+                <div className="d-flex align-items-center justify-content-between w-100 pe-2 mb-2 mb-lg-0">
+                    <h1 className="navbar-brand navbar-brand-autodark m-0">
+                        <Link href={route('admin.dashboard')}>
+                            <img
+                                src={settings?.site_logo || '/default-files/logo.png'}
+                                width="110"
+                                height="32"
+                                alt="Logo"
+                                className="navbar-brand-image"
+                                onError={(e) => {
+                                    e.target.onerror = null;
+                                    e.target.src = '/default-files/logo.png';
+                                }}
+                            />
+                        </Link>
+                    </h1>
+                    <button
+                        type="button"
+                        className="btn btn-icon btn-ghost-light text-white border-0 shadow-none d-none d-lg-flex"
+                        onClick={() => document.body.classList.toggle('sidebar-collapsed')}
+                        title="Toggle Sidebar"
+                    >
+                        <i className="ti ti-menu-2 fs-2"></i>
+                    </button>
+                </div>
 
                 <div className="collapse navbar-collapse" id="sidebar-menu">
                     <ul className="navbar-nav pt-lg-3">

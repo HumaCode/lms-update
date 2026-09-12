@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\BlogCategoryController;
 use App\Http\Controllers\Admin\BlogController;
 use App\Http\Controllers\Admin\BrandSectionController;
 use App\Http\Controllers\Admin\CertificateBuilderController;
+use App\Http\Controllers\Admin\CertificateController;
 use App\Http\Controllers\Admin\ContactController;
 use App\Http\Controllers\Admin\ContactSettingController;
 use App\Http\Controllers\Admin\CounterController;
@@ -197,6 +198,8 @@ Route::group(["middleware" => "auth:admin", "prefix" => "admin", "as" => "admin.
     Route::get('certificate-builder', [CertificateBuilderController::class, 'index'])->name('certificate-builder.index');
     Route::post('certificate-builder', [CertificateBuilderController::class, 'update'])->name('certificate-builder.update');
     Route::post('certificate-item', [CertificateBuilderController::class, 'itemUpdate'])->name('certificate-item.update');
+    Route::post('certificate-course/{course}/toggle', [CertificateBuilderController::class, 'toggleCourseCertificate'])->name('certificate-course.toggle');
+    Route::get('certificate/{course}/download', [CertificateController::class, 'download'])->name('certificate.download');
 
     /** Hero Routes */
     Route::resource('hero', HeroController::class);

@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Model;
     'sub_title',
     'description',
     'signature',
+    'signature_2',
 ])]
 class CertificateBuilder extends Model
 {

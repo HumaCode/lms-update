@@ -55,7 +55,9 @@ document.addEventListener("DOMContentLoaded", function () {
 var delete_url = null;
 
 $(function() {
-    $('.select2').select2();
+    if ($.fn.select2) {
+        $('.select2').select2();
+    }
 });
 
 /** Delete Item with confirmation */
@@ -137,30 +139,32 @@ $('.db-clear-submit').on('submit', function(e) {
 /** Certificate js */
 
 $(function() {
-    $('.draggable-element').draggable({
-        containment: '.certificate-body',
-        stop: function(event, ui) {
-            var elementId = $(this).attr('id');
-            var xPosition = ui.position.left;
-            var yPosition = ui.position.top;
+    if ($.fn.draggable) {
+        $('.draggable-element').draggable({
+            containment: '.certificate-body',
+            stop: function(event, ui) {
+                var elementId = $(this).attr('id');
+                var xPosition = ui.position.left;
+                var yPosition = ui.position.top;
 
-            $.ajax({
-                method: 'POST',
-                url: `${base_url}/admin/certificate-item`,
-                data: {
-                    '_token': csrf_token,
-                    'element_id': elementId,
-                    'x_position': xPosition,
-                    'y_position': yPosition
-                },
-                success: function(data) {},
-                error: function(xhr, status, error) {
-                }
+                $.ajax({
+                    method: 'POST',
+                    url: `${base_url}/admin/certificate-item`,
+                    data: {
+                        '_token': csrf_token,
+                        'element_id': elementId,
+                        'x_position': xPosition,
+                        'y_position': yPosition
+                    },
+                    success: function(data) {},
+                    error: function(xhr, status, error) {
+                    }
 
-            })
-        }
-    });
-})
+                })
+            }
+        })
+    }
+});
 
 
 /** Featured Instructor js */

@@ -20,9 +20,17 @@ export default function AdminLayout({ children, title = 'Admin Dashboard' }) {
         const ring = document.getElementById('pointer-ring');
         if (ring) ring.remove();
 
+        const isCertBuilder = window.location.pathname.includes('/admin/certificate-builder');
+        if (isCertBuilder) {
+            document.body.classList.add('sidebar-collapsed');
+        }
+
         return () => {
             document.documentElement.style.cursor = '';
             document.body.style.cursor = '';
+            if (isCertBuilder) {
+                document.body.classList.remove('sidebar-collapsed');
+            }
         };
     }, []);
 

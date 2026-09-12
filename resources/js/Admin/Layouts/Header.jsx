@@ -53,7 +53,15 @@ export default function Header() {
 
     return (
         <header className="navbar navbar-expand-md d-none d-lg-flex d-print-none">
-            <div className="container-xl">
+            <div className="container-fluid px-4">
+                <button
+                    type="button"
+                    className="btn btn-icon btn-ghost-secondary me-3 border-0 shadow-none"
+                    onClick={() => document.body.classList.toggle('sidebar-collapsed')}
+                    title="Toggle Sidebar"
+                >
+                    <i className="ti ti-menu-2 fs-2"></i>
+                </button>
                 <button
                     className="navbar-toggler"
                     type="button"

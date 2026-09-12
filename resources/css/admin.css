@@ -72,9 +72,6 @@ textarea {
     -o-border-radius: 8px;
 }
 
-#description {
-    padding: 10px 50px 10px 50px;
-}
 
 .add_course_content .item_list li span {
     color: var(--colorBlack);
@@ -160,11 +157,18 @@ textarea {
 
 
 .certificate-body {
-    height: 600px;
     width: 930px;
-    background: gray;
-    background-repeat: no-repeat;
+    height: 600px;
+    max-width: 930px;
+    min-height: 600px;
+    background-color: #f1f5f9;
+    background-size: 100% 100% !important;
+    background-position: center center !important;
+    background-repeat: no-repeat !important;
     text-align: center;
+    position: relative;
+    border: 1px solid #cbd5e1;
+    overflow: hidden;
 }
 .certificate-body div {
     /* display: inline-block; */
@@ -187,7 +191,12 @@ textarea {
   }
 
 .certificate-body .draggable-element {
+    position: absolute;
     cursor: move;
+    color: #1e293b;
+    z-index: 100;
+    user-select: none;
+    white-space: pre-line;
 }
 
 .nav-item.dropdown.active > .dropdown-menu {
@@ -206,4 +215,24 @@ textarea {
 }
 label {
     margin-bottom: 6px;
-  }
+}
+
+/* Sidebar Collapse Toggle Styles (Desktop only) */
+@media (min-width: 992px) {
+    body.sidebar-collapsed aside.navbar-vertical,
+    body.sidebar-collapsed .navbar-vertical {
+        display: none !important;
+    }
+
+    body.sidebar-collapsed .page-wrapper,
+    body.sidebar-collapsed header.navbar,
+    body.sidebar-collapsed .navbar,
+    body.sidebar-collapsed .navbar-expand-md,
+    body.sidebar-collapsed .navbar-expand-lg,
+    body.sidebar-collapsed footer.footer,
+    body.sidebar-collapsed .footer {
+        margin-left: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+    }
+}

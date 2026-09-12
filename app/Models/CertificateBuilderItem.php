@@ -20,6 +20,13 @@ use Illuminate\Database\Eloquent\Model;
     'element_id',
     'x_position',
     'y_position',
+    'font_family',
+    'font_size',
+    'color',
+    'is_bold',
+    'is_italic',
+    'is_underline',
+    'is_visible',
 ])]
 class CertificateBuilderItem extends Model
 {

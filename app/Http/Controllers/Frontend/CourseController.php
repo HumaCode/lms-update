@@ -186,15 +186,18 @@ class CourseController extends Controller
                 $course->status = $request->status;
                 $course->save();
 
-                // Create Admin Notification for course review submission
-                \App\Models\AdminNotification::create([
-                    'title' => 'Pengajuan Peninjauan Kursus',
-                    'message' => 'Instruktur ' . (Auth::user()->name ?? 'Instruktur') . ' mengajukan kursus "' . $course->title . '" untuk ditinjau & disetujui',
-                    'url' => route('admin.courses.index'),
-                    'is_read' => false,
-                ]);
-
-                notyf()->success('Course published and submitted for review!');
+                // If course was not approved yet, notify admin for review approval
+                if ($course->is_approved !== 'approved') {
+                    \App\Models\AdminNotification::create([
+                        'title' => 'Pengajuan Peninjauan Kursus',
+                        'message' => 'Instruktur ' . (Auth::user()->name ?? 'Instruktur') . ' mengajukan kursus "' . $course->title . '" untuk ditinjau & disetujui',
+                        'url' => route('admin.courses.index'),
+                        'is_read' => false,
+                    ]);
+                    notyf()->success('Course published and submitted for review!');
+                } else {
+                    notyf()->success('Course updated successfully!');
+                }
 
                 return to_route('instructor.courses.index');
         }

@@ -68,8 +68,8 @@ class CourseContentController extends Controller
         $lesson->file_path = $request->filled('file') ? $request->file : $request->url;
         $lesson->file_type = $request->file_type;
         $lesson->duration = $request->duration;
-        $lesson->is_preview = $request->filled('is_preview') ? 1 : 0;
-        $lesson->downloadable = $request->filled('downloadable') ? 1 : 0;
+        $lesson->is_preview = filter_var($request->is_preview, FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
+        $lesson->downloadable = filter_var($request->downloadable, FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
         $lesson->description = $request->description;
         $lesson->instructor_id = Auth::user()->id;
         $lesson->course_id = $request->course_id;
@@ -164,8 +164,8 @@ class CourseContentController extends Controller
         $lesson->file_path = $request->filled('file') ? $request->file : $request->url;
         $lesson->file_type = $request->file_type;
         $lesson->duration = $request->duration;
-        $lesson->is_preview = $request->filled('is_preview') ? 1 : 0;
-        $lesson->downloadable = $request->filled('downloadable') ? 1 : 0;
+        $lesson->is_preview = filter_var($request->is_preview, FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
+        $lesson->downloadable = filter_var($request->downloadable, FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
         $lesson->description = $request->description;
         $lesson->instructor_id = Auth::user()->id;
         $lesson->course_id = $request->course_id;

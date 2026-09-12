@@ -24,15 +24,28 @@ export default function CourseSidebar({
     const thumbnail = getImageUrl(course.thumbnail, '/frontend/assets/images/courses_img_1.jpg');
     const instructorImg = getImageUrl(course.instructor?.image, '/default-files/avatar.png');
 
+    const calculateTotalDuration = () => {
+        let totalMins = Number(course.duration || 0);
+        if ((!totalMins || totalMins === 0) && course.chapters) {
+            course.chapters.forEach((ch) => {
+                if (ch.lessons) {
+                    ch.lessons.forEach((l) => {
+                        totalMins += Number(l.duration || 0);
+                    });
+                }
+            });
+        }
+        return totalMins;
+    };
+
     const formatDuration = (mins) => {
-        if (!mins) return 'Self-paced';
-        if (isNaN(mins)) return mins;
-        const num = parseInt(mins, 10);
+        const num = typeof mins === 'number' ? mins : calculateTotalDuration();
+        if (!num || num === 0) return 'Self-paced';
         const h = Math.floor(num / 60);
         const m = num % 60;
         if (h > 0 && m > 0) return `${h}h ${m}m`;
-        if (h > 0) return `${h} hours`;
-        return `${m} minutes`;
+        if (h > 0) return `${h}h`;
+        return `${m}m`;
     };
 
     const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
@@ -328,7 +341,7 @@ export default function CourseSidebar({
                         </span>
                         Full Access to Practice Exercises
                     </li>
-                    {course.certificate ? (
+                    {(course.certificate === 1 || course.certificate === '1' || course.certificate === true) ? (
                         <li>
                             <span>
                                 <img

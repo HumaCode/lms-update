@@ -167,7 +167,9 @@ export default function Edit({
 
     const [showLessonModal, setShowLessonModal] = useState(false);
     const [activeChapterId, setActiveChapterId] = useState(null);
+    const [editingLesson, setEditingLesson] = useState(null);
     const [savingLesson, setSavingLesson] = useState(false);
+    const [detectingDuration, setDetectingDuration] = useState(false);
     const [lessonForm, setLessonForm] = useState({
         title: '',
         source: 'youtube',
@@ -178,6 +180,156 @@ export default function Edit({
         downloadable: 0,
         description: '',
     });
+
+    const handleAddLessonModal = (chapterId) => {
+        setEditingLesson(null);
+        setActiveChapterId(chapterId);
+        setLessonForm({
+            title: '',
+            source: 'youtube',
+            file_type: 'video',
+            url: '',
+            duration: '',
+            is_preview: 0,
+            downloadable: 0,
+            description: '',
+        });
+        setShowLessonModal(true);
+    };
+
+    const handleEditLessonModal = (chapterId, lesson) => {
+        setEditingLesson(lesson);
+        setActiveChapterId(chapterId);
+        setLessonForm({
+            title: lesson.title || '',
+            source: lesson.storage || 'youtube',
+            file_type: lesson.file_type || 'video',
+            url: lesson.file_path || '',
+            duration: lesson.duration || '',
+            is_preview: lesson.is_preview ? 1 : 0,
+            downloadable: lesson.downloadable ? 1 : 0,
+            description: lesson.description || '',
+        });
+        setShowLessonModal(true);
+    };
+
+    const extractYouTubeId = (url) => {
+        if (!url) return null;
+        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+        const match = url.match(regExp);
+        return (match && match[2] && match[2].length === 11) ? match[2] : null;
+    };
+
+    const fetchYouTubeDuration = (videoId) => {
+        return new Promise((resolve, reject) => {
+            const divId = 'yt-player-temp-' + Math.random().toString(36).substring(2, 9);
+            const container = document.createElement('div');
+            container.id = divId;
+            container.style.position = 'absolute';
+            container.style.top = '-9999px';
+            container.style.left = '-9999px';
+            container.style.width = '1px';
+            container.style.height = '1px';
+            document.body.appendChild(container);
+
+            const cleanup = () => {
+                try {
+                    if (container && container.parentNode) {
+                        container.parentNode.removeChild(container);
+                    }
+                } catch (e) {}
+            };
+
+            const timeout = setTimeout(() => {
+                cleanup();
+                reject('Timeout');
+            }, 6000);
+
+            const initPlayer = () => {
+                try {
+                    new window.YT.Player(divId, {
+                        videoId: videoId,
+                        events: {
+                            onReady: (evt) => {
+                                clearTimeout(timeout);
+                                try {
+                                    const sec = evt.target.getDuration();
+                                    evt.target.destroy();
+                                    cleanup();
+                                    if (sec && sec > 0) {
+                                        resolve(Math.max(1, Math.ceil(sec / 60)));
+                                    } else {
+                                        reject('Zero duration');
+                                    }
+                                } catch (e) {
+                                    cleanup();
+                                    reject(e);
+                                }
+                            },
+                            onError: (err) => {
+                                clearTimeout(timeout);
+                                cleanup();
+                                reject(err);
+                            }
+                        }
+                    });
+                } catch (e) {
+                    clearTimeout(timeout);
+                    cleanup();
+                    reject(e);
+                }
+            };
+
+            if (window.YT && window.YT.Player) {
+                initPlayer();
+            } else {
+                if (!document.getElementById('yt-iframe-api-script')) {
+                    const tag = document.createElement('script');
+                    tag.id = 'yt-iframe-api-script';
+                    tag.src = 'https://www.youtube.com/iframe_api';
+                    const firstScriptTag = document.getElementsByTagName('script')[0];
+                    if (firstScriptTag && firstScriptTag.parentNode) {
+                        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+                    } else {
+                        document.head.appendChild(tag);
+                    }
+                }
+
+                const checkYT = setInterval(() => {
+                    if (window.YT && window.YT.Player) {
+                        clearInterval(checkYT);
+                        initPlayer();
+                    }
+                }, 150);
+
+                setTimeout(() => clearInterval(checkYT), 5000);
+            }
+        });
+    };
+
+    const handleLessonUrlChange = (urlVal) => {
+        setLessonForm((prev) => ({ ...prev, url: urlVal }));
+
+        if (lessonForm.source === 'youtube' || !lessonForm.source) {
+            const videoId = extractYouTubeId(urlVal);
+            if (videoId) {
+                setDetectingDuration(true);
+                fetchYouTubeDuration(videoId)
+                    .then((mins) => {
+                        if (mins) {
+                            setLessonForm((prev) => ({ ...prev, duration: String(mins) }));
+                            notify.success('Auto-Detected', `Durasi YouTube berhasil dideteksi: ${mins} menit.`);
+                        }
+                    })
+                    .catch(() => {
+                        // Silent catch if private or blocked
+                    })
+                    .finally(() => {
+                        setDetectingDuration(false);
+                    });
+            }
+        }
+    };
 
     const handleSaveChapter = (e) => {
         e.preventDefault();
@@ -237,30 +389,59 @@ export default function Edit({
     const handleSaveLesson = (e) => {
         e.preventDefault();
         setSavingLesson(true);
-        router.post(route('instructor.course-content.store-lesson'), {
-            course_id: course.id,
-            chapter_id: activeChapterId,
-            ...lessonForm,
-        }, {
-            onSuccess: () => {
-                setShowLessonModal(false);
-                setLessonForm({
-                    title: '',
-                    source: 'youtube',
-                    file_type: 'video',
-                    url: '',
-                    duration: '',
-                    is_preview: 0,
-                    downloadable: 0,
-                    description: '',
-                });
-                notify.success('Berhasil Disimpan', 'Lesson baru telah berhasil ditambahkan.');
-            },
-            onError: () => {
-                notify.error('Gagal Menyimpan Lesson', 'Silakan periksa data inputan lesson.');
-            },
-            onFinish: () => setSavingLesson(false),
-        });
+
+        if (editingLesson) {
+            router.post(route('instructor.course-content.update-lesson', editingLesson.id), {
+                course_id: course.id,
+                chapter_id: activeChapterId,
+                ...lessonForm,
+            }, {
+                onSuccess: () => {
+                    setShowLessonModal(false);
+                    setEditingLesson(null);
+                    setLessonForm({
+                        title: '',
+                        source: 'youtube',
+                        file_type: 'video',
+                        url: '',
+                        duration: '',
+                        is_preview: 0,
+                        downloadable: 0,
+                        description: '',
+                    });
+                    notify.success('Berhasil Disimpan', 'Lesson berhasil diperbarui.');
+                },
+                onError: () => {
+                    notify.error('Gagal Perbarui Lesson', 'Silakan periksa data inputan lesson.');
+                },
+                onFinish: () => setSavingLesson(false),
+            });
+        } else {
+            router.post(route('instructor.course-content.store-lesson'), {
+                course_id: course.id,
+                chapter_id: activeChapterId,
+                ...lessonForm,
+            }, {
+                onSuccess: () => {
+                    setShowLessonModal(false);
+                    setLessonForm({
+                        title: '',
+                        source: 'youtube',
+                        file_type: 'video',
+                        url: '',
+                        duration: '',
+                        is_preview: 0,
+                        downloadable: 0,
+                        description: '',
+                    });
+                    notify.success('Berhasil Disimpan', 'Lesson baru telah berhasil ditambahkan.');
+                },
+                onError: () => {
+                    notify.error('Gagal Menyimpan Lesson', 'Silakan periksa data inputan lesson.');
+                },
+                onFinish: () => setSavingLesson(false),
+            });
+        }
     };
 
     const handleDeleteLesson = (lessonId, title) => {
@@ -1040,10 +1221,7 @@ export default function Edit({
                                             <div className="d-flex align-items-center gap-2">
                                                 <button
                                                     type="button"
-                                                    onClick={() => {
-                                                        setActiveChapterId(chapter.id);
-                                                        setShowLessonModal(true);
-                                                    }}
+                                                    onClick={() => handleAddLessonModal(chapter.id)}
                                                     className="btn btn-sm btn-outline-primary py-1"
                                                 >
                                                     <i className="fas fa-plus me-1"></i> Add Lesson
@@ -1093,14 +1271,24 @@ export default function Edit({
                                                                 )}
                                                             </div>
                                                         </div>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleDeleteLesson(lesson.id, lesson.title)}
-                                                            className="btn btn-sm btn-link text-danger p-1"
-                                                            title="Delete Lesson"
-                                                        >
-                                                            <i className="fas fa-trash-alt"></i>
-                                                        </button>
+                                                        <div className="d-flex align-items-center gap-1">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleEditLessonModal(chapter.id, lesson)}
+                                                                className="btn btn-sm btn-link text-primary p-1 me-1"
+                                                                title="Edit Lesson"
+                                                            >
+                                                                <i className="fas fa-edit"></i>
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleDeleteLesson(lesson.id, lesson.title)}
+                                                                className="btn btn-sm btn-link text-danger p-1"
+                                                                title="Delete Lesson"
+                                                            >
+                                                                <i className="fas fa-trash-alt"></i>
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 ))}
                                             </div>
@@ -1297,6 +1485,10 @@ export default function Edit({
                                         <i className="fas fa-spinner fa-spin me-2 text-white"></i>
                                         Sedang Proses...
                                     </>
+                                ) : course.is_approved === 'approved' ? (
+                                    <>
+                                        <i className="fas fa-save me-1"></i> Submit Course for Edit
+                                    </>
                                 ) : (
                                     <>
                                         <i className="fas fa-paper-plane me-1"></i> Submit Course for Review
@@ -1432,7 +1624,9 @@ export default function Edit({
                     <div className="modal-dialog modal-dialog-centered modal-lg">
                         <div className="modal-content border-0 shadow rounded-3">
                             <div className="modal-header border-bottom">
-                                <h5 className="modal-title fw-bold">Add Lesson to Chapter</h5>
+                                <h5 className="modal-title fw-bold">
+                                    {editingLesson ? 'Edit Lesson' : 'Add Lesson to Chapter'}
+                                </h5>
                                 <button
                                     type="button"
                                     className="btn-close"
@@ -1476,17 +1670,22 @@ export default function Edit({
                                             <input
                                                 type="url"
                                                 className="form-control"
-                                                placeholder="https://..."
+                                                placeholder="https://www.youtube.com/watch?v=..."
                                                 value={lessonForm.url}
-                                                onChange={(e) =>
-                                                    setLessonForm({ ...lessonForm, url: e.target.value })
-                                                }
+                                                onChange={(e) => handleLessonUrlChange(e.target.value)}
                                                 required
                                             />
                                         </div>
 
                                         <div className="col-md-6">
-                                            <label className="form-label required fw-semibold">Duration (Minutes)</label>
+                                            <label className="form-label required fw-semibold d-flex justify-content-between align-items-center">
+                                                <span>Duration (Minutes)</span>
+                                                {detectingDuration && (
+                                                    <span className="text-primary small fw-normal">
+                                                        <i className="fas fa-spinner fa-spin me-1"></i> Auto-detecting...
+                                                    </span>
+                                                )}
+                                            </label>
                                             <input
                                                 type="number"
                                                 min="1"

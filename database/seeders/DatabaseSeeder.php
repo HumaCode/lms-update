@@ -20,5 +20,6 @@ class DatabaseSeeder extends Seeder
         $this->call(CourseLevelSeeder::class);
         $this->call(CourseLanguageSeeder::class);
         $this->call(CourseInteractionSeeder::class);
+        $this->call(BlogCategorySeeder::class);
     }
 }

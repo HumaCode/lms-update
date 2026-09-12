@@ -6,15 +6,15 @@ import { route } from '@/Utils/routes';
 
 export default function Edit({ blog, categories = [] }) {
     const { data, setData, processing, errors } = useForm({
-        title: blog.title || '',
-        category: blog.blog_category_id || '',
+        title: blog?.title || '',
+        category: blog?.blog_category_id || '',
         image: null,
-        description: blog.description || '',
-        status: blog.status ? 1 : 0,
+        description: blog?.description || '',
+        status: blog?.status ? 1 : 0,
     });
 
     const [imagePreview, setImagePreview] = useState(
-        blog.image ? `/${blog.image}` : null
+        blog?.blog_image || (blog?.image ? (blog.image.startsWith('http') ? blog.image : `/${blog.image}`) : null)
     );
 
     const handleImageChange = (e) => {
@@ -30,48 +30,51 @@ export default function Edit({ blog, categories = [] }) {
         router.post(route('admin.blogs.update', blog.id), {
             _method: 'PUT',
             ...data,
+        }, {
+            forceFormData: true,
+            onSuccess: () => {
+                if (window.toast) {
+                    window.toast.success('Artikel Blog Berhasil Diperbarui', 'Data artikel blog telah diperbarui.');
+                }
+            },
+            onError: () => {
+                if (window.toast) {
+                    window.toast.danger('Gagal Memperbarui Artikel Blog', 'Silakan periksa kembali inputan form.');
+                }
+            },
         });
     };
 
     return (
-        <AdminLayout>
-            <Head title={`Edit Post: ${blog.title}`} />
+        <AdminLayout title={`Edit Post: ${blog?.title}`}>
+            <Head title={`Edit Post: ${blog?.title}`} />
+            <PageHeader title="Edit Blog Post" pretitle="Content Management" />
 
-            <PageHeader
-                title="Edit Blog Post"
-                breadcrumbs={[
-                    { label: 'Dashboard', url: route('admin.dashboard') },
-                    { label: 'Blogs', url: route('admin.blogs.index') },
-                    { label: blog.title },
-                    { label: 'Edit' },
-                ]}
-                actionText="Back to Blogs"
-                actionUrl={route('admin.blogs.index')}
-                actionIcon="ti ti-arrow-left"
-            />
-
-            <div className="row">
-                <div className="col-md-9 col-lg-8">
+            <div className="page-body">
+                <div className="container-xl">
                     <div className="card">
-                        <div className="card-header">
+                        <div className="card-header d-flex justify-content-between align-items-center">
                             <h3 className="card-title">Edit Article</h3>
+                            <Link href={route('admin.blogs.index')} className="btn btn-primary">
+                                Back
+                            </Link>
                         </div>
-                        <form onSubmit={handleSubmit} encType="multipart/form-data">
-                            <div className="card-body">
-                                <div className="mb-3">
-                                    <label className="form-label required">Post Title</label>
-                                    <input
-                                        type="text"
-                                        className={`form-control ${errors.title ? 'is-invalid' : ''}`}
-                                        value={data.title}
-                                        onChange={(e) => setData('title', e.target.value)}
-                                        autoFocus
-                                    />
-                                    {errors.title && <div className="invalid-feedback">{errors.title}</div>}
-                                </div>
+                        <div className="card-body">
+                            <form onSubmit={handleSubmit} encType="multipart/form-data">
+                                <div className="row g-3">
+                                    <div className="col-md-12">
+                                        <label className="form-label required">Post Title</label>
+                                        <input
+                                            type="text"
+                                            className={`form-control ${errors.title ? 'is-invalid' : ''}`}
+                                            value={data.title}
+                                            onChange={(e) => setData('title', e.target.value)}
+                                            autoFocus
+                                        />
+                                        {errors.title && <div className="invalid-feedback">{errors.title}</div>}
+                                    </div>
 
-                                <div className="row">
-                                    <div className="col-md-6 mb-3">
+                                    <div className="col-md-6">
                                         <label className="form-label required">Category</label>
                                         <select
                                             className={`form-select ${errors.category ? 'is-invalid' : ''}`}
@@ -88,7 +91,7 @@ export default function Edit({ blog, categories = [] }) {
                                         {errors.category && <div className="invalid-feedback">{errors.category}</div>}
                                     </div>
 
-                                    <div className="col-md-6 mb-3">
+                                    <div className="col-md-6">
                                         <label className="form-label">Change Featured Image</label>
                                         <input
                                             type="file"
@@ -108,59 +111,48 @@ export default function Edit({ blog, categories = [] }) {
                                             </div>
                                         )}
                                     </div>
-                                </div>
 
-                                <div className="mb-3">
-                                    <label className="form-label required">Article Content</label>
-                                    <textarea
-                                        className={`form-control ${errors.description ? 'is-invalid' : ''}`}
-                                        rows="12"
-                                        value={data.description}
-                                        onChange={(e) => setData('description', e.target.value)}
-                                    ></textarea>
-                                    {errors.description && <div className="invalid-feedback">{errors.description}</div>}
-                                </div>
+                                    <div className="col-md-12">
+                                        <label className="form-label required">Article Content</label>
+                                        <textarea
+                                            className={`form-control ${errors.description ? 'is-invalid' : ''}`}
+                                            rows="10"
+                                            value={data.description}
+                                            onChange={(e) => setData('description', e.target.value)}
+                                        ></textarea>
+                                        {errors.description && <div className="invalid-feedback">{errors.description}</div>}
+                                    </div>
 
-                                <div className="mb-3">
-                                    <label className="form-check form-switch">
-                                        <input
-                                            className="form-check-input"
-                                            type="checkbox"
-                                            checked={data.status === 1}
-                                            onChange={(e) => setData('status', e.target.checked ? 1 : 0)}
-                                        />
-                                        <span className="form-check-label">Published</span>
-                                    </label>
+                                    <div className="col-md-12">
+                                        <label className="form-label">Status</label>
+                                        <select
+                                            className={`form-select ${errors.status ? 'is-invalid' : ''}`}
+                                            value={data.status}
+                                            onChange={(e) => setData('status', Number(e.target.value))}
+                                        >
+                                            <option value={1}>Published</option>
+                                            <option value={0}>Draft / Inactive</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="col-12 mt-4">
+                                        <button type="submit" className="btn btn-primary" disabled={processing}>
+                                            {processing ? (
+                                                <>
+                                                    <span className="spinner-border spinner-border-sm me-2"></span>
+                                                    Updating...
+                                                </>
+                                            ) : (
+                                                'Update Post'
+                                            )}
+                                        </button>
+                                        <Link href={route('admin.blogs.index')} className="btn btn-link link-secondary ms-2">
+                                            Cancel
+                                        </Link>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="card-footer text-end">
-                                <div className="d-flex justify-content-end gap-2">
-                                    <Link
-                                        href={route('admin.blogs.index')}
-                                        className="btn btn-link link-secondary"
-                                    >
-                                        Cancel
-                                    </Link>
-                                    <button
-                                        type="submit"
-                                        className="btn btn-primary"
-                                        disabled={processing}
-                                    >
-                                        {processing ? (
-                                            <>
-                                                <span className="spinner-border spinner-border-sm me-2"></span>
-                                                Updating...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <i className="ti ti-check me-1"></i>
-                                                Update Post
-                                            </>
-                                        )}
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -9,12 +9,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
 /**
  * @property string $id
  * @property int $user_id
  * @property int $blog_category_id
- * @property string $image
  * @property string $title
  * @property string $slug
  * @property string $description
@@ -25,15 +26,35 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable([
     'user_id',
     'blog_category_id',
-    'image',
     'title',
     'slug',
     'description',
     'status',
 ])]
-class Blog extends Model
+class Blog extends Model implements HasMedia
 {
-    use HasFactory, HasUlids;
+    use HasFactory, HasUlids, InteractsWithMedia;
+
+    protected $appends = ['blog_image'];
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('blog_image')
+            ->useDisk('private')
+            ->singleFile();
+    }
+
+    public function getBlogImageAttribute(): ?string
+    {
+        $media = $this->getFirstMedia('blog_image');
+        if ($media) {
+            return route('media.blog-image', [
+                'blog' => $this->id,
+                'v' => $media->updated_at?->timestamp ?? time(),
+            ]);
+        }
+        return null;
+    }
 
     public function category(): BelongsTo
     {

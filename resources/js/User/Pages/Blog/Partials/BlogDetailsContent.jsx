@@ -30,7 +30,7 @@ export default function BlogDetailsContent({ blog }) {
             {/* Thumbnail */}
             <div className="wsus__blog_details_thumb">
                 <img
-                    src={formatImagePath(blog.image, '/frontend/assets/images/blog_details_thumb.jpg')}
+                    src={formatImagePath(blog.blog_image || blog.image, '/frontend/assets/images/blog_details_thumb.jpg')}
                     alt={blog.title}
                     className="img-fluid w-100"
                     onError={(e) => {

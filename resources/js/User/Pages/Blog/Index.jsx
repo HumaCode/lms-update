@@ -75,7 +75,7 @@ export default function BlogIndex({ blogs }) {
                                     <div className="card h-100 border-0 shadow-sm rounded-3 overflow-hidden transition-all hover-lift">
                                         <Link href={route('blog.show', blog.slug)}>
                                             <img
-                                                src={blog.image ? `/${blog.image}` : '/frontend/assets/images/blog_1.jpg'}
+                                                src={blog.blog_image || (blog.image ? (blog.image.startsWith('http') ? blog.image : `/${blog.image}`) : '/frontend/assets/images/blog_1.jpg')}
                                                 alt={blog.title}
                                                 className="w-100"
                                                 style={{ height: '220px', objectFit: 'cover' }}

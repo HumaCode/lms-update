@@ -56,6 +56,10 @@ class CustomPathGenerator implements PathGenerator
             return 'section/feature/';
         }
 
+        if ($media->model_type === 'App\Models\Blog' || $media->collection_name === 'blog_image') {
+            return 'blog/';
+        }
+
         return 'course/' . $media->collection_name . '/' . $media->id . '/';
     }
 

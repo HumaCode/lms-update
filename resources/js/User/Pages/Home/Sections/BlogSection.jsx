@@ -280,11 +280,12 @@ export default function BlogSection({ blogs = [] }) {
                                     >
                                         <img
                                             src={
-                                                blog.image
+                                                blog.blog_image ||
+                                                (blog.image
                                                     ? (blog.image.startsWith('http') || blog.image.startsWith('/')
                                                         ? blog.image
                                                         : `/${blog.image}`)
-                                                    : `/frontend/assets/images/blog_4_img_${(idx % 4) + 1}.jpg`
+                                                    : `/frontend/assets/images/blog_4_img_${(idx % 4) + 1}.jpg`)
                                             }
                                             alt={blog.title}
                                             style={{

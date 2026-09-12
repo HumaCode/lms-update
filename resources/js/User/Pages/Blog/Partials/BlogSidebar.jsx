@@ -66,7 +66,7 @@ export default function BlogSidebar({ recentBlogs = [], blogCategories = [] }) {
                                 <Link href={route('blog.show', item.slug)} className="img">
                                     <img
                                         src={formatImagePath(
-                                            item.image,
+                                            item.blog_image || item.image,
                                             '/frontend/assets/images/blog_4_img_1.jpg'
                                         )}
                                         alt={item.title}
@@ -108,7 +108,7 @@ export default function BlogSidebar({ recentBlogs = [], blogCategories = [] }) {
                                 <Link href={route('blog.index', { category: cat.slug })}>
                                     {cat.name}{' '}
                                     <span>
-                                        ({String(cat.blogs_count || 0).padStart(2, '0')})
+                                        ({cat.blogs_count || 0})
                                     </span>
                                 </Link>
                             </li>

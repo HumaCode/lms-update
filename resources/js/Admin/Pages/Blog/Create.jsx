@@ -25,48 +25,52 @@ export default function Create({ categories = [] }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        post(route('admin.blogs.store'));
+        post(route('admin.blogs.store'), {
+            forceFormData: true,
+            onSuccess: () => {
+                if (window.toast) {
+                    window.toast.success('Artikel Blog Berhasil Ditambahkan', 'Artikel blog baru telah disimpan.');
+                }
+            },
+            onError: () => {
+                if (window.toast) {
+                    window.toast.danger('Gagal Menambahkan Artikel Blog', 'Silakan periksa kembali inputan form.');
+                }
+            },
+        });
     };
 
     return (
-        <AdminLayout>
+        <AdminLayout title="Write Blog Post">
             <Head title="Write Blog Post" />
+            <PageHeader title="Write Blog Post" pretitle="Content Management" />
 
-            <PageHeader
-                title="Write Blog Post"
-                breadcrumbs={[
-                    { label: 'Dashboard', url: route('admin.dashboard') },
-                    { label: 'Blogs', url: route('admin.blogs.index') },
-                    { label: 'Write' },
-                ]}
-                actionText="Back to Blogs"
-                actionUrl={route('admin.blogs.index')}
-                actionIcon="ti ti-arrow-left"
-            />
-
-            <div className="row">
-                <div className="col-md-9 col-lg-8">
+            <div className="page-body">
+                <div className="container-xl">
                     <div className="card">
-                        <div className="card-header">
+                        <div className="card-header d-flex justify-content-between align-items-center">
                             <h3 className="card-title">Article Details</h3>
+                            <Link href={route('admin.blogs.index')} className="btn btn-primary">
+                                Back
+                            </Link>
                         </div>
-                        <form onSubmit={handleSubmit} encType="multipart/form-data">
-                            <div className="card-body">
-                                <div className="mb-3">
-                                    <label className="form-label required">Post Title</label>
-                                    <input
-                                        type="text"
-                                        className={`form-control ${errors.title ? 'is-invalid' : ''}`}
-                                        placeholder="Enter engaging blog title..."
-                                        value={data.title}
-                                        onChange={(e) => setData('title', e.target.value)}
-                                        autoFocus
-                                    />
-                                    {errors.title && <div className="invalid-feedback">{errors.title}</div>}
-                                </div>
+                        <div className="card-body">
+                            <form onSubmit={handleSubmit} encType="multipart/form-data">
+                                <div className="row g-3">
+                                    <div className="col-md-12">
+                                        <label className="form-label required">Post Title</label>
+                                        <input
+                                            type="text"
+                                            className={`form-control ${errors.title ? 'is-invalid' : ''}`}
+                                            placeholder="Enter engaging blog title..."
+                                            value={data.title}
+                                            onChange={(e) => setData('title', e.target.value)}
+                                            autoFocus
+                                        />
+                                        {errors.title && <div className="invalid-feedback">{errors.title}</div>}
+                                    </div>
 
-                                <div className="row">
-                                    <div className="col-md-6 mb-3">
+                                    <div className="col-md-6">
                                         <label className="form-label required">Category</label>
                                         <select
                                             className={`form-select ${errors.category ? 'is-invalid' : ''}`}
@@ -83,7 +87,7 @@ export default function Create({ categories = [] }) {
                                         {errors.category && <div className="invalid-feedback">{errors.category}</div>}
                                     </div>
 
-                                    <div className="col-md-6 mb-3">
+                                    <div className="col-md-6">
                                         <label className="form-label required">Featured Image</label>
                                         <input
                                             type="file"
@@ -103,60 +107,49 @@ export default function Create({ categories = [] }) {
                                             </div>
                                         )}
                                     </div>
-                                </div>
 
-                                <div className="mb-3">
-                                    <label className="form-label required">Article Content</label>
-                                    <textarea
-                                        className={`form-control ${errors.description ? 'is-invalid' : ''}`}
-                                        rows="12"
-                                        placeholder="Write article content here..."
-                                        value={data.description}
-                                        onChange={(e) => setData('description', e.target.value)}
-                                    ></textarea>
-                                    {errors.description && <div className="invalid-feedback">{errors.description}</div>}
-                                </div>
+                                    <div className="col-md-12">
+                                        <label className="form-label required">Article Content</label>
+                                        <textarea
+                                            className={`form-control ${errors.description ? 'is-invalid' : ''}`}
+                                            rows="10"
+                                            placeholder="Write article content here..."
+                                            value={data.description}
+                                            onChange={(e) => setData('description', e.target.value)}
+                                        ></textarea>
+                                        {errors.description && <div className="invalid-feedback">{errors.description}</div>}
+                                    </div>
 
-                                <div className="mb-3">
-                                    <label className="form-check form-switch">
-                                        <input
-                                            className="form-check-input"
-                                            type="checkbox"
-                                            checked={data.status === 1}
-                                            onChange={(e) => setData('status', e.target.checked ? 1 : 0)}
-                                        />
-                                        <span className="form-check-label">Publish immediately</span>
-                                    </label>
+                                    <div className="col-md-12">
+                                        <label className="form-label">Status</label>
+                                        <select
+                                            className={`form-select ${errors.status ? 'is-invalid' : ''}`}
+                                            value={data.status}
+                                            onChange={(e) => setData('status', Number(e.target.value))}
+                                        >
+                                            <option value={1}>Publish immediately</option>
+                                            <option value={0}>Draft / Inactive</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="col-12 mt-4">
+                                        <button type="submit" className="btn btn-primary" disabled={processing}>
+                                            {processing ? (
+                                                <>
+                                                    <span className="spinner-border spinner-border-sm me-2"></span>
+                                                    Publishing...
+                                                </>
+                                            ) : (
+                                                'Publish Post'
+                                            )}
+                                        </button>
+                                        <Link href={route('admin.blogs.index')} className="btn btn-link link-secondary ms-2">
+                                            Cancel
+                                        </Link>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="card-footer text-end">
-                                <div className="d-flex justify-content-end gap-2">
-                                    <Link
-                                        href={route('admin.blogs.index')}
-                                        className="btn btn-link link-secondary"
-                                    >
-                                        Cancel
-                                    </Link>
-                                    <button
-                                        type="submit"
-                                        className="btn btn-primary"
-                                        disabled={processing}
-                                    >
-                                        {processing ? (
-                                            <>
-                                                <span className="spinner-border spinner-border-sm me-2"></span>
-                                                Publishing...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <i className="ti ti-check me-1"></i>
-                                                Publish Post
-                                            </>
-                                        )}
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>

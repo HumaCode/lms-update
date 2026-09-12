@@ -5,16 +5,12 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Blog;
 use App\Models\BlogCategory;
-use App\Traits\FileUpload;
 use Exception;
-use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 
 class BlogController extends Controller
 {
-    use FileUpload;
     /**
      * Display a listing of the resource.
      */
@@ -50,17 +46,19 @@ class BlogController extends Controller
             'status' => ['nullable', 'boolean'],
         ]);
 
-        $image = $this->uploadFile($request->file('image'));
-
         $blog = new Blog();
-        $blog->image = $image;
         $blog->title = $request->title;
         $blog->slug = \Str::slug($request->title);
         $blog->description = $request->description;
         $blog->blog_category_id = $request->category;
-        $blog->user_id = adminUser()->id;
+        $blog->user_id = adminUser()?->id ?? auth('web')->user()?->id;
         $blog->status = $request->status ?? 0;
         $blog->save();
+
+        if ($request->hasFile('image')) {
+            $blog->addMediaFromRequest('image')
+                ->toMediaCollection('blog_image', 'private');
+        }
 
         notyf()->success('Blog post created successfully!');
 
@@ -94,19 +92,18 @@ class BlogController extends Controller
         ]);
 
         $blog = Blog::findOrFail($id);
-
-        if ($request->hasFile('image')) {
-            $image = $this->uploadFile($request->file('image'));
-            $this->deleteFile($blog->image);
-            $blog->image = $image;
-        }
-
         $blog->title = $request->title;
         $blog->slug = \Str::slug($request->title);
         $blog->description = $request->description;
         $blog->blog_category_id = $request->category;
         $blog->status = $request->status ?? 0;
         $blog->save();
+
+        if ($request->hasFile('image')) {
+            $blog->clearMediaCollection('blog_image');
+            $blog->addMediaFromRequest('image')
+                ->toMediaCollection('blog_image', 'private');
+        }
 
         notyf()->success('Blog post updated successfully!');
 
@@ -120,7 +117,7 @@ class BlogController extends Controller
     {
         try {
             $blog = Blog::findOrFail($id);
-            $this->deleteFile($blog->image);
+            $blog->clearMediaCollection('blog_image');
             $blog->delete();
             notyf()->success('Blog post deleted successfully!');
             return to_route('admin.blogs.index');

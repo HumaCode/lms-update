@@ -4,23 +4,18 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\VideoSection;
-use App\Traits\FileUpload;
-use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
 class VideoSectionController extends Controller
 {
-
-    use FileUpload;
     /**
      * Display a listing of the resource.
      */
-    public function index() : View
+    public function index()
     {
         $video = VideoSection::first();
-        return view('admin.sections.video.index', compact('video'));
+        return inertia('Admin/Sections/Video/Index', compact('video'));
     }
-
 
     /**
      * Store a newly created resource in storage.
@@ -30,18 +25,33 @@ class VideoSectionController extends Controller
         $validatedData = $request->validate([
             'background' => ['nullable', 'image', 'max:3000'],
             'video_url' => ['nullable', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:500'],
             'button_text' => ['nullable', 'string', 'max:255'],
             'button_url' => ['nullable', 'string', 'max:255'],
         ]);
 
-        if($request->hasFile('background')) {
-            $image = $this->uploadFile($request->file('background'));
-            $this->deleteFile($request->old_background);
-            $validatedData['background'] = $image;
+        $video = VideoSection::first();
+        if ($video) {
+            $video->update([
+                'video_url' => $validatedData['video_url'] ?? null,
+                'description' => $validatedData['description'] ?? null,
+                'button_text' => $validatedData['button_text'] ?? null,
+                'button_url' => $validatedData['button_url'] ?? null,
+            ]);
+        } else {
+            $video = VideoSection::create([
+                'video_url' => $validatedData['video_url'] ?? null,
+                'description' => $validatedData['description'] ?? null,
+                'button_text' => $validatedData['button_text'] ?? null,
+                'button_url' => $validatedData['button_url'] ?? null,
+            ]);
         }
 
-        VideoSection::updateOrCreate(['id' => 1], $validatedData);
+        if ($request->hasFile('background')) {
+            $video->clearMediaCollection('video_background');
+            $video->addMediaFromRequest('background')
+                ->toMediaCollection('video_background', 'private');
+        }
 
         notyf()->success('Update Successfully!');
         return redirect()->back();

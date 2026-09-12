@@ -8,10 +8,24 @@ use App\Models\Course;
 use App\Models\Feature;
 use App\Models\Hero;
 use App\Models\Media;
+use App\Models\VideoSection;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class MediaController extends Controller
 {
+    public function videoBackground(VideoSection $section): BinaryFileResponse
+    {
+        $media = $section->getFirstMedia('video_background');
+
+        if ($media && file_exists($media->getPath())) {
+            return response()->file($media->getPath(), [
+                'Content-Type' => $media->mime_type ?? 'image/png',
+                'Cache-Control' => 'public, max-age=86400',
+            ]);
+        }
+
+        abort(404);
+    }
     public function becomeInstructorImage(BecomeInstructorSection $section): BinaryFileResponse
     {
         $media = $section->getFirstMedia('become_instructor_image');

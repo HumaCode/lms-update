@@ -8,9 +8,8 @@ export default function VideoSection({ video }) {
         <section className="wsus__video mt_120 xs_mt_100">
             <img
                 src={
-                    video.background
-                        ? `/${video.background}`
-                        : '/frontend/assets/images/video_bg.jpg'
+                    video.video_background ||
+                    (video.background ? `/${video.background}` : '/frontend/assets/images/video_bg.jpg')
                 }
                 alt="Video"
                 className="img-fluid w-100"

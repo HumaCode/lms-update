@@ -90,6 +90,9 @@ class HandleInertiaRequests extends Middleware
             'footer' => fn () => \App\Models\Footer::first(),
             'social_links' => fn () => \App\Models\SocialLink::where('status', 1)->get(),
             'custom_pages' => fn () => \App\Models\CustomPage::where('status', 1)->where('show_at_nav', 1)->get(),
+            'user_enrolled_course_ids' => fn () => auth('web')->check()
+                ? \App\Models\Enrollment::where('user_id', auth('web')->id())->pluck('course_id')->toArray()
+                : [],
             'ziggy' => fn () => [
                 ...(new \Tighten\Ziggy\Ziggy)->toArray(),
                 'location' => $request->url(),

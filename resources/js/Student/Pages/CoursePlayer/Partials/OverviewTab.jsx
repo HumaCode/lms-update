@@ -1,7 +1,8 @@
 import React from 'react';
 
-export default function OverviewTab({ course, activeLesson, lessonCount }) {
+export default function OverviewTab({ course, activeLesson, lessonCount, progressPercentage = 0 }) {
     const courseSummary = course?.seo_description || (course?.description ? course.description.replace(/<[^>]+>/g, '').slice(0, 150) + '...' : '');
+    const isCompleted = progressPercentage >= 100;
 
     return (
         <div className="video_about">
@@ -35,14 +36,37 @@ export default function OverviewTab({ course, activeLesson, lessonCount }) {
                         </tr>
 
                         {/* 2. Certificates */}
-                        {Boolean(course?.certificate) && (
+                        {Boolean(course?.certificate == 1 || course?.certificate === true) && (
                             <tr>
                                 <td>
                                     <p className="fw-bold mb-0">Certificates</p>
                                 </td>
                                 <td colSpan="2">
-                                    <p className="mb-2">Get EduCore certificate by completing entire course</p>
-                                    <span className="table_btn d-inline-block">EduCore certificate</span>
+                                    <p className="mb-2 text-secondary small">
+                                        {isCompleted
+                                            ? 'Get EduCore certificate by completing entire course.'
+                                            : 'Selesaikan 100% seluruh materi kursus untuk dapat mengunduh sertifikat.'}
+                                    </p>
+                                    {isCompleted ? (
+                                        <a
+                                            href={route('student.certificate.download', course.id)}
+                                            className="btn btn-primary fw-semibold px-3 py-1-5 rounded-pill shadow-xs d-inline-flex align-items-center gap-2"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                        >
+                                            <i className="fas fa-certificate text-warning"></i> Download Certificate
+                                        </a>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            className="btn btn-secondary fw-semibold px-3 py-1-5 rounded-pill opacity-50 d-inline-flex align-items-center gap-2"
+                                            disabled
+                                            style={{ cursor: 'not-allowed', pointerEvents: 'auto' }}
+                                            title="Progress belum 100%. Selesaikan semua materi terlebih dahulu."
+                                        >
+                                            <i className="fas fa-lock"></i> Download Certificate
+                                        </button>
+                                    )}
                                 </td>
                             </tr>
                         )}

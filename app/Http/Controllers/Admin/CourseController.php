@@ -28,6 +28,7 @@ class CourseController extends Controller
     public function index(): InertiaResponse
     {
         $courses = Course::with(['instructor', 'category', 'level', 'language', 'chapters.lessons'])
+            ->withCount(['enrollments', 'lessons'])
             ->orderBy('id', 'desc')
             ->paginate(25);
 

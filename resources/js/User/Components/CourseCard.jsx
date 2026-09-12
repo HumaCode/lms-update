@@ -55,6 +55,9 @@ export default function CourseCard({ course }) {
         return `/${url}`;
     };
 
+    const enrolledCourseIds = props?.user_enrolled_course_ids || [];
+    const isEnrolled = enrolledCourseIds.includes(course.id) || Boolean(course.is_enrolled);
+
     return (
         <div className="wsus__single_courses_3">
             <div className="wsus__single_courses_3_img">
@@ -107,66 +110,98 @@ export default function CourseCard({ course }) {
                 </div>
             </div>
             <div className="wsus__single_courses_3_footer align-items-center">
-                {isFree ? (
+                {isEnrolled ? (
                     <Link
-                        className="common_btn"
-                        href={route('courses.show', course.slug)}
+                        href={route('student.course-player.index', course.slug)}
+                        style={{
+                            width: '100%',
+                            background: '#10B981',
+                            color: '#ffffff',
+                            borderRadius: '10px',
+                            padding: '10px 16px',
+                            fontSize: '14px',
+                            fontWeight: 700,
+                            textDecoration: 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                            transition: 'all 0.2s ease',
+                            boxShadow: '0 2px 6px rgba(16, 185, 129, 0.25)',
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.background = '#059669';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.background = '#10B981';
+                        }}
                     >
-                        Enroll <i className="fas fa-arrow-right"></i>
+                        <i className="far fa-play-circle" style={{ fontSize: '16px' }}></i> Go To Course
                     </Link>
                 ) : (
-                    <a
-                        className="common_btn add_to_cart"
-                        href="#"
-                        onClick={handleAddToCart}
-                        style={{ pointerEvents: adding ? 'none' : 'auto', opacity: adding ? 0.7 : 1 }}
-                    >
-                        {adding ? 'Adding...' : 'Add to Cart'}{' '}
-                        <i className="fas fa-arrow-right"></i>
-                    </a>
+                    <>
+                        {isFree ? (
+                            <Link
+                                className="common_btn"
+                                href={route('courses.show', course.slug)}
+                            >
+                                Enroll <i className="fas fa-arrow-right"></i>
+                            </Link>
+                        ) : (
+                            <a
+                                className="common_btn add_to_cart"
+                                href="#"
+                                onClick={handleAddToCart}
+                                style={{ pointerEvents: adding ? 'none' : 'auto', opacity: adding ? 0.7 : 1 }}
+                            >
+                                {adding ? 'Adding...' : 'Add to Cart'}{' '}
+                                <i className="fas fa-arrow-right"></i>
+                            </a>
+                        )}
+                        <div className="d-flex flex-column align-items-end text-end ms-auto">
+                            {isFree ? (
+                                <span style={{ color: '#16A34A', fontWeight: 700, fontSize: '16px' }}>FREE</span>
+                            ) : hasDiscount ? (
+                                <>
+                                    <del
+                                        style={{
+                                            color: '#94A3B8',
+                                            fontWeight: 400,
+                                            fontSize: '12px',
+                                            lineHeight: '1.2',
+                                            display: 'block',
+                                        }}
+                                    >
+                                        {formatCurrency(numPrice, settings)}
+                                    </del>
+                                    <span
+                                        style={{
+                                            color: '#0F172A',
+                                            fontWeight: 700,
+                                            fontSize: '16px',
+                                            lineHeight: '1.2',
+                                            display: 'block',
+                                        }}
+                                    >
+                                        {formatCurrency(finalPrice, settings)}
+                                    </span>
+                                </>
+                            ) : (
+                                <span
+                                    style={{
+                                        color: '#0F172A',
+                                        fontWeight: 700,
+                                        fontSize: '16px',
+                                        lineHeight: '1.2',
+                                        display: 'block',
+                                    }}
+                                >
+                                    {formatCurrency(finalPrice, settings)}
+                                </span>
+                            )}
+                        </div>
+                    </>
                 )}
-                <div className="d-flex flex-column align-items-end text-end ms-auto">
-                    {isFree ? (
-                        <span style={{ color: '#16A34A', fontWeight: 700, fontSize: '16px' }}>FREE</span>
-                    ) : hasDiscount ? (
-                        <>
-                            <del
-                                style={{
-                                    color: '#94A3B8',
-                                    fontWeight: 400,
-                                    fontSize: '12px',
-                                    lineHeight: '1.2',
-                                    display: 'block',
-                                }}
-                            >
-                                {formatCurrency(numPrice, settings)}
-                            </del>
-                            <span
-                                style={{
-                                    color: '#0F172A',
-                                    fontWeight: 700,
-                                    fontSize: '16px',
-                                    lineHeight: '1.2',
-                                    display: 'block',
-                                }}
-                            >
-                                {formatCurrency(finalPrice, settings)}
-                            </span>
-                        </>
-                    ) : (
-                        <span
-                            style={{
-                                color: '#0F172A',
-                                fontWeight: 700,
-                                fontSize: '16px',
-                                lineHeight: '1.2',
-                                display: 'block',
-                            }}
-                        >
-                            {formatCurrency(finalPrice, settings)}
-                        </span>
-                    )}
-                </div>
             </div>
         </div>
     );

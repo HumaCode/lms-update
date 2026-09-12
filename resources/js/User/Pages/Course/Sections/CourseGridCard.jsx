@@ -32,6 +32,9 @@ export default function CourseGridCard({ course }) {
     const lessonsCount = course.lessons_count ?? (course.lessons ? course.lessons.length : 0);
     const studentsCount = course.enrollments_count ?? (course.enrollments ? course.enrollments.length : 0);
 
+    const enrolledCourseIds = props?.user_enrolled_course_ids || [];
+    const isEnrolled = enrolledCourseIds.includes(course.id) || Boolean(course.is_enrolled);
+
     return (
         <div
             className="wsus__single_courses_3"
@@ -194,7 +197,7 @@ export default function CourseGridCard({ course }) {
                 </div>
             </div>
 
-            {/* Footer: Enroll button and Price */}
+            {/* Footer: Enroll button / Go to Course button and Price */}
             <div
                 className="wsus__single_courses_3_footer"
                 style={{
@@ -206,76 +209,108 @@ export default function CourseGridCard({ course }) {
                     background: '#ffffff',
                 }}
             >
-                <Link
-                    href={route('courses.show', course.slug)}
-                    style={{
-                        border: '1px solid #E2E8F0',
-                        background: '#ffffff',
-                        color: '#0F172A',
-                        borderRadius: '6px',
-                        padding: '6px 14px',
-                        fontSize: '13px',
-                        fontWeight: 600,
-                        textDecoration: 'none',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        transition: 'all 0.2s',
-                    }}
-                    onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = '#2563EB';
-                        e.currentTarget.style.color = '#2563EB';
-                    }}
-                    onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = '#E2E8F0';
-                        e.currentTarget.style.color = '#0F172A';
-                    }}
-                >
-                    Enroll <i className="fas fa-arrow-right" style={{ fontSize: '11px' }}></i>
-                </Link>
-
-                <div className="d-flex flex-column align-items-end text-end ms-auto">
-                    {isFree ? (
-                        <span style={{ color: '#16A34A', fontWeight: 700, fontSize: '16px' }}>FREE</span>
-                    ) : hasDiscount ? (
-                        <>
-                            <del
-                                style={{
-                                    color: '#94A3B8',
-                                    fontWeight: 400,
-                                    fontSize: '12px',
-                                    lineHeight: '1.2',
-                                    display: 'block',
-                                }}
-                            >
-                                {formatCurrency(course.price, settings)}
-                            </del>
-                            <span
-                                style={{
-                                    color: '#0F172A',
-                                    fontWeight: 700,
-                                    fontSize: '16px',
-                                    lineHeight: '1.2',
-                                    display: 'block',
-                                }}
-                            >
-                                {formatCurrency(finalPrice, settings)}
-                            </span>
-                        </>
-                    ) : (
-                        <span
+                {isEnrolled ? (
+                    <Link
+                        href={route('student.course-player.index', course.slug)}
+                        style={{
+                            width: '100%',
+                            background: '#10B981',
+                            color: '#ffffff',
+                            borderRadius: '10px',
+                            padding: '10px 16px',
+                            fontSize: '14px',
+                            fontWeight: 700,
+                            textDecoration: 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                            transition: 'all 0.2s ease',
+                            boxShadow: '0 2px 6px rgba(16, 185, 129, 0.25)',
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.background = '#059669';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.background = '#10B981';
+                        }}
+                    >
+                        <i className="far fa-play-circle" style={{ fontSize: '16px' }}></i> Go To Course
+                    </Link>
+                ) : (
+                    <>
+                        <Link
+                            href={route('courses.show', course.slug)}
                             style={{
+                                border: '1px solid #E2E8F0',
+                                background: '#ffffff',
                                 color: '#0F172A',
-                                fontWeight: 700,
-                                fontSize: '16px',
-                                lineHeight: '1.2',
-                                display: 'block',
+                                borderRadius: '6px',
+                                padding: '6px 14px',
+                                fontSize: '13px',
+                                fontWeight: 600,
+                                textDecoration: 'none',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                transition: 'all 0.2s',
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.borderColor = '#2563EB';
+                                e.currentTarget.style.color = '#2563EB';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.borderColor = '#E2E8F0';
+                                e.currentTarget.style.color = '#0F172A';
                             }}
                         >
-                            {formatCurrency(finalPrice, settings)}
-                        </span>
-                    )}
-                </div>
+                            Enroll <i className="fas fa-arrow-right" style={{ fontSize: '11px' }}></i>
+                        </Link>
+
+                        <div className="d-flex flex-column align-items-end text-end ms-auto">
+                            {isFree ? (
+                                <span style={{ color: '#16A34A', fontWeight: 700, fontSize: '16px' }}>FREE</span>
+                            ) : hasDiscount ? (
+                                <>
+                                    <del
+                                        style={{
+                                            color: '#94A3B8',
+                                            fontWeight: 400,
+                                            fontSize: '12px',
+                                            lineHeight: '1.2',
+                                            display: 'block',
+                                        }}
+                                    >
+                                        {formatCurrency(course.price, settings)}
+                                    </del>
+                                    <span
+                                        style={{
+                                            color: '#0F172A',
+                                            fontWeight: 700,
+                                            fontSize: '16px',
+                                            lineHeight: '1.2',
+                                            display: 'block',
+                                        }}
+                                    >
+                                        {formatCurrency(finalPrice, settings)}
+                                    </span>
+                                </>
+                            ) : (
+                                <span
+                                    style={{
+                                        color: '#0F172A',
+                                        fontWeight: 700,
+                                        fontSize: '16px',
+                                        lineHeight: '1.2',
+                                        display: 'block',
+                                    }}
+                                >
+                                    {formatCurrency(finalPrice, settings)}
+                                </span>
+                            )}
+                        </div>
+                    </>
+                )}
             </div>
         </div>
     );

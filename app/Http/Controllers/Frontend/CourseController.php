@@ -24,7 +24,7 @@ class CourseController extends Controller
     {
         $courses = Course::with(['category', 'enrollments'])
             ->withAvg('reviews', 'rating')
-            ->withCount('enrollments')
+            ->withCount(['enrollments', 'lessons'])
             ->where('instructor_id', Auth::user()->id)
             ->orderBy('id', 'DESC')
             ->paginate(10)

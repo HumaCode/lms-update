@@ -37,6 +37,14 @@ export default function CoursePlayer({
     const [completedIds, setCompletedIds] = useState(watchedLessonIds || []);
     const [activeTab, setActiveTab] = useState('overview');
 
+    const isQnaEnabled = Boolean(course?.qna == 1 || course?.qna === true);
+
+    useEffect(() => {
+        if (!isQnaEnabled && activeTab === 'qna') {
+            setActiveTab('overview');
+        }
+    }, [isQnaEnabled, activeTab]);
+
     // Theater mode state (persisted to localStorage)
     const [isTheaterMode, setIsTheaterMode] = useState(() => {
         try {
@@ -162,15 +170,17 @@ export default function CoursePlayer({
                                                 Overview
                                             </button>
                                         </li>
-                                        <li className="nav-item" role="presentation">
-                                            <button
-                                                className={`nav-link ${effectiveTab === 'qna' ? 'active' : ''}`}
-                                                type="button"
-                                                onClick={() => setActiveTab('qna')}
-                                            >
-                                                Q&A
-                                            </button>
-                                        </li>
+                                        {isQnaEnabled && (
+                                            <li className="nav-item" role="presentation">
+                                                <button
+                                                    className={`nav-link ${effectiveTab === 'qna' ? 'active' : ''}`}
+                                                    type="button"
+                                                    onClick={() => setActiveTab('qna')}
+                                                >
+                                                    Q&A
+                                                </button>
+                                            </li>
+                                        )}
                                         <li className="nav-item" role="presentation">
                                             <button
                                                 className={`nav-link ${effectiveTab === 'announcements' ? 'active' : ''}`}
@@ -194,10 +204,10 @@ export default function CoursePlayer({
                                     <div className="tab-content" id="pills-tabContent">
                                         {effectiveTab === 'overview' && (
                                             <div className="tab-pane fade show active">
-                                                <OverviewTab course={course} activeLesson={activeLesson} lessonCount={lessonCount} />
+                                                <OverviewTab course={course} activeLesson={activeLesson} lessonCount={lessonCount} progressPercentage={progressPercentage} />
                                             </div>
                                         )}
-                                        {effectiveTab === 'qna' && (
+                                        {isQnaEnabled && effectiveTab === 'qna' && (
                                             <div className="tab-pane fade show active">
                                                 <QnaTab course={course} activeLesson={activeLesson} initialQuestions={initialQuestions} />
                                             </div>
@@ -261,15 +271,17 @@ export default function CoursePlayer({
                                     Overview
                                 </button>
                             </li>
-                            <li className="nav-item" role="presentation">
-                                <button
-                                    className={`nav-link ${activeTab === 'qna' ? 'active' : ''}`}
-                                    type="button"
-                                    onClick={() => setActiveTab('qna')}
-                                >
-                                    Q&A
-                                </button>
-                            </li>
+                            {isQnaEnabled && (
+                                <li className="nav-item" role="presentation">
+                                    <button
+                                        className={`nav-link ${activeTab === 'qna' ? 'active' : ''}`}
+                                        type="button"
+                                        onClick={() => setActiveTab('qna')}
+                                    >
+                                        Q&A
+                                    </button>
+                                </li>
+                            )}
                             <li className="nav-item" role="presentation">
                                 <button
                                     className={`nav-link ${activeTab === 'announcements' ? 'active' : ''}`}
@@ -309,11 +321,11 @@ export default function CoursePlayer({
 
                             {activeTab === 'overview' && (
                                 <div className="tab-pane fade show active">
-                                    <OverviewTab course={course} activeLesson={activeLesson} lessonCount={lessonCount} />
+                                    <OverviewTab course={course} activeLesson={activeLesson} lessonCount={lessonCount} progressPercentage={progressPercentage} />
                                 </div>
                             )}
 
-                            {activeTab === 'qna' && (
+                            {isQnaEnabled && activeTab === 'qna' && (
                                 <div className="tab-pane fade show active">
                                     <QnaTab course={course} activeLesson={activeLesson} initialQuestions={initialQuestions} />
                                 </div>
